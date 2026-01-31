@@ -1,0 +1,4 @@
+=== REBUILD MODE LOG ===
+Fragmentos leídos: 14146
+Objetos reconstruidos: 0
+Productos finales: 0

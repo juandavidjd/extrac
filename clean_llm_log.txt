@@ -1,0 +1,622 @@
+=== JSON VÁLIDOS ===
+879
+
+=== JSON CORRUPTOS ===
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"03284\",\n    \"descripcion\": \"MANILAR BLISTER PROTAPER\",\n    \"precio\": \"10400\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"03284_1.jpg\", \"03284_2.jpg\", \"03284_3.jpg\", \"03284_4.jpg\"],\n    \"variantes\": [\"AZUL 03242\", \"ROJO 03243\", \"NEGRO 03284\", \"GRIS 01115\"]\n  }
+
+{\n    \"codigo\": \"04909\",\n    \"descripcion\": \"MANILAR PROTAPER METAL MULISHA\",\n    \"precio\": \"8783\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"04909_1.jpg\", \"04909_2.jpg\"],\n    \"variantes\": [\"ROJO 04909\", \"AZUL 04448\"]\n  }
+
+{\n    \"codigo\": \"04855\",\n    \"descripcion\": \"MANILAR CARBONO RACING\",\n    \"precio\": \"7375\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"04855_1.jpg\", \"04855_2.jpg\"],\n    \"variantes\": [\"100% CAUCHO\", \"NEGRO 04855\", \"ROJO 04863\", \"AZUL 04972\"]\n  }
+
+{\n    \"codigo\": \"04876\",\n    \"descripcion\": \"MANILAR CARBONO RACING APLIQUES\",\n    \"precio\": \"11250\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"04876_1.jpg\", \"04876_2.jpg\", \"04876_3.jpg\", \"04876_4.jpg\"],\n    \"variantes\": [\"ROJO 04876\", \"AZUL 04877\", \"GRIS 05317\", \"NEGRO 05318\"]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"PROTAPER\",\n  \"descripcion\": \"SYNERGY\",\n  \"precio\": \"\",\n  \"empaque\": \"2\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"PROTAPER\",\n  \"descripcion\": \"GRIPS RGV\",\n  \"precio\": \"\",\n  \"empaque\": \"X1\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"PT-1234\",\n  \"descripcion\": \"Pro Taper Synergy Grips\",\n  \"precio\": \"25\",\n  \"empaque\": \"X1\",\n  \"fotos\": [\n    \"foto1.jpg\",\n    \"foto2.jpg\",\n    \"foto3.jpg\",\n    \"foto4.jpg\"\n  ],\n  \"variantes\": [\n    \"PT-1234-BK\",\n    \"PT-1234-GY\",\n    \"PT-1234-RD\",\n    \"PT-1234-BL\"\n  ]\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"03284\",\n    \"descripcion\": \"MANILAR BLISTER PROTAPER\",\n    \"precio\": \"10400\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"03284_1.jpg\", \"03284_2.jpg\", \"03284_3.jpg\", \"03284_4.jpg\"],\n    \"variantes\": [\"AZUL 03242\", \"ROJO 03243\", \"NEGRO 03284\", \"GRIS 01115\"]\n  }
+
+{\n    \"codigo\": \"04909\",\n    \"descripcion\": \"MANILAR PROTAPER METAL MULISHA\",\n    \"precio\": \"8783\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"04909_1.jpg\", \"04909_2.jpg\"],\n    \"variantes\": [\"ROJO 04909\", \"AZUL 04448\"]\n  }
+
+{\n    \"codigo\": \"04855\",\n    \"descripcion\": \"MANILAR CARBONO RACING\",\n    \"precio\": \"7375\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"04855_1.jpg\", \"04855_2.jpg\"],\n    \"variantes\": [\"100% CAUCHO\", \"NEGRO 04855\", \"ROJO 04863\", \"AZUL 04972\"]\n  }
+
+{\n    \"codigo\": \"04876\",\n    \"descripcion\": \"MANILAR CARBONO RACING APLIQUES\",\n    \"precio\": \"11250\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"04876_1.jpg\", \"04876_2.jpg\", \"04876_3.jpg\", \"04876_4.jpg\"],\n    \"variantes\": [\"ROJO 04876\", \"AZUL 04877\", \"GRIS 05317\", \"NEGRO 05318\"]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"04855\",\n    \"descripcion\": \"MANILAR CARBONO RACING 100% CAUCHO NEGRO 04855 ROJO 04863 AZUL 04972\",\n    \"precio\": \"7375\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"manilar_carbono_racing_1.jpg\", \"manilar_carbono_racing_2.jpg\"],\n    \"variantes\": [\"04863\", \"04972\"]\n  }
+
+{\n    \"codigo\": \"04876\",\n    \"descripcion\": \"MANILAR CARBONO RACING APLIQUES ROJO 04876 AZUL 04877 GRIS 05317 NEGRO 05318\",\n    \"precio\": \"11250\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"manilar_carbono_apliques_1.jpg\", \"manilar_carbono_apliques_2.jpg\"],\n    \"variantes\": [\"04877\", \"05317\", \"05318\"]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"PROTAPER SYNERGY\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"PROTAP\",\n  \"descripcion\": \"Grip de manillar\",\n  \"precio\": \"\",\n  \"empaque\": \"X1\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"PROTAPER SYNERGY\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"X1\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"PROTAPER SYNERGY\",\n  \"descripcion\": \"Puños Pro Taper Synergy\",\n  \"precio\": \"\",\n  \"empaque\": \"2 piezas\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"PROTAPER SYNERGY\",\n  \"descripcion\": \"GRIPS 7/8\\\" MX BARS FULL DIAMOND\",\n  \"precio\": \"\",\n  \"empaque\": \"X2\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"HYNERGY2V\",\n  \"descripcion\": \"PROTAPER\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"PROTAPER SYNERGY\",\n  \"descripcion\": \"GRIPS FULL DIAMOND\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"03245\",\n    \"descripcion\": \"DONA PROTAPER COLOR SURTIDO AMARILLO 03245 AZUL 04388 ROJA 04389\",\n    \"precio\": \"2570\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"dona_protaper.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"02311\",\n    \"descripcion\": \"MANILAR PROTAPER CAUCHO COLORS LILA 02311 AZUL 02312 BLANCO 02313 VERDE 02314 NARANJA 02496 ROJO 02315\",\n    \"precio\": \"5197\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"manilar_protaper.jpg\"],\n    \"variantes\": [\"02311\", \"02312\", \"02313\", \"02314\", \"02496\", \"02315\"]\n  }
+
+{\n    \"codigo\": \"03019\",\n    \"descripcion\": \"MOXI MANILAR ESTRIADO NARANJA 03019 AZUL 03018\",\n    \"precio\": \"8372\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"moxi_manilar.jpg\"],\n    \"variantes\": [\"03019\", \"03018\"]\n  }
+
+{\n    \"codigo\": \"02495\",\n    \"descripcion\": \"MOXI MANILAR TOPE SMALL ROJO 02495 AZUL 02374 PLATA 02376 NARANJA 02375\",\n    \"precio\": \"17730\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"moxi_manilar_tope_small.jpg\"],\n    \"variantes\": [\"02495\", \"02374\", \"02376\", \"02375\"]\n  }
+
+{\n    \"codigo\": \"02337\",\n    \"descripcion\": \"MOXI MANILARPLANO VERDE\",\n    \"precio\": \"12236\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"moxi_manilarplano.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"02599\",\n    \"descripcion\": \"MANILAR DOMINO NEGRO-VERDE\",\n    \"precio\": \"5260\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"manilar_domino.jpg\"],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"02599\",\n  \"descripcion\": \"MANILAR DOMINO NEGRO-VERDE\",\n  \"precio\": \"5260\",\n  \"empaque\": \"X2\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"PROTAPER\",\n  \"descripcion\": \"Grip Pro Taper\",\n  \"precio\": \"0\",\n  \"empaque\": \"X1\",\n  \"fotos\": [\n    \"imagen1.jpg\",\n    \"imagen2.jpg\",\n    \"imagen3.jpg\",\n    \"imagen4.jpg\"\n  ],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"03245\",\n    \"descripcion\": \"DONA PROTAPER COLOR SURTIDO AMARILLO 03245 AZUL 04388 ROJA 04389\",\n    \"precio\": \"2570\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"dona_protaper.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"02311\",\n    \"descripcion\": \"MANILAR PROTAPER CAUCHO COLORS LILA 02311 AZUL 02312 BLANCO 02313 VERDE 02314 NARANJA 02496 ROJO 02315\",\n    \"precio\": \"5197\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"manilar_protaper.jpg\"],\n    \"variantes\": [\"02311\", \"02312\", \"02313\", \"02314\", \"02496\", \"02315\"]\n  }
+
+{\n    \"codigo\": \"03019\",\n    \"descripcion\": \"MOXI MANILAR ESTRIADO NARANJA 03019 AZUL 03018\",\n    \"precio\": \"8372\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"moxi_manilar.jpg\"],\n    \"variantes\": [\"03019\", \"03018\"]\n  }
+
+{\n    \"codigo\": \"02495\",\n    \"descripcion\": \"MOXI MANILAR TOPE SMALL ROJO 02495 AZUL 02374 PLATA 02376 NARANJA 02375\",\n    \"precio\": \"17730\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"moxi_manilar_tope.jpg\"],\n    \"variantes\": [\"02495\", \"02374\", \"02376\", \"02375\"]\n  }
+
+{\n    \"codigo\": \"02337\",\n    \"descripcion\": \"MOXI MANILARPLANO VERDE\",\n    \"precio\": \"12236\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"moxi_manilarplano.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"02599\",\n    \"descripcion\": \"MANILAR DOMINO NEGRO-VERDE\",\n    \"precio\": \"5260\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"manilar_domino.jpg\"],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"01894\",\n    \"descripcion\": \"TAPA COMBUSTIBLE BWS-125 X NARANJA\",\n    \"precio\": \"28924\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03107\",\n    \"descripcion\": \"TAPA GASOLINA BWS-125 FI\",\n    \"precio\": \"27310\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2.jpg\"],\n    \"variantes\": [\n      \"DORADA 04385\",\n      \"VERDE 04384\",\n      \"NARANJA 04382\",\n      \"FUCIA 04383\"\n    ]\n  }
+
+{\n    \"codigo\": \"04300\",\n    \"descripcion\": \"TAPA GASOLINA N-MAX\",\n    \"precio\": \"22919\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto3.jpg\"],\n    \"variantes\": [\n      \"NARANJA 04302\",\n      \"DORADA 04303\"\n    ]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"01879\",\n    \"descripcion\": \"TWPO TAPA SWITCH BWS-125 X NARANJA 01879 VERDE 02183 ROJA 1878\",\n    \"precio\": \"26750\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1\"],\n    \"variantes\": [\"01879\", \"02183\", \"1878\"]\n  }
+
+{\n    \"codigo\": \"04293\",\n    \"descripcion\": \"TAPA SWITCH BWS-125 FI ROJA 03102 AZUL 03103 GRIS 03105 NEGRA 03101\",\n    \"precio\": \"21446\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2\"],\n    \"variantes\": [\"03102\", \"03103\", \"03105\", \"03101\"]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen_recortada\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"22919\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"04300\",\n  \"descripcion\": \"TAPA GASOLINA N-MAX NARANJA 04302 DORADA 04303\",\n  \"precio\": \"\",\n  \"empaque\": \"X1\",\n  \"fotos\": [],\n  \"variantes\": [\n    \"04302\",\n    \"04303\"\n  ]\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\n    \"image1.jpg\",\n    \"image2.jpg\"\n  ],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"BWS-125 X\",\n  \"descripcion\": \"TAPA COMBUSTIBLE\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": [\n    \"NARANJA 01895\",\n    \"BWS-125 FI\",\n    \"DORADA 04385\",\n    \"VERDE 04384\",\n    \"NARANJA 04382\",\n    \"FUCIA 04383\"\n  ]\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"01894\",\n    \"descripcion\": \"TAPA COMBUSTIBLE BWS-125 X NARANJA\",\n    \"precio\": \"28924\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03107\",\n    \"descripcion\": \"TAPA GASOLINA BWS-125 FI DORADA VERDE NARANJA FUCIA\",\n    \"precio\": \"27310\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2.jpg\"],\n    \"variantes\": [\"04385\", \"04384\", \"04382\", \"04383\"]\n  }
+
+{\n    \"codigo\": \"04300\",\n    \"descripcion\": \"TAPA GASOLINA N-MAX NARANJA DORADA\",\n    \"precio\": \"22919\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto3.jpg\"],\n    \"variantes\": [\"04302\", \"04303\"]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"X1\",\n  \"fotos\": [\"imagen_recortada\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"01879\",\n    \"descripcion\": \"TWPO TAPA SWITCH BWS-125 X NARANJA 01879 VERDE 02183 ROJA 1878\",\n    \"precio\": \"26750\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1.jpg\"],\n    \"variantes\": [\"01879\", \"02183\", \"1878\"]\n  }
+
+{\n    \"codigo\": \"04293\",\n    \"descripcion\": \"TAPA SWITCH BWS-125 FI ROJA 03102 AZUL 03103 GRIS 03105 NEGRA 03101\",\n    \"precio\": \"21446\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2.jpg\"],\n    \"variantes\": [\"03102\", \"03103\", \"03105\", \"03101\"]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"02459\",\n    \"descripcion\": \"RPM DISCO FRENO 260MM BWS-125 NARANJA 02461\",\n    \"precio\": \"131670\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"02831\",\n    \"descripcion\": \"RPM DISCO FRENO 260MM BWS125 MODEL2 NARANJA 02831\",\n    \"precio\": \"131670\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"02834\",\n    \"descripcion\": \"RPM DISCO FRENO 260MM BWS-125 MODEL3 AZUL 02834 DORADO 02836 NARANJA 02835\",\n    \"precio\": \"131670\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto3.jpg\"],\n    \"variantes\": [\"02834\", \"02836\", \"02835\"]\n  }
+
+{\n    \"codigo\": \"02466\",\n    \"descripcion\": \"FRC FLANCHE DISCO 280MM\",\n    \"precio\": \"24750\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto4.jpg\"],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"02834\",\n    \"descripcion\": \"RPM DISCO FRENO 260MM BWS-125 MODEL3 AZUL 02834 DORADO 02836 NARANJA 02835\",\n    \"precio\": \"131670\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"imagen1.jpg\"],\n    \"variantes\": [\"02834\", \"02836\", \"02835\"]\n  }
+
+{\n    \"codigo\": \"02466\",\n    \"descripcion\": \"FRC FLANCHE DISCO 280MM\",\n    \"precio\": \"24750\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"imagen2.jpg\"],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"BWS-125\",\n  \"descripcion\": \"RPM DISCO FRENO 260MM\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": [\n    \"BWS125 MODEL2\",\n    \"NARANJA 02461\",\n    \"NARANJA 02831\"\n  ]\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"02459\",\n    \"descripcion\": \"RPM DISCO FRENO 260MM BWS-125 NARANJA 02461\",\n    \"precio\": \"131670\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"02831\",\n    \"descripcion\": \"RPM DISCO FRENO 260MM BWS125 MODEL2 NARANJA 02831\",\n    \"precio\": \"131670\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"02834\",\n    \"descripcion\": \"RPM DISCO FRENO 260MM BWS-125 MODEL3 AZUL 02834 DORADO 02836 NARANJA 02835\",\n    \"precio\": \"131670\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto3.jpg\"],\n    \"variantes\": [\"02834\", \"02836\", \"02835\"]\n  }
+
+{\n    \"codigo\": \"02466\",\n    \"descripcion\": \"FRC FLANCHE DISCO 280MM\",\n    \"precio\": \"24750\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto4.jpg\"],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"01060\",\n    \"descripcion\": \"TWPO TAPA VENTILADOR AZUL 01061 NARANJA 01062\",\n    \"precio\": \"20493\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1.jpg\"],\n    \"variantes\": [\"01061\", \"01062\"]\n  }
+
+{\n    \"codigo\": \"01353\",\n    \"descripcion\": \"FRC TAPA VENTILADOR ASPA SCOOTER CARBONO\",\n    \"precio\": \"22275\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2.jpg\"],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"01869\",\n    \"descripcion\": \"MOXI PATA LATERAL ALUMINIO BWS-125 NARANJA 01870\",\n    \"precio\": \"39990\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03660\",\n    \"descripcion\": \"PATA LATERAL KOSSO GRADUABLEUNIVERSAL ROJO 03660 NEGRO 04251 AZUL 04291 PLATA 04489\",\n    \"precio\": \"27880\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2.jpg\"],\n    \"variantes\": [\"03660\", \"04251\", \"04291\", \"04489\"]\n  }
+
+{\n    \"codigo\": \"02109\",\n    \"descripcion\": \"PALANCA CAMBIO DOBLE ESTRIA FINA SUZUKI AX/TS ALUMINIO ROJA 02109 AZUL 02110\",\n    \"precio\": \"12420\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto3.jpg\"],\n    \"variantes\": [\"02109\", \"02110\"]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"22275\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"TWPO TAPA VENTILADOR\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": [\n    \"AZUL 01061\",\n    \"NARANJA 01062\"\n  ]\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"01060\",\n  \"descripcion\": \"TWPO TAPA VENTILADOR AZUL 01061 NARANJA 01062\",\n  \"precio\": \"20493\",\n  \"empaque\": \"X1\",\n  \"fotos\": [\"foto\"],\n  \"variantes\": [\"01061\", \"01062\"]\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"01060\",\n    \"descripcion\": \"TWPO TAPA VENTILADOR AZUL 01061 NARANJA 01062\",\n    \"precio\": \"20493\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1\"],\n    \"variantes\": [\"01061\", \"01062\"]\n  }
+
+{\n    \"codigo\": \"01353\",\n    \"descripcion\": \"FRC TAPA VENTILADOR ASPA SCOOTER CARBONO\",\n    \"precio\": \"22275\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2\"],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"PALANCA CAMBIO DOBLE ESTRIA FINA SUZUKI AX/TS ALUMINIO\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": [\n    \"ROJA 02109\",\n    \"AZUL 02110\"\n  ]\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"02109\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"12420\",\n  \"empaque\": \"X1\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"01869\",\n    \"descripcion\": \"MOXI PATA LATERAL ALUMINIO BWS-125 NARANJA 01870\",\n    \"precio\": \"39990\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03660\",\n    \"descripcion\": \"PATA LATERAL KOSSO GRADUABLEUNIVERSAL ROJO 03660 NEGRO 04251 AZUL 04291 PLATA 04489\",\n    \"precio\": \"27880\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2.jpg\"],\n    \"variantes\": [\"03660\", \"04251\", \"04291\", \"04489\"]\n  }
+
+{\n    \"codigo\": \"02109\",\n    \"descripcion\": \"PALANCA CAMBIO DOBLE ESTRIA FINA SUZUKI AX/TS ALUMINIO ROJA 02109 AZUL 02110\",\n    \"precio\": \"12420\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto3.jpg\"],\n    \"variantes\": [\"02109\", \"02110\"]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"01783\",\n    \"descripcion\": \"CALAPIE ALUMINIO UNIVERSAL NEGRO/PLATA 01783 NEGRO/AZUL 01782 NEGRO/NARANJA 04253 NEGRO/ROJO 01298 NEGRO/NEGRO 03477\",\n    \"precio\": \"13764\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"calapie_aluminio_universal.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"01669\",\n    \"descripcion\": \"CALAPIE ALUMINIO POSH DORADO\",\n    \"precio\": \"7200\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"calapie_aluminio_posh_dorado.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"02544\",\n    \"descripcion\": \"CALAPIE ALUMINIO ESTRIADO DORADO 02544 PLATA 02547\",\n    \"precio\": \"8990\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"calapie_aluminio_estriado.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03800\",\n    \"descripcion\": \"CALAPIE TRASERO BWS-125 FI\",\n    \"precio\": \"23112\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"calapie_trasero_bws_125_fi.jpg\"],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"01783\",\n    \"descripcion\": \"CALAPIE ALUMINIO UNIVERSAL NEGRO/PLATA 01783 NEGRO/AZUL 01782 NEGRO/NARANJA 04253 NEGRO/ROJO 01298 NEGRO/NEGRO 03477\",\n    \"precio\": \"13764\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"calapie_aluminio_universal.jpg\"],\n    \"variantes\": [\n      \"01783\",\n      \"01782\",\n      \"04253\",\n      \"01298\",\n      \"03477\"\n    ]\n  }
+
+{\n    \"codigo\": \"01669\",\n    \"descripcion\": \"CALAPIE ALUMINIO POSH DORADO\",\n    \"precio\": \"7200\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"calapie_aluminio_posh_dorado.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"02544\",\n    \"descripcion\": \"CALAPIE ALUMINIO ESTRIADO DORADO 02544 PLATA 02547\",\n    \"precio\": \"8990\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"calapie_aluminio_estriado.jpg\"],\n    \"variantes\": [\n      \"02544\",\n      \"02547\"\n    ]\n  }
+
+{\n    \"codigo\": \"03800\",\n    \"descripcion\": \"CALAPIE TRASERO BWS-125 FI\",\n    \"precio\": \"23112\",\n    \"empaque\": \"X2\",\n    \"fotos\": [\"calapie_trasero_bws_125_fi.jpg\"],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"image1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"02029\",\n    \"descripcion\": \"BASE CALAPIE TRASERO AKT110/WAVE/ACTIVE\",\n    \"precio\": \"44003\",\n    \"empaque\": \"X2 PCS\",\n    \"fotos\": [\"image1.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"05003\",\n    \"descripcion\": \"BASE CALAPIE TRASERO AKT110/WAVE/ACTIVE\",\n    \"precio\": \"39200\",\n    \"empaque\": \"X2 PCS\",\n    \"fotos\": [\"image2.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"05509\",\n    \"descripcion\": \"BASE CALAPIE TRASERO AKT110 SPECIAL WAVE NEGRA\",\n    \"precio\": \"39890\",\n    \"empaque\": \"X2 PCS\",\n    \"fotos\": [\"image3.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03323\",\n    \"descripcion\": \"BASE CALAPIE TRASERO. IZQUIERDO AKT-125 FLEX\",\n    \"precio\": \"46500\",\n    \"empaque\": \"X1 PCS IZQ\",\n    \"fotos\": [\"image4.jpg\"],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen_recortada\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen_recortada\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"39890\",\n  \"empaque\": \"X2 PCS\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"TRASEROAKT110\",\n  \"descripcion\": \"BASE CALAPIE SPECIAL WAVE NEGRA\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"05509\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"Soporte de motor\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"02029\",\n    \"descripcion\": \"BASE CALAPIE TRASERO AKT110/WAVE/ACTIVE\",\n    \"precio\": \"44003\",\n    \"empaque\": \"X2 PCS\",\n    \"fotos\": [\"image1.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"05003\",\n    \"descripcion\": \"BASE CALAPIE TRASERO AKT110/WAVE/ACTIVE\",\n    \"precio\": \"39200\",\n    \"empaque\": \"X2 PCS\",\n    \"fotos\": [\"image2.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"05509\",\n    \"descripcion\": \"BASE CALAPIE TRASERO AKT110 SPECIAL WAVE NEGRA\",\n    \"precio\": \"39890\",\n    \"empaque\": \"X2 PCS\",\n    \"fotos\": [\"image3.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03323\",\n    \"descripcion\": \"BASE CALAPIE TRASERO. IZQUIERDO AKT-125 FLEX\",\n    \"precio\": \"46500\",\n    \"empaque\": \"X1 PCS IZQ\",\n    \"fotos\": [\"image4.jpg\"],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen_recortada\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"46500\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"IZQ\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"X1 PCS\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"03323\",\n  \"descripcion\": \"BASE CALAPIE TRASERO. IZQUIERDO AKT-125 FLEX\",\n  \"precio\": \"\",\n  \"empaque\": \"X1 PCS IZQ\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"04311\",\n  \"descripcion\": \"GUANTE SUOMY TACTIL ROJO TALLA M 04311 TALLA L 04312 TALLA XL 04313\",\n  \"precio\": \"24289\",\n  \"empaque\": \"PAR\",\n  \"fotos\": [\"foto\"],\n  \"variantes\": [\"04311\", \"04470\", \"04308\", \"04309\"]\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"¡Nuevo!\",\n  \"precio\": \"24289\",\n  \"empaque\": \"PAR\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"04311\",\n  \"descripcion\": \"GUANTE SUOMY\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\n    \"guante_suomy_1.jpg\",\n    \"guante_suomy_2.jpg\"\n  ],\n  \"variantes\": [\n    \"04311\",\n    \"L04312\",\n    \"04313\",\n    \"04470\",\n    \"04308\",\n    \"04309\"\n  ]\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"04311\",\n  \"descripcion\": \"GUANTE SUOMY TACTIL ROJO\",\n  \"precio\": \"24289\",\n  \"empaque\": \"PAR\",\n  \"fotos\": [\n    \"SUOMY.jpg\",\n    \"nuevo.jpg\"\n  ],\n  \"variantes\": [\n    \"04312\",\n    \"04313\",\n    \"04470\",\n    \"04308\",\n    \"04309\"\n  ]\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"ARM HIGH PERFORMANCE QUALITY\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"03249\",\n    \"descripcion\": \"KIT RODILLERA Y CODERA ACERO PROBIKER\",\n    \"precio\": \"74347\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03250\",\n    \"descripcion\": \"KIT RODILLERA YCODERA MARCA VEMAR\",\n    \"precio\": \"34005\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03293\",\n    \"descripcion\": \"KIT RODILLERA SCOYCO ECUALIZABLE\",\n    \"precio\": \"135397\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto3\"],\n    \"variantes\": [\"VERDE 03294\"]\n  }
+
+{\n    \"codigo\": \"03662\",\n    \"descripcion\": \"PORTA PLACA CNC UNIVERSAL\",\n    \"precio\": \"59920\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto4\"],\n    \"variantes\": [\"ROJO 03664\", \"AZUL 05392\"]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"03249\",\n    \"descripcion\": \"KIT RODILLERA Y CODERA ACERO PROBIKER\",\n    \"precio\": \"74347\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03250\",\n    \"descripcion\": \"KIT RODILLERA YCODERA MARCA VEMAR\",\n    \"precio\": \"34005\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03293\",\n    \"descripcion\": \"KIT RODILLERA SCOYCO ECUALIZABLE\",\n    \"precio\": \"135397\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto3.jpg\"],\n    \"variantes\": [\"03294\"]\n  }
+
+{\n    \"codigo\": \"03662\",\n    \"descripcion\": \"PORTA PLACA CNC UNIVERSAL\",\n    \"precio\": \"59920\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto4.jpg\"],\n    \"variantes\": [\"03664\", \"05392\"]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"logo.png\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"04094\",\n    \"descripcion\": \"LLAVERO IMPORTADO CORTO DISEÑOS SURTIDOS (BOLSA x10 UND)\",\n    \"precio\": \"2650\",\n    \"empaque\": \"X10\",\n    \"fotos\": [\"foto1.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04097\",\n    \"descripcion\": \"LLAVERO DE COLGAR IMPORTADO LARGO DISEÑOS SURTIDOS (BOLSA x10 UND)\",\n    \"precio\": \"3332\",\n    \"empaque\": \"X10\",\n    \"fotos\": [\"foto2.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"05375\",\n    \"descripcion\": \"FUNDA CON MANILLA LLAVE CONTROL N-MAX CONNECTED\",\n    \"precio\": \"8250\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto3.jpg\"],\n    \"variantes\": [\n      \"NEGRO 05375\",\n      \"ROJO 05377\",\n      \"AZUL 05376\",\n      \"GRIS 05378\",\n      \"MORADO 05379\"\n    ]\n  }
+
+{\n    \"codigo\": \"05370\",\n    \"descripcion\": \"FUNDA LLAVE CONTROL N-MAX CONNECTED\",\n    \"precio\": \"5700\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto4.jpg\"],\n    \"variantes\": [\n      \"NEGRO 05370\",\n      \"ROJO 05371\",\n      \"AZUL 05372\"\n    ]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen_recortada\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1.jpg\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"04094\",\n    \"descripcion\": \"LLAVERO IMPORTADO CORTO DISEÑOS SURTIDOS (BOLSA x10 UND)\",\n    \"precio\": \"2650\",\n    \"empaque\": \"X10\",\n    \"fotos\": [\"foto1.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04097\",\n    \"descripcion\": \"LLAVERO DE COLGAR IMPORTADO LARGO DISEÑOS SURTIDOS (BOLSA x10 UND)\",\n    \"precio\": \"3332\",\n    \"empaque\": \"X10\",\n    \"fotos\": [\"foto2.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"05375\",\n    \"descripcion\": \"FUNDA CON MANILLA LLAVE CONTROL N-MAX CONNECTED\",\n    \"precio\": \"8250\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto3.jpg\"],\n    \"variantes\": [\n      \"NEGRO 05375\",\n      \"ROJO 05377\",\n      \"AZUL 05376\",\n      \"GRIS 05378\",\n      \"MORADO 05379\"\n    ]\n  }
+
+{\n    \"codigo\": \"05370\",\n    \"descripcion\": \"FUNDA LLAVE CONTROL N-MAX CONNECTED\",\n    \"precio\": \"5700\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto4.jpg\"],\n    \"variantes\": [\n      \"NEGRO 05370\",\n      \"ROJO 05371\",\n      \"AZUL 05372\"\n    ]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"04094\",\n    \"descripcion\": \"LLAVERO IMPORTADO CORTO DISEÑOS SURTIDOS (BOLSA x10 UND)\",\n    \"precio\": \"2650\",\n    \"empaque\": \"X10\",\n    \"fotos\": [\"llaveros_04094.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04097\",\n    \"descripcion\": \"LLAVERO DE COLGAR IMPORTADO LARGO DISEÑOS SURTIDOS (BOLSA x10 UND)\",\n    \"precio\": \"3332\",\n    \"empaque\": \"X10\",\n    \"fotos\": [\"llaveros_04097.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"05375\",\n    \"descripcion\": \"FUNDA CON MANILLA LLAVE CONTROL N-MAX CONNECTED\",\n    \"precio\": \"8250\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"llaveros_05375.jpg\"],\n    \"variantes\": [\n      \"NEGRO 05375\",\n      \"ROJO 05377\",\n      \"AZUL 05376\",\n      \"GRIS 05378\",\n      \"MORADO 05379\"\n    ]\n  }
+
+{\n    \"codigo\": \"05370\",\n    \"descripcion\": \"FUNDA LLAVE CONTROL N-MAX CONNECTED\",\n    \"precio\": \"5700\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"llaveros_05370.jpg\"],\n    \"variantes\": [\n      \"NEGRO 05370\",\n      \"ROJO 05371\",\n      \"AZUL 05372\"\n    ]\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"05002\",\n    \"descripcion\": \"CAUCHO TAPA LATERAL AKT-125/TT/XL250\",\n    \"precio\": \"420\",\n    \"empaque\": \"X50\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04936\",\n    \"descripcion\": \"CAUCHO TAPA LATERAL AKT-125/XL/BOXER\",\n    \"precio\": \"420\",\n    \"empaque\": \"X50\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03322\",\n    \"descripcion\": \"CAUCHO PROTECTOR EXOSTO\",\n    \"precio\": \"420\",\n    \"empaque\": \"X50\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03610\",\n    \"descripcion\": \"TOPE GATO Y SILLA UNIVERSAL ALTO\",\n    \"precio\": \"905\",\n    \"empaque\": \"X10\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03611\",\n    \"descripcion\": \"TOPE GATO AGILITY\",\n    \"precio\": \"1020\",\n    \"empaque\": \"X10\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04777\",\n    \"descripcion\": \"EMPAQUE CONECTOR PIPETA DTK-100/125/175\",\n    \"precio\": \"1660\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"02874\",\n    \"descripcion\": \"TAPON GUARDACADENA ECO\",\n    \"precio\": \"1050\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04872\",\n    \"descripcion\": \"TAPON GUARDACADENA BOXER/PULSAR\",\n    \"precio\": \"1205\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04976\",\n    \"descripcion\": \"TAPON GUARDACADENA DISCOVER/PLATINO\",\n    \"precio\": \"1200\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04927\",\n    \"descripcion\": \"CAUCHO ACOPLE TANQUE GASOLINA ECO-DELUXE\",\n    \"precio\": \"1350\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04348\",\n    \"descripcion\": \"KIT ANTIVIBRANTE CALIPER X2 PZS UNIVERSAL\",\n    \"precio\": \"2050\",\n    \"empaque\": \"SET\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"04872\",\n    \"descripcion\": \"TAPON GUARDACADENA BOXER/PULSAR CM49A\",\n    \"precio\": \"1205\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04976\",\n    \"descripcion\": \"TAPON GUARDACADENA DISCOVER/PLATINO CM49B\",\n    \"precio\": \"1200\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04927\",\n    \"descripcion\": \"CAUCHO ACOPLE TANQUE GASOLINA ECO-DELUXE\",\n    \"precio\": \"1350\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04348\",\n    \"descripcion\": \"KIT ANTIVIBRANTE CALIPER X2 PZS UNIVERSAL\",\n    \"precio\": \"2050\",\n    \"empaque\": \"SET\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"1050\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"420\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen_recortada\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"X50\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"CM28\",\n  \"descripcion\": \"CAUCHO PROTECTOR EXOSTO\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"03322\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"05002\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": [\n    \"04936\"\n  ]\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"05002\",\n    \"descripcion\": \"CAUCHO TAPA LATERAL AKT-125/TT/XL250 CM10\",\n    \"precio\": \"420\",\n    \"empaque\": \"X50\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04936\",\n    \"descripcion\": \"CAUCHO TAPA LATERAL AKT-125/XL/BOXER CM36\",\n    \"precio\": \"420\",\n    \"empaque\": \"X50\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03322\",\n    \"descripcion\": \"CAUCHO PROTECTOR EXOSTO CM28\",\n    \"precio\": \"420\",\n    \"empaque\": \"X50\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03610\",\n    \"descripcion\": \"TOPE GATO Y SILLA UNIVERSAL ALTO 03610 BAJO 04890\",\n    \"precio\": \"905\",\n    \"empaque\": \"X10\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03611\",\n    \"descripcion\": \"TOPE GATO AGILITY CM15\",\n    \"precio\": \"1020\",\n    \"empaque\": \"X10\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04777\",\n    \"descripcion\": \"EMPAQUE CONECTOR PIPETA DTK-100/125/175\",\n    \"precio\": \"1660\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"02874\",\n    \"descripcion\": \"TAPON GUARDACADENA ECO CM57\",\n    \"precio\": \"1050\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04872\",\n    \"descripcion\": \"TAPON GUARDACADENA BOXER/PULSAR CM49A\",\n    \"precio\": \"1205\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04976\",\n    \"descripcion\": \"TAPON GUARDACADENA DISCOVER/PLATINO CM49B\",\n    \"precio\": \"1200\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04927\",\n    \"descripcion\": \"CAUCHO ACOPLE TANQUE GASOLINA ECO-DELUXE\",\n    \"precio\": \"1350\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04348\",\n    \"descripcion\": \"KIT ANTIVIBRANTE CALIPER X2 PZS UNIVERSAL\",\n    \"precio\": \"2050\",\n    \"empaque\": \"SET\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"X1\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"CM57\",\n  \"descripcion\": \"TAPON GUARDACADENA ECO\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"02874\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"03610\",\n    \"descripcion\": \"TOPE GATO Y SILLA UNIVERSAL ALTO\",\n    \"precio\": \"905\",\n    \"empaque\": \"X10\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04890\",\n    \"descripcion\": \"TOPE GATO Y SILLA UNIVERSAL BAJO\",\n    \"precio\": \"900\",\n    \"empaque\": \"X10\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"\",\n    \"descripcion\": \"TOPE GATO AGILITY CM15\",\n    \"precio\": \"1020\",\n    \"empaque\": \"X10\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"DTK-100/125/175\",\n    \"descripcion\": \"EMPAQUE CONECTOR PIPETA\",\n    \"precio\": \"1660\",\n    \"empaque\": \"X1\",\n    \"fotos\": [],\n    \"variantes\": []\n  }
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n{\n  \"codigo\": \"03610\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [],\n  \"variantes\": [\n    \"03611\",\n    \"04777\"\n  ]\n}
+
+{
+        "error": "JSON inválido",
+        "raw": "```json\n[\n  {\n    \"codigo\": \"03269\",\n    \"descripcion\": \"CAMARA DOBLE AKRAPOVIC SALIDAPUNTA CARBONO REF A08-LM\",\n    \"precio\": \"384441\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto1.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"03300\",\n    \"descripcion\": \"CAMARA DOBLE AKRAPOVIC SALIDA PUNTA CARBONO REF A08-ALTO CILINDRAJE\",\n    \"precio\": \"396330\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto2.jpg\"],\n    \"variantes\": []\n  }
+
+{\n    \"codigo\": \"04478\",\n    \"descripcion\": \"CAMARA AKRAPOVIC OCTAGONAL PUNTA CARBONO ALTO CILINDRAJE H-06 50CM LARGO 15 CM ANCHO\",\n    \"precio\": \"422448\",\n    \"empaque\": \"X1\",\n    \"fotos\": [\"foto3.jpg\"],\n    \"variantes\": []\n  }
+
