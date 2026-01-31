@@ -1,0 +1,15 @@
+=== INFORME DE AUDITORÍA ARMOTOS ===
+Total de productos cargados: 5813
+Códigos duplicados detectados: 574
+Ejemplos duplicados: CARBONO, PROTAPER, RACING, ROJO, AZUL, NEGRO, SYNERGY, FULL, CAUCHO, NARANJA
+Descripciones duplicadas: 96
+Ejemplos: \"RPM DISCO FRENO 260MM BWS-125, "raw": "```json\n{\n  \"codigo\": \", \",\n  \"descripcion\": \", \",\n    \", \"CAMARA DOBLE AKRAPOVIC SALIDAPUNTA CARBONO, \",\n  \"precio\": \"\",\n  \"empaque\": \"\",\n  \"fotos\": [\"imagen1\"],\n  \"variantes\": []\n}\n```", \"CAMARA CROMO TWPO PUNTA ALUMINIO, \"descripcion\": \"CAMARA CROMO TWPO PUNTA, /, 
+Column 'codigo' tiene 0 vacíos.
+Column 'descripcion' tiene 0 vacíos.
+Column 'color' tiene 5369 vacíos.
+Column 'empaque' tiene 5813 vacíos.
+Column 'imagen' tiene 5813 vacíos.
+Column 'linea' tiene 0 vacíos.
+Descripciones demasiado cortas (<5 chars): 68
+Imágenes faltantes: 0
+Posibles duplicados por similitud >92: 1620

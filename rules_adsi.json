@@ -1,0 +1,21 @@
+{
+    "common_words_remove": [
+        "PRECIO X UNIDAD",
+        "PRECIO X",
+        "EMPAQUE",
+        "UND",
+        "X1",
+        "X2"
+    ],
+    "color_words": [
+        "AZUL",
+        "ROJO",
+        "NEGRO",
+        "VERDE",
+        "AMARILLO",
+        "NARANJA",
+        "GRIS",
+        "PLATA",
+        "DORADO"
+    ]
+}
