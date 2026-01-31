@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Catálogo ADSI V5</title>
+    <link rel="stylesheet" href="/static/tailwind.css">
+</head>
+<body class="p-6 bg-white">
+
+<h1 class="text-3xl font-bold mb-6">Catálogo ADSI V5</h1>
+
+<table class="min-w-full border">
+    <thead>
+        <tr class="bg-gray-200">
+            <th class="p-2 border">SKU</th>
+            <th class="p-2 border">Descripción</th>
+            <th class="p-2 border">Precio</th>
+            <th class="p-2 border">Familia</th>
+            <th class="p-2 border">Imagen</th>
+            <th class="p-2 border">Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for p in products %}
+        <tr class="hover:bg-gray-50">
+            <td class="border p-2">{{p.sku}}</td>
+            <td class="border p-2">{{p.descripcion}}</td>
+            <td class="border p-2">${{p.precio}}</td>
+            <td class="border p-2">{{p.familia}}</td>
+            <td class="border p-2">
+                {% if p.imagenes %}
+                    <img src="{{p.imagenes.split(',')[0]}}" width="70">
+                {% endif %}
+            </td>
+            <td class="border p-2">
+                <a href="/edit/{{p.sku}}" class="text-blue-600">Editar</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+</body>
+</html>

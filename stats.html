@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Estadísticas Catálogo</title>
+    <link href="/static/tailwind.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-8">
+
+<h1 class="text-3xl font-bold mb-4">Estadísticas del Catálogo</h1>
+
+<a href="/" class="underline text-blue-600 mb-4 inline-block">← Volver</a>
+
+<ul class="bg-white p-6 shadow rounded max-w-md">
+    <li>Total productos: <b>{{ stats.total }}</b></li>
+    <li>Sin código: <b>{{ stats.sin_codigo }}</b></li>
+    <li>Sin precio: <b>{{ stats.sin_precio }}</b></li>
+    <li>Sin foto: <b>{{ stats.sin_foto }}</b></li>
+</ul>
+
+</body>
+</html>

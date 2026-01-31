@@ -1,0 +1,7 @@
+tesseract:
+  psm: 6
+  oem: 3
+  languages: ["spa", "eng"]
+
+openai:
+  vision_batch: 5

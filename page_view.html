@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Page {{ page_id }}</title>
+    <link href="/static/tailwind.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 p-8">
+
+<h1 class="text-3xl font-bold mb-4">Página {{ page_id }}</h1>
+
+<a href="/" class="underline text-blue-600 mb-4 inline-block">← Volver</a>
+
+<div class="grid grid-cols-4 gap-4">
+    {% for cell in data.cells %}
+    <div class="p-2 bg-white rounded shadow">
+        <img src="{{ cell.url }}" class="w-full mb-2 border" />
+        <pre class="text-xs bg-gray-100 p-2 overflow-auto">{{ cell.fragment | tojson(indent=2) }}</pre>
+    </div>
+    {% endfor %}
+</div>
+
+</body>
+</html>
