@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Editar {{p.sku}}</title>
+    <link rel="stylesheet" href="/static/tailwind.css">
+</head>
+<body class="p-6 bg-white">
+
+<h1 class="text-3xl font-bold mb-4">Editar producto {{p.sku}}</h1>
+
+<div class="grid grid-cols-2 gap-4">
+    <div>
+        <p class="font-semibold">Descripción</p>
+        <input id="descripcion" value="{{p.descripcion}}" class="border p-2 w-full">
+
+        <p class="font-semibold mt-4">Precio</p>
+        <input id="precio" value="{{p.precio}}" class="border p-2 w-full">
+
+        <p class="font-semibold mt-4">Familia</p>
+        <input id="familia" value="{{p.familia}}" class="border p-2 w-full">
+        
+        <p class="font-semibold mt-4">Subfamilia</p>
+        <input id="subfamilia" value="{{p.subfamilia}}" class="border p-2 w-full">
+
+        <button onclick="save()" class="mt-6 bg-blue-600 text-white px-4 py-2 rounded">
+            Guardar cambios
+        </button>
+    </div>
+
+    <div>
+        {% if p.imagenes %}
+            <img src="{{p.imagenes.split(',')[0]}}" class="border">
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function save() {
+    fetch("/save-product/{{p.sku}}", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({
+            descripcion: document.getElementById("descripcion").value,
+            precio: document.getElementById("precio").value,
+            familia: document.getElementById("familia").value,
+            subfamilia: document.getElementById("subfamilia").value,
+        })
+    }).then(r => r.json()).then(j => {
+        alert("Guardado");
+    });
+}
+</script>
+
+</body>
+</html>

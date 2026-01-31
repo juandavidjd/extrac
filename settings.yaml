@@ -1,0 +1,7 @@
+input_path: "input/pages/"
+output_path: "output/"
+dpi: 300
+language: "spa"
+enable_layout_analysis: true
+enable_ocr: true
+enable_image_crop: true

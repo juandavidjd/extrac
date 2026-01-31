@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ADSI Extractor V5</title>
+    <link rel="stylesheet" href="/static/tailwind.css">
+</head>
+<body class="p-6 bg-gray-100">
+    <h1 class="text-3xl font-bold">ADSI Extractor V5 Dashboard</h1>
+    <p class="mt-2">Productos procesados: {{count}}</p>
+
+    <h2 class="text-xl mt-6 font-semibold">Familias</h2>
+    <ul class="mt-2">
+        {% for f in families %}
+            <li>{{f}}</li>
+        {% endfor %}
+    </ul>
+
+    <a href="/products" class="mt-8 inline-block bg-blue-600 text-white px-4 py-2 rounded">
+        Ver catálogo
+    </a>
+</body>
+</html>

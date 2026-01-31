@@ -1,0 +1,12 @@
+table_line_detection:
+  min_line_length: 50
+  line_thickness: 2
+
+image_detection:
+  min_area: 8000
+  aspect_ratio_min: 0.2
+  aspect_ratio_max: 6.0
+
+product_block:
+  min_height: 80
+  max_height: 700

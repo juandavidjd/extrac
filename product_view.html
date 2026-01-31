@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Página {{page}}</title>
+    <link rel="stylesheet" href="/static/tailwind.css">
+</head>
+<body class="p-6 bg-gray-100">
+
+<h1 class="text-2xl font-bold mb-4">Página {{page}}</h1>
+
+<h2 class="text-xl font-semibold mt-4">JSON</h2>
+<pre class="bg-white p-4 border rounded">{{json | tojson(indent=2)}}</pre>
+
+<h2 class="text-xl font-semibold mt-4">Celdas detectadas</h2>
+<div class="grid grid-cols-6 gap-2 mt-4">
+    {% for c in cells %}
+        <div>
+            <img src="{{c}}" class="border">
+        </div>
+    {% endfor %}
+</div>
+
+</body>
+</html>

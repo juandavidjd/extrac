@@ -1,0 +1,41 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<h2 class="text-2xl font-bold mb-3">Producto {{ p.codigo }}</h2>
+
+<div class="flex gap-6">
+    <div>
+        {% if p.imagen %}
+            <img src="/static/{{ p.imagen }}" class="w-64 border shadow">
+        {% else %}
+            <p class="text-red-500">Sin imagen</p>
+        {% endif %}
+    </div>
+
+    <form method="post" action="/producto/{{ p.codigo }}/guardar" class="space-y-4">
+
+        <label>Descripción</label>
+        <textarea name="descripcion" class="w-full p-2 border">{{ p.descripcion }}</textarea>
+
+        <label>Precio</label>
+        <input type="text" name="precio" class="w-full p-2 border" value="{{ p.precio }}">
+
+        <label>Empaque</label>
+        <input name="empaque" class="w-full p-2 border" value="{{ p.empaque }}">
+
+        <label>Familia</label>
+        <input name="familia" class="w-full p-2 border" value="{{ p.familia }}">
+
+        <label>Subfamilia</label>
+        <input name="subfamilia" class="w-full p-2 border" value="{{ p.subfamilia }}">
+
+        <label>Color</label>
+        <input name="color" class="w-full p-2 border" value="{{ p.color }}">
+
+        <label>Modelo Moto</label>
+        <input name="modelo_moto" class="w-full p-2 border" value="{{ p.modelo_moto }}">
+
+        <button class="bg-blue-600 text-white px-4 py-2 mt-4">Guardar</button>
+    </form>
+</div>
+{% endblock %}
