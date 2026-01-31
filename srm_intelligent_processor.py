@@ -2,52 +2,29 @@
 """
 ══════════════════════════════════════════════════════════════════════════════════
                      SRM INTELLIGENT PROCESSOR v4.0
-                  Procesador Universal Multi-Industria
+              Procesador Universal Multi-Industria Multi-Tenant
 ══════════════════════════════════════════════════════════════════════════════════
 
-DESCRIPCIÓN:
-    Procesador universal de catálogos que transforma cualquier fuente de datos
-    en información técnica estructurada lista para e-commerce.
+ARQUITECTURA:
+    somosindustrias.com (Master)
+    └── Industrias
+        ├── somosrepuestosmotos.com (SRM)
+        │   └── Clientes: Kaiqi, Japan, Bara, DFG, Yokomar, etc.
+        ├── somosferreteria.com
+        ├── somoselectronica.com
+        └── ...
 
-FORMATOS SOPORTADOS:
-    ✓ PDF      - Catálogos, fichas técnicas, listas de precios
-    ✓ Excel    - .xlsx, .xls con datos tabulares
-    ✓ CSV      - Archivos delimitados
-    ✓ Word     - .docx con tablas y texto
-    ✓ TXT      - Texto plano estructurado
-    ✓ Imágenes - JPG, PNG, WEBP (análisis con Vision AI)
-    ✓ ZIP      - Archivos comprimidos con múltiples fuentes
-    ✓ URL      - Scraping de páginas web de catálogos
-
-PIPELINE:
-    1. INGESTA      → Recepción y detección automática de formato
-    2. EXTRACCIÓN   → Parsing inteligente de datos
-    3. NORMALIZACIÓN → Limpieza y estandarización
-    4. UNIFICACIÓN  → Clasificación bajo taxonomía técnica
-    5. ENRIQUECIMIENTO → Fitment, atributos técnicos, descripciones
-    6. FICHA 360°   → Generación de ficha completa para publicación
-
-INDUSTRIAS SOPORTADAS:
-    - Autopartes (motos, carros, camiones)
-    - Ferretería y construcción
-    - Electrónica y tecnología
-    - Hogar y decoración
-    - Industrial y maquinaria
-    - Genérico (configurable)
+CAPACIDADES:
+    ✓ Auto-detección de industria por contenido
+    ✓ Auto-detección de cliente/marca
+    ✓ Push directo a Shopify del cliente
+    ✓ Soporte multi-formato (PDF, Excel, CSV, Word, TXT, Imágenes, ZIP, URL)
+    ✓ Pipeline: Ingesta → Extracción → Normalización → Unificación → Enriquecimiento → Ficha 360°
 
 INSTALACIÓN:
-    pip install openai pandas openpyxl python-docx beautifulsoup4 requests pillow opencv-python
+    pip install openai anthropic pandas openpyxl python-docx beautifulsoup4 requests pillow opencv-python shopify
 
-USO:
-    python3 srm_intelligent_processor.py <archivo_o_url> [opciones]
-
-EJEMPLOS:
-    python3 srm_intelligent_processor.py catalogo.pdf --industry autopartes
-    python3 srm_intelligent_processor.py productos.xlsx --output /data/output
-    python3 srm_intelligent_processor.py "https://ejemplo.com/catalogo" --scrape
-    python3 srm_intelligent_processor.py archivos.zip --prefix PROV
-
-AUTOR: SRM Team
+AUTOR: SRM/ODI Team
 VERSIÓN: 4.0
 ══════════════════════════════════════════════════════════════════════════════════
 """
@@ -73,48 +50,82 @@ from abc import ABC, abstractmethod
 import subprocess
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from dotenv import load_dotenv
+
+# Cargar variables de entorno
+load_dotenv()
 
 # ============================================================================
 # VERIFICACIÓN DE DEPENDENCIAS
 # ============================================================================
 
-DEPENDENCIES = {
-    'pandas': 'pandas',
-    'openpyxl': 'openpyxl',
-    'cv2': 'opencv-python',
-    'numpy': 'numpy',
-    'PIL': 'pillow',
-    'openai': 'openai',
-    'docx': 'python-docx',
-    'bs4': 'beautifulsoup4',
-    'requests': 'requests',
-}
+CORE_DEPS = ['pandas', 'requests', 'PIL', 'openai']
+OPTIONAL_DEPS = ['cv2', 'docx', 'bs4', 'openpyxl', 'anthropic', 'shopify']
 
 def check_dependencies():
-    """Verifica e importa dependencias."""
-    missing = []
+    missing_core = []
+    missing_optional = []
 
-    for module, package in DEPENDENCIES.items():
+    for dep in CORE_DEPS:
         try:
-            __import__(module)
+            __import__(dep)
         except ImportError:
-            missing.append(package)
+            missing_core.append(dep)
 
-    if missing:
-        print(f"❌ Dependencias faltantes:")
-        print(f"   pip install {' '.join(missing)}")
+    for dep in OPTIONAL_DEPS:
+        try:
+            __import__(dep)
+        except ImportError:
+            missing_optional.append(dep)
+
+    if missing_core:
+        print(f"❌ Dependencias requeridas faltantes: {missing_core}")
+        print("   pip install pandas requests pillow openai python-dotenv")
         sys.exit(1)
+
+    if missing_optional:
+        print(f"⚠️  Dependencias opcionales faltantes: {missing_optional}")
+        print("   pip install opencv-python python-docx beautifulsoup4 openpyxl anthropic ShopifyAPI")
 
 check_dependencies()
 
 import pandas as pd
 import numpy as np
-import cv2
+import requests
 from PIL import Image
 from openai import OpenAI
-from docx import Document
-from bs4 import BeautifulSoup
-import requests
+
+# Imports opcionales
+try:
+    import cv2
+    CV2_AVAILABLE = True
+except ImportError:
+    CV2_AVAILABLE = False
+
+try:
+    from docx import Document
+    DOCX_AVAILABLE = True
+except ImportError:
+    DOCX_AVAILABLE = False
+
+try:
+    from bs4 import BeautifulSoup
+    BS4_AVAILABLE = True
+except ImportError:
+    BS4_AVAILABLE = False
+
+try:
+    import anthropic
+    ANTHROPIC_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_AVAILABLE = False
+
+try:
+    import shopify
+    SHOPIFY_AVAILABLE = True
+except ImportError:
+    SHOPIFY_AVAILABLE = False
+
 
 # ============================================================================
 # CONFIGURACIÓN GLOBAL
@@ -124,9 +135,9 @@ VERSION = "4.0"
 SCRIPT_NAME = "SRM Intelligent Processor"
 
 # Directorios
-DEFAULT_OUTPUT_DIR = "/tmp/srm_output"
-DEFAULT_TEMP_DIR = "/tmp/srm_temp"
-DEFAULT_CACHE_DIR = "/tmp/srm_cache"
+DEFAULT_OUTPUT_DIR = os.getenv('SRM_OUTPUT_DIR', '/tmp/srm_output')
+DEFAULT_TEMP_DIR = os.getenv('SRM_TEMP_DIR', '/tmp/srm_temp')
+IMAGE_SERVER_URL = os.getenv('IMAGE_SERVER_URL', 'http://64.23.170.118/images')
 
 # API Configuration
 VISION_MODEL = "gpt-4o"
@@ -134,137 +145,160 @@ TEXT_MODEL = "gpt-4o-mini"
 MAX_TOKENS = 4096
 MAX_RETRIES = 5
 RETRY_DELAY = 2
-REQUEST_TIMEOUT = 120
 
-# Processing
-BATCH_SIZE = 10
-MAX_WORKERS = 4
-CHECKPOINT_INTERVAL = 5
-
-# Scraping
-DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-SCRAPE_DELAY = 1.5
-MAX_PAGES_SCRAPE = 50
-
-# File limits
-MAX_FILE_SIZE_MB = 100
-MAX_IMAGES_PER_ZIP = 500
+# AI Provider Selection
+AI_PROVIDER = os.getenv('AI_PROVIDER', 'OPENAI').upper()
 
 
 # ============================================================================
-# TAXONOMÍA MULTI-INDUSTRIA
+# CONFIGURACIÓN MULTI-TENANT
 # ============================================================================
 
-INDUSTRY_TAXONOMIES = {
-    "autopartes": {
-        "name": "Autopartes y Vehículos",
+# Industrias soportadas
+INDUSTRIES = {
+    "autopartes_motos": {
+        "name": "Repuestos de Motos y Motocargueros",
+        "domain": "somosrepuestosmotos.com",
+        "keywords": ["moto", "motocicleta", "motocarguero", "cilindraje", "cc", "2t", "4t",
+                    "pistón", "cilindro", "carburador", "cdi", "bobina", "clutch", "piñón",
+                    "catalina", "cadena", "amortiguador", "telescopio", "freno", "disco",
+                    "pastilla", "zapata", "faro", "direccional", "velocímetro", "tacómetro"],
         "categories": {
-            "motor": ["motor", "culata", "pistón", "biela", "cigüeñal", "válvula", "cilindro",
-                     "empaque", "junta", "retén", "árbol", "leva", "cárter", "balancín"],
-            "frenos": ["freno", "pastilla", "disco", "zapata", "caliper", "mordaza", "tambor",
-                      "bomba freno", "líquido freno", "manguera freno"],
-            "suspension": ["suspensión", "amortiguador", "resorte", "espiral", "buje",
-                          "rótula", "terminal", "barra", "brazo"],
-            "transmision": ["transmisión", "caja", "embrague", "clutch", "cadena", "piñón",
-                           "catalina", "correa", "variador", "eje", "cruceta"],
-            "electrico": ["eléctrico", "batería", "alternador", "motor arranque", "bobina",
-                         "bujía", "cable", "faro", "luz", "bombillo", "fusible", "relay"],
-            "carroceria": ["carrocería", "guardafango", "parachoques", "capó", "puerta",
-                          "espejo", "vidrio", "moldura", "manija"],
-            "direccion": ["dirección", "volante", "columna", "cremallera", "bomba dirección"],
-            "refrigeracion": ["refrigeración", "radiador", "termostato", "bomba agua",
-                             "ventilador", "manguera", "anticongelante"],
-            "escape": ["escape", "silenciador", "catalizador", "tubo", "colector"],
-            "accesorios": ["accesorio", "tapete", "forro", "portavasos", "organizador"],
-        },
-        "fitment_fields": ["marca", "modelo", "año", "motor", "cilindraje", "posicion"],
+            "motor": ["motor", "culata", "pistón", "biela", "cigüeñal", "válvula", "cilindro", "aro", "anillo"],
+            "frenos": ["freno", "pastilla", "disco", "zapata", "caliper", "bomba freno", "manigueta"],
+            "suspension": ["suspensión", "amortiguador", "telescopio", "resorte", "buje"],
+            "transmision": ["transmisión", "cadena", "piñón", "catalina", "clutch", "embrague", "variador"],
+            "electrico": ["eléctrico", "bobina", "cdi", "batería", "faro", "luz", "bombillo", "direccional"],
+            "carroceria": ["carrocería", "plástico", "guardafango", "tanque", "tapa", "carenaje"],
+            "accesorios": ["accesorio", "espejo", "manubrio", "pedal", "estribo", "defensa"],
+        }
+    },
+
+    "autopartes_carros": {
+        "name": "Repuestos de Carros",
+        "domain": "somosrepuestoscarros.com",
+        "keywords": ["carro", "automóvil", "vehículo", "sedan", "suv", "camioneta",
+                    "motor", "caja", "suspensión", "freno", "radiador"],
+        "categories": {}
     },
 
     "ferreteria": {
         "name": "Ferretería y Construcción",
-        "categories": {
-            "herramientas_manuales": ["martillo", "destornillador", "llave", "alicate", "pinza",
-                                      "serrucho", "cincel", "lima", "nivel", "metro", "flexómetro"],
-            "herramientas_electricas": ["taladro", "esmeril", "sierra", "lijadora", "pulidora",
-                                        "rotomartillo", "caladora", "fresadora"],
-            "fijacion": ["tornillo", "clavo", "taco", "ancla", "remache", "grapa", "tuerca",
-                        "arandela", "perno", "abrazadera"],
-            "plomeria": ["tubo", "codo", "tee", "unión", "válvula", "llave paso", "grifo",
-                        "sifón", "sanitario", "lavamanos"],
-            "electricos": ["cable", "interruptor", "tomacorriente", "breaker", "caja",
-                          "canaleta", "tubo conduit", "cinta", "bombillo"],
-            "pinturas": ["pintura", "esmalte", "vinilo", "barniz", "sellador", "brocha",
-                        "rodillo", "espátula", "masilla", "lija"],
-            "construccion": ["cemento", "arena", "grava", "ladrillo", "bloque", "varilla",
-                            "malla", "alambre", "impermeabilizante"],
-            "cerrajeria": ["cerradura", "candado", "chapa", "llave", "bisagra", "pasador"],
-            "jardineria": ["manguera", "aspersor", "tijera", "pala", "rastrillo", "machete"],
-            "seguridad": ["casco", "guante", "gafa", "bota", "arnés", "chaleco", "tapaoídos"],
-        },
-        "fitment_fields": ["material", "medida", "tipo", "uso", "norma"],
+        "domain": "somosferreteria.com",
+        "keywords": ["tornillo", "tuerca", "clavo", "martillo", "taladro", "cemento",
+                    "pintura", "tubo", "cable", "interruptor", "cerradura"],
+        "categories": {}
     },
 
     "electronica": {
         "name": "Electrónica y Tecnología",
-        "categories": {
-            "computacion": ["computador", "laptop", "monitor", "teclado", "mouse", "disco",
-                           "memoria", "procesador", "tarjeta", "fuente"],
-            "celulares": ["celular", "smartphone", "tablet", "cargador", "cable", "forro",
-                         "mica", "batería", "auricular", "parlante"],
-            "audio_video": ["televisor", "teatro", "parlante", "amplificador", "micrófono",
-                           "cámara", "proyector", "consola"],
-            "redes": ["router", "switch", "cable red", "access point", "modem", "rack"],
-            "componentes": ["resistencia", "capacitor", "transistor", "diodo", "led",
-                           "circuito", "sensor", "relay", "transformador"],
-            "electrodomesticos": ["nevera", "lavadora", "horno", "microondas", "licuadora",
-                                 "ventilador", "aire acondicionado", "plancha"],
-            "iluminacion": ["bombillo", "lámpara", "reflector", "cinta led", "driver"],
-            "energia": ["batería", "ups", "inversor", "panel solar", "regulador"],
-            "cables": ["cable", "conector", "adaptador", "extensión", "regleta", "enchufe"],
-            "accesorios": ["estuche", "soporte", "base", "organizador", "limpiador"],
-        },
-        "fitment_fields": ["marca", "modelo", "compatibilidad", "voltaje", "potencia"],
+        "domain": "somoselectronica.com",
+        "keywords": ["celular", "computador", "tablet", "televisor", "parlante",
+                    "cable usb", "cargador", "batería", "pantalla", "teclado"],
+        "categories": {}
     },
 
     "hogar": {
         "name": "Hogar y Decoración",
-        "categories": {
-            "muebles": ["sofá", "silla", "mesa", "cama", "armario", "escritorio", "estante"],
-            "cocina": ["olla", "sartén", "plato", "vaso", "cubierto", "tabla", "colador"],
-            "baño": ["toalla", "cortina", "tapete", "dispensador", "espejo", "organizador"],
-            "decoracion": ["cuadro", "jarrón", "cojín", "lámpara", "reloj", "espejo"],
-            "textiles": ["sábana", "cobija", "almohada", "cortina", "mantel", "tapete"],
-            "almacenamiento": ["caja", "canasta", "organizador", "gancho", "perchero"],
-            "jardin": ["maceta", "manguera", "silla exterior", "sombrilla", "parrilla"],
-            "limpieza": ["escoba", "trapeador", "balde", "cepillo", "esponja", "detergente"],
-        },
-        "fitment_fields": ["material", "color", "medidas", "estilo", "ambiente"],
+        "domain": "somoshogar.com",
+        "keywords": ["sofá", "mesa", "silla", "cama", "cocina", "baño", "lámpara",
+                    "cortina", "tapete", "almohada"],
+        "categories": {}
     },
 
     "industrial": {
         "name": "Industrial y Maquinaria",
-        "categories": {
-            "motores": ["motor eléctrico", "motor diesel", "motor gasolina", "reductor"],
-            "bombas": ["bomba centrífuga", "bomba sumergible", "bomba neumática", "compresor"],
-            "valvulas": ["válvula", "electroválvula", "regulador", "manómetro", "filtro"],
-            "transmision": ["polea", "correa", "cadena", "sprocket", "chumacera", "rodamiento"],
-            "neumatica": ["cilindro", "válvula neumática", "racor", "manguera", "FRL"],
-            "hidraulica": ["cilindro hidráulico", "bomba hidráulica", "válvula", "aceite"],
-            "automatizacion": ["PLC", "sensor", "actuador", "variador", "HMI", "contactor"],
-            "soldadura": ["soldadora", "electrodo", "alambre", "gas", "careta", "guante"],
-            "seguridad": ["EPP", "señalización", "extintor", "botiquín", "camilla"],
-            "mantenimiento": ["lubricante", "grasa", "limpiador", "sellante", "adhesivo"],
-        },
-        "fitment_fields": ["marca", "modelo", "potencia", "voltaje", "capacidad", "presion"],
+        "domain": "somosindustrial.com",
+        "keywords": ["motor eléctrico", "bomba", "compresor", "válvula", "plc",
+                    "variador", "sensor", "cilindro neumático", "hidráulico"],
+        "categories": {}
     },
+}
 
-    "generico": {
-        "name": "Catálogo General",
-        "categories": {
-            "productos": ["producto", "artículo", "item", "referencia"],
+# Clientes por industria (con configuración Shopify)
+CLIENTS = {
+    "autopartes_motos": {
+        "KAIQI": {
+            "name": "Kaiqi Parts",
+            "type": "fabricante",
+            "shop": os.getenv('KAIQI_SHOP', 'u03tqc-0e.myshopify.com'),
+            "token": os.getenv('KAIQI_TOKEN'),
+            "prefixes": ["KQ", "KAIQI", "KAI"],
+            "keywords": ["kaiqi", "kai qi"],
         },
-        "fitment_fields": ["marca", "modelo", "tipo", "caracteristica"],
-    },
+        "JAPAN": {
+            "name": "Japan",
+            "type": "fabricante",
+            "shop": os.getenv('JAPAN_SHOP', '7cy1zd-qz.myshopify.com'),
+            "token": os.getenv('JAPAN_TOKEN'),
+            "prefixes": ["JP", "JAPAN", "JAP"],
+            "keywords": ["japan", "japón"],
+        },
+        "DUNA": {
+            "name": "Duna",
+            "type": "fabricante",
+            "shop": os.getenv('DUNA_SHOP', 'ygsfhq-fs.myshopify.com'),
+            "token": os.getenv('DUNA_TOKEN'),
+            "prefixes": ["DUN", "DUNA"],
+            "keywords": ["duna"],
+        },
+        "BARA": {
+            "name": "Bara Importaciones",
+            "type": "importador",
+            "shop": os.getenv('BARA_SHOP', '4jqcki-jq.myshopify.com'),
+            "token": os.getenv('BARA_TOKEN'),
+            "prefixes": ["BAR", "BARA"],
+            "keywords": ["bara", "importaciones bara"],
+        },
+        "DFG": {
+            "name": "DFG",
+            "type": "importador",
+            "shop": os.getenv('DFG_SHOP', '0se1jt-q1.myshopify.com'),
+            "token": os.getenv('DFG_TOKEN'),
+            "prefixes": ["DFG"],
+            "keywords": ["dfg"],
+        },
+        "YOKOMAR": {
+            "name": "Yokomar",
+            "type": "distribuidor",
+            "shop": os.getenv('YOKOMAR_SHOP', 'u1zmhk-ts.myshopify.com'),
+            "token": os.getenv('YOKOMAR_TOKEN'),
+            "prefixes": ["YOK", "YOKOMAR"],
+            "keywords": ["yokomar"],
+        },
+        "VAISAND": {
+            "name": "Vaisand",
+            "type": "distribuidor",
+            "shop": os.getenv('VAISAND_SHOP', 'z4fpdj-mz.myshopify.com'),
+            "token": os.getenv('VAISAND_TOKEN'),
+            "prefixes": ["VAI", "VAISAND"],
+            "keywords": ["vaisand"],
+        },
+        "LEO": {
+            "name": "Leo",
+            "type": "almacen",
+            "shop": os.getenv('LEO_SHOP', 'h1hywg-pq.myshopify.com'),
+            "token": os.getenv('LEO_TOKEN'),
+            "prefixes": ["LEO"],
+            "keywords": ["leo"],
+        },
+        "STORE": {
+            "name": "Store (Carguero)",
+            "type": "almacen",
+            "shop": os.getenv('STORE_SHOP', '0b6umv-11.myshopify.com'),
+            "token": os.getenv('STORE_TOKEN'),
+            "prefixes": ["STR", "STORE", "CARGUERO"],
+            "keywords": ["store", "carguero"],
+        },
+        "IMBRA": {
+            "name": "Imbra",
+            "type": "fabricante",
+            "shop": os.getenv('IMBRA_SHOP', '0i1mdf-gi.myshopify.com'),
+            "token": os.getenv('IMBRA_TOKEN'),
+            "prefixes": ["IMB", "IMBRA"],
+            "keywords": ["imbra"],
+        },
+    }
 }
 
 
@@ -331,53 +365,28 @@ def ensure_dir(path: str) -> str:
     return path
 
 
-def file_hash(filepath: str, length: int = 12) -> str:
-    hasher = hashlib.md5()
-    with open(filepath, 'rb') as f:
-        for chunk in iter(lambda: f.read(65536), b''):
-            hasher.update(chunk)
-    return hasher.hexdigest()[:length]
-
-
 def detect_file_type(filepath: str) -> str:
-    """Detecta el tipo de archivo."""
     ext = Path(filepath).suffix.lower()
-
     type_map = {
-        '.pdf': 'pdf',
-        '.xlsx': 'excel',
-        '.xls': 'excel',
-        '.csv': 'csv',
-        '.docx': 'word',
-        '.doc': 'word',
-        '.txt': 'txt',
-        '.jpg': 'image',
-        '.jpeg': 'image',
-        '.png': 'image',
-        '.webp': 'image',
-        '.gif': 'image',
-        '.zip': 'zip',
-        '.rar': 'zip',
-        '.7z': 'zip',
+        '.pdf': 'pdf', '.xlsx': 'excel', '.xls': 'excel', '.csv': 'csv',
+        '.docx': 'word', '.doc': 'word', '.txt': 'txt',
+        '.jpg': 'image', '.jpeg': 'image', '.png': 'image', '.webp': 'image',
+        '.zip': 'zip', '.rar': 'zip',
     }
-
     return type_map.get(ext, 'unknown')
 
 
 def clean_text(text: Any) -> str:
     if not isinstance(text, str):
         text = str(text) if text is not None else ""
-    text = text.strip()
-    text = re.sub(r'\s+', ' ', text)
-    return text
+    return re.sub(r'\s+', ' ', text.strip())
 
 
 def clean_price(value: Any) -> float:
     if isinstance(value, (int, float)):
         return float(value)
     if isinstance(value, str):
-        cleaned = re.sub(r'[^\d.,]', '', value)
-        cleaned = cleaned.replace(',', '.')
+        cleaned = re.sub(r'[^\d.,]', '', value).replace(',', '.')
         if cleaned.count('.') > 1:
             parts = cleaned.split('.')
             cleaned = ''.join(parts[:-1]) + '.' + parts[-1]
@@ -388,20 +397,72 @@ def clean_price(value: Any) -> float:
     return 0.0
 
 
-def normalize_category(text: str, industry: str = "generico") -> str:
-    """Normaliza categoría según industria."""
-    if not text:
+# ============================================================================
+# DETECTOR DE INDUSTRIA Y CLIENTE
+# ============================================================================
+
+class IndustryDetector:
+    """Detecta automáticamente la industria del contenido."""
+
+    def __init__(self):
+        self.industries = INDUSTRIES
+        self.clients = CLIENTS
+
+    def detect_industry(self, text: str, filename: str = "") -> Tuple[str, float]:
+        """Detecta la industria basándose en keywords."""
+        text_lower = (text + " " + filename).lower()
+        scores = {}
+
+        for industry_id, config in self.industries.items():
+            score = 0
+            for keyword in config.get('keywords', []):
+                if keyword in text_lower:
+                    score += 1
+
+            if score > 0:
+                scores[industry_id] = score
+
+        if not scores:
+            return 'autopartes_motos', 0.0  # Default
+
+        best = max(scores.items(), key=lambda x: x[1])
+        total_keywords = len(self.industries[best[0]].get('keywords', []))
+        confidence = min(best[1] / max(total_keywords * 0.3, 1), 1.0)
+
+        return best[0], confidence
+
+    def detect_client(self, text: str, industry: str, filename: str = "") -> Tuple[Optional[str], float]:
+        """Detecta el cliente/marca basándose en prefijos y keywords."""
+        text_lower = (text + " " + filename).lower()
+        text_upper = (text + " " + filename).upper()
+
+        industry_clients = self.clients.get(industry, {})
+
+        for client_id, config in industry_clients.items():
+            # Buscar por prefijos
+            for prefix in config.get('prefixes', []):
+                if prefix in text_upper:
+                    return client_id, 0.9
+
+            # Buscar por keywords
+            for keyword in config.get('keywords', []):
+                if keyword in text_lower:
+                    return client_id, 0.8
+
+        return None, 0.0
+
+    def detect_category(self, text: str, industry: str) -> str:
+        """Detecta categoría dentro de la industria."""
+        text_lower = text.lower()
+        industry_config = self.industries.get(industry, {})
+        categories = industry_config.get('categories', {})
+
+        for category, keywords in categories.items():
+            for keyword in keywords:
+                if keyword in text_lower:
+                    return category.upper().replace('_', ' ')
+
         return "OTROS"
-
-    text_lower = text.lower()
-    taxonomy = INDUSTRY_TAXONOMIES.get(industry, INDUSTRY_TAXONOMIES["generico"])
-
-    for category, keywords in taxonomy["categories"].items():
-        for keyword in keywords:
-            if keyword in text_lower:
-                return category.upper().replace("_", " ")
-
-    return "OTROS"
 
 
 # ============================================================================
@@ -418,7 +479,7 @@ class ProductData:
     descripcion: str = ""
     descripcion_corta: str = ""
     precio: float = 0.0
-    precio_anterior: float = 0.0
+    precio_comparacion: float = 0.0
     categoria: str = ""
     subcategoria: str = ""
     marca: str = ""
@@ -430,10 +491,11 @@ class ProductData:
     tags: List[str] = field(default_factory=list)
     stock: int = 0
     peso: float = 0.0
-    dimensiones: str = ""
+    peso_unit: str = "kg"
     fuente: str = ""
     pagina: int = 0
-    confianza: float = 0.0
+    industria: str = ""
+    cliente: str = ""
 
     def to_dict(self) -> dict:
         d = asdict(self)
@@ -442,6 +504,27 @@ class ProductData:
         d['atributos'] = json.dumps(self.atributos, ensure_ascii=False) if self.atributos else ''
         d['fitment'] = json.dumps(self.fitment, ensure_ascii=False) if self.fitment else ''
         return d
+
+    def to_shopify(self) -> dict:
+        """Convierte a formato Shopify Product."""
+        return {
+            "product": {
+                "title": self.nombre,
+                "body_html": f"<p>{self.descripcion}</p>",
+                "vendor": self.marca or self.cliente,
+                "product_type": self.categoria,
+                "tags": self.tags,
+                "variants": [{
+                    "sku": self.sku,
+                    "price": str(self.precio),
+                    "compare_at_price": str(self.precio_comparacion) if self.precio_comparacion else None,
+                    "inventory_quantity": self.stock,
+                    "weight": self.peso,
+                    "weight_unit": self.peso_unit,
+                }],
+                "images": [{"src": img} for img in self.imagenes if img] if self.imagenes else [],
+            }
+        }
 
     def is_valid(self) -> bool:
         return bool(self.codigo or self.nombre)
@@ -455,7 +538,197 @@ class ProcessingResult:
     errors: List[str] = field(default_factory=list)
     source_file: str = ""
     source_type: str = ""
+    detected_industry: str = ""
+    detected_client: str = ""
     processing_time: float = 0.0
+
+
+# ============================================================================
+# CLIENTE AI MULTI-PROVEEDOR
+# ============================================================================
+
+class AIClient:
+    """Cliente de AI que soporta múltiples proveedores."""
+
+    def __init__(self, provider: str = None):
+        self.provider = provider or AI_PROVIDER
+
+        if self.provider == 'OPENAI':
+            api_key = os.getenv('OPENAI_API_KEY')
+            if not api_key:
+                raise ValueError("OPENAI_API_KEY no configurada")
+            self.client = OpenAI(api_key=api_key)
+
+        elif self.provider == 'ANTHROPIC' and ANTHROPIC_AVAILABLE:
+            api_key = os.getenv('ANTHROPIC_API_KEY')
+            if not api_key:
+                raise ValueError("ANTHROPIC_API_KEY no configurada")
+            self.client = anthropic.Anthropic(api_key=api_key)
+
+        else:
+            # Fallback a OpenAI
+            api_key = os.getenv('OPENAI_API_KEY')
+            self.client = OpenAI(api_key=api_key) if api_key else None
+
+    def analyze_image(self, image_path: str, prompt: str) -> dict:
+        """Analiza una imagen con Vision AI."""
+        with open(image_path, 'rb') as f:
+            image_b64 = base64.b64encode(f.read()).decode('utf-8')
+
+        for attempt in range(MAX_RETRIES):
+            try:
+                if self.provider == 'OPENAI':
+                    response = self.client.chat.completions.create(
+                        model=VISION_MODEL,
+                        messages=[{
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": prompt},
+                                {"type": "image_url", "image_url": {
+                                    "url": f"data:image/jpeg;base64,{image_b64}",
+                                    "detail": "high"
+                                }}
+                            ]
+                        }],
+                        max_tokens=MAX_TOKENS,
+                        response_format={"type": "json_object"}
+                    )
+                    return json.loads(response.choices[0].message.content)
+
+                elif self.provider == 'ANTHROPIC':
+                    response = self.client.messages.create(
+                        model="claude-3-5-sonnet-20241022",
+                        max_tokens=MAX_TOKENS,
+                        messages=[{
+                            "role": "user",
+                            "content": [
+                                {"type": "image", "source": {
+                                    "type": "base64",
+                                    "media_type": "image/jpeg",
+                                    "data": image_b64
+                                }},
+                                {"type": "text", "text": prompt + "\n\nResponde SOLO JSON válido."}
+                            ]
+                        }]
+                    )
+                    # Extraer JSON de la respuesta
+                    text = response.content[0].text
+                    json_match = re.search(r'\{.*\}', text, re.DOTALL)
+                    if json_match:
+                        return json.loads(json_match.group())
+                    return {}
+
+            except Exception as e:
+                if 'rate_limit' in str(e).lower():
+                    time.sleep(RETRY_DELAY * (2 ** attempt))
+                else:
+                    log.log(f"Error AI: {str(e)[:50]}", "warning")
+                    time.sleep(RETRY_DELAY)
+
+        return {}
+
+    def analyze_text(self, text: str, prompt: str) -> dict:
+        """Analiza texto con LLM."""
+        for attempt in range(MAX_RETRIES):
+            try:
+                if self.provider == 'OPENAI':
+                    response = self.client.chat.completions.create(
+                        model=TEXT_MODEL,
+                        messages=[{"role": "user", "content": f"{prompt}\n\nTEXTO:\n{text[:10000]}"}],
+                        response_format={"type": "json_object"},
+                        max_tokens=2000
+                    )
+                    return json.loads(response.choices[0].message.content)
+
+                elif self.provider == 'ANTHROPIC':
+                    response = self.client.messages.create(
+                        model="claude-3-5-sonnet-20241022",
+                        max_tokens=2000,
+                        messages=[{"role": "user", "content": f"{prompt}\n\nTEXTO:\n{text[:10000]}\n\nResponde SOLO JSON."}]
+                    )
+                    text_resp = response.content[0].text
+                    json_match = re.search(r'\{.*\}', text_resp, re.DOTALL)
+                    if json_match:
+                        return json.loads(json_match.group())
+                    return {}
+
+            except Exception as e:
+                log.log(f"Error AI texto: {str(e)[:50]}", "warning")
+                time.sleep(RETRY_DELAY)
+
+        return {}
+
+
+# ============================================================================
+# CLIENTE SHOPIFY
+# ============================================================================
+
+class ShopifyClient:
+    """Cliente para interactuar con tiendas Shopify."""
+
+    def __init__(self, shop_url: str, access_token: str):
+        self.shop_url = shop_url
+        self.access_token = access_token
+        self.api_version = os.getenv('SHOPIFY_API_VERSION', '2024-01')
+        self.base_url = f"https://{shop_url}/admin/api/{self.api_version}"
+
+    def _headers(self) -> dict:
+        return {
+            "X-Shopify-Access-Token": self.access_token,
+            "Content-Type": "application/json"
+        }
+
+    def create_product(self, product: ProductData) -> Optional[dict]:
+        """Crea un producto en Shopify."""
+        try:
+            url = f"{self.base_url}/products.json"
+            data = product.to_shopify()
+
+            response = requests.post(url, headers=self._headers(), json=data, timeout=30)
+
+            if response.status_code == 201:
+                return response.json()
+            else:
+                log.log(f"Shopify error: {response.status_code} - {response.text[:100]}", "warning")
+                return None
+
+        except Exception as e:
+            log.log(f"Error Shopify: {e}", "warning")
+            return None
+
+    def update_product(self, product_id: str, product: ProductData) -> Optional[dict]:
+        """Actualiza un producto existente."""
+        try:
+            url = f"{self.base_url}/products/{product_id}.json"
+            data = product.to_shopify()
+
+            response = requests.put(url, headers=self._headers(), json=data, timeout=30)
+
+            if response.status_code == 200:
+                return response.json()
+            return None
+
+        except Exception as e:
+            log.log(f"Error Shopify update: {e}", "warning")
+            return None
+
+    def find_product_by_sku(self, sku: str) -> Optional[dict]:
+        """Busca producto por SKU."""
+        try:
+            url = f"{self.base_url}/products.json?fields=id,title,variants"
+            response = requests.get(url, headers=self._headers(), timeout=30)
+
+            if response.status_code == 200:
+                products = response.json().get('products', [])
+                for product in products:
+                    for variant in product.get('variants', []):
+                        if variant.get('sku') == sku:
+                            return product
+            return None
+
+        except Exception as e:
+            log.log(f"Error Shopify search: {e}", "warning")
+            return None
 
 
 # ============================================================================
@@ -463,27 +736,27 @@ class ProcessingResult:
 # ============================================================================
 
 class BaseProcessor(ABC):
-    """Clase base para procesadores de archivos."""
+    """Clase base para procesadores."""
 
     def __init__(self, config: dict):
         self.config = config
-        self.industry = config.get('industry', 'generico')
-        self.prefix = config.get('prefix', 'SRM')
         self.output_dir = config.get('output_dir', DEFAULT_OUTPUT_DIR)
+        self.prefix = config.get('prefix', 'SRM')
+        self.detector = IndustryDetector()
+        self.ai_client = None
+
+    def _get_ai_client(self) -> AIClient:
+        if not self.ai_client:
+            self.ai_client = AIClient()
+        return self.ai_client
 
     @abstractmethod
     def process(self, filepath: str) -> ProcessingResult:
         pass
 
-    def _get_openai_client(self) -> OpenAI:
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY no configurada")
-        return OpenAI(api_key=api_key)
-
 
 class PDFProcessor(BaseProcessor):
-    """Procesa archivos PDF."""
+    """Procesa archivos PDF con detección automática."""
 
     def process(self, filepath: str) -> ProcessingResult:
         log.log(f"Procesando PDF: {Path(filepath).name}", "step")
@@ -491,36 +764,65 @@ class PDFProcessor(BaseProcessor):
         start_time = time.time()
 
         try:
-            client = self._get_openai_client()
+            ai = self._get_ai_client()
             pages_dir = ensure_dir(os.path.join(self.output_dir, "pages"))
             crops_dir = ensure_dir(os.path.join(self.output_dir, "crops"))
 
-            # Obtener número de páginas
+            # Obtener páginas a procesar
             page_count = self._get_page_count(filepath)
-            pages_to_process = self.config.get('pages', list(range(1, (page_count or 50) + 1)))
+            pages = self.config.get('pages') or list(range(1, min((page_count or 50) + 1, 100)))
 
-            log.log(f"   Páginas a procesar: {len(pages_to_process)}")
+            log.log(f"   Páginas: {len(pages)}")
 
-            for i, page_num in enumerate(pages_to_process, 1):
-                log.log(f"   [{i}/{len(pages_to_process)}] Página {page_num}...")
+            # Procesar primera página para detectar industria/cliente
+            first_page_img = os.path.join(pages_dir, "page_001.jpg")
+            if self._convert_page(filepath, pages[0], first_page_img):
+                # Análisis rápido para detección
+                detection_result = ai.analyze_image(first_page_img, """
+                Analiza esta página de catálogo e identifica:
+                1. ¿Qué tipo de productos contiene? (motos, carros, ferretería, electrónica, etc.)
+                2. ¿Hay alguna marca o empresa identificable?
 
-                # Convertir página
+                RESPONDE JSON: {"tipo_productos": "...", "industria": "...", "marca": "...", "empresa": "..."}
+                """)
+
+                # Detectar industria
+                detection_text = json.dumps(detection_result)
+                result.detected_industry, _ = self.detector.detect_industry(
+                    detection_text, Path(filepath).name
+                )
+                result.detected_client, _ = self.detector.detect_client(
+                    detection_text, result.detected_industry, Path(filepath).name
+                )
+
+                log.log(f"   Industria detectada: {result.detected_industry}", "success")
+                if result.detected_client:
+                    log.log(f"   Cliente detectado: {result.detected_client}", "success")
+
+            # Procesar todas las páginas
+            for i, page_num in enumerate(pages, 1):
+                log.log(f"   [{i}/{len(pages)}] Página {page_num}...")
+
                 page_img = os.path.join(pages_dir, f"page_{page_num:03d}.jpg")
                 if not self._convert_page(filepath, page_num, page_img):
                     continue
 
-                # Extraer productos con Vision
-                products = self._extract_with_vision(client, page_img, page_num)
+                # Extraer productos
+                products = self._extract_products(ai, page_img, page_num, result.detected_industry)
 
-                # Detectar y guardar crops
-                crops = self._detect_and_crop(page_img, crops_dir, page_num)
+                # Detectar crops
+                if CV2_AVAILABLE:
+                    crops = self._detect_crops(page_img, crops_dir, page_num)
+                    if crops and products:
+                        products = self._associate_crops(products, crops)
 
-                # Asociar crops a productos
-                if crops and products:
-                    products = self._associate_crops(products, crops)
+                # Asignar industria y cliente a productos
+                for p in products:
+                    p.industria = result.detected_industry
+                    p.cliente = result.detected_client or self.prefix
 
                 result.products.extend(products)
-                log.log(f"      {len(products)} productos extraídos", "success")
+                log.log(f"      {len(products)} productos", "success")
 
                 gc.collect()
 
@@ -528,7 +830,7 @@ class PDFProcessor(BaseProcessor):
 
         except Exception as e:
             result.errors.append(str(e))
-            log.log(f"Error procesando PDF: {e}", "error")
+            log.log(f"Error: {e}", "error")
 
         result.processing_time = time.time() - start_time
         return result
@@ -551,85 +853,56 @@ class PDFProcessor(BaseProcessor):
                    '-l', str(page_num), '-singlefile', pdf_path, base]
             result = subprocess.run(cmd, capture_output=True, timeout=120)
             return result.returncode == 0 and os.path.exists(output_path)
-        except Exception as e:
-            log.log(f"Error convirtiendo página: {e}", "warning")
+        except:
             return False
 
-    def _extract_with_vision(self, client: OpenAI, image_path: str, page_num: int) -> List[ProductData]:
-        prompt = self._get_extraction_prompt()
+    def _extract_products(self, ai: AIClient, image_path: str, page_num: int, industry: str) -> List[ProductData]:
+        industry_name = INDUSTRIES.get(industry, {}).get('name', 'productos')
 
-        with open(image_path, 'rb') as f:
-            image_b64 = base64.b64encode(f.read()).decode('utf-8')
+        prompt = f"""Analiza esta página de catálogo de {industry_name}.
 
-        for attempt in range(MAX_RETRIES):
-            try:
-                response = client.chat.completions.create(
-                    model=VISION_MODEL,
-                    messages=[{
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {"type": "image_url", "image_url": {
-                                "url": f"data:image/jpeg;base64,{image_b64}",
-                                "detail": "high"
-                            }}
-                        ]
-                    }],
-                    max_tokens=MAX_TOKENS,
-                    response_format={"type": "json_object"},
-                    timeout=REQUEST_TIMEOUT
-                )
-
-                data = json.loads(response.choices[0].message.content)
-                products = []
-
-                for p in data.get("productos", []):
-                    product = ProductData(
-                        codigo=clean_text(p.get('codigo', '')),
-                        nombre=clean_text(p.get('nombre', '')),
-                        descripcion=clean_text(p.get('descripcion', '')),
-                        precio=clean_price(p.get('precio', 0)),
-                        categoria=normalize_category(p.get('categoria', ''), self.industry),
-                        marca=clean_text(p.get('marca', '')),
-                        pagina=page_num,
-                        fuente=Path(image_path).name
-                    )
-
-                    if p.get('posicion_vertical'):
-                        product.atributos['posicion_y'] = int(p['posicion_vertical'])
-
-                    if product.is_valid():
-                        product.sku = f"{self.prefix}-{product.codigo}" if product.codigo else ""
-                        products.append(product)
-
-                return products
-
-            except Exception as e:
-                if 'rate_limit' in str(e).lower():
-                    time.sleep(RETRY_DELAY * (2 ** attempt))
-                else:
-                    log.log(f"Error Vision API: {str(e)[:50]}", "warning")
-                    time.sleep(RETRY_DELAY)
-
-        return []
-
-    def _get_extraction_prompt(self) -> str:
-        industry_name = INDUSTRY_TAXONOMIES.get(self.industry, {}).get('name', 'productos')
-
-        return f"""Analiza esta página de catálogo de {industry_name}.
-
-EXTRAE todos los productos visibles con:
-- codigo: Código/referencia del producto
+EXTRAE todos los productos con:
+- codigo: Código/referencia
 - nombre: Nombre comercial
 - descripcion: Especificaciones técnicas
-- precio: Valor numérico sin símbolos
+- precio: Valor numérico
 - categoria: Categoría del producto
-- marca: Marca si es visible
-- posicion_vertical: Posición 1-10 (1=arriba, 10=abajo)
+- marca: Marca visible
+- posicion_vertical: 1-10 (1=arriba)
 
 RESPONDE JSON: {{"productos": [...]}}"""
 
-    def _detect_and_crop(self, image_path: str, output_dir: str, page_num: int) -> List[dict]:
+        data = ai.analyze_image(image_path, prompt)
+        products = []
+
+        for p in data.get("productos", []):
+            product = ProductData(
+                codigo=clean_text(p.get('codigo', '')),
+                nombre=clean_text(p.get('nombre', '')),
+                descripcion=clean_text(p.get('descripcion', '')),
+                precio=clean_price(p.get('precio', 0)),
+                categoria=self.detector.detect_category(
+                    p.get('nombre', '') + ' ' + p.get('categoria', ''),
+                    industry
+                ),
+                marca=clean_text(p.get('marca', '')),
+                pagina=page_num,
+                fuente=Path(image_path).name
+            )
+
+            if p.get('posicion_vertical'):
+                product.atributos['posicion_y'] = int(p['posicion_vertical'])
+
+            if product.is_valid():
+                product.sku = f"{self.prefix}-{product.codigo}" if product.codigo else ""
+                products.append(product)
+
+        return products
+
+    def _detect_crops(self, image_path: str, output_dir: str, page_num: int) -> List[dict]:
+        if not CV2_AVAILABLE:
+            return []
+
         try:
             img = cv2.imread(image_path)
             if img is None:
@@ -658,13 +931,13 @@ RESPONDE JSON: {{"productos": [...]}}"""
 
                 crops.append({
                     'filename': filename,
+                    'path': path,
                     'y_normalized': y / height,
                     'assigned': False
                 })
 
             return crops[:20]
-        except Exception as e:
-            log.log(f"Error detectando crops: {e}", "warning")
+        except:
             return []
 
     def _associate_crops(self, products: List[ProductData], crops: List[dict]) -> List[ProductData]:
@@ -684,6 +957,8 @@ RESPONDE JSON: {{"productos": [...]}}"""
 
             if best_crop and best_distance < 0.25:
                 product.imagen = best_crop['filename']
+                if best_crop.get('path'):
+                    product.imagenes = [f"{IMAGE_SERVER_URL}/{best_crop['filename']}"]
                 best_crop['assigned'] = True
 
         return products
@@ -698,8 +973,20 @@ class ExcelProcessor(BaseProcessor):
         start_time = time.time()
 
         try:
-            # Leer todas las hojas
             xls = pd.ExcelFile(filepath)
+
+            # Detectar industria del contenido
+            all_text = ""
+            for sheet in xls.sheet_names[:3]:
+                df = pd.read_excel(filepath, sheet_name=sheet, nrows=50)
+                all_text += " ".join(df.astype(str).values.flatten()[:500])
+
+            result.detected_industry, _ = self.detector.detect_industry(all_text, filepath)
+            result.detected_client, _ = self.detector.detect_client(
+                all_text, result.detected_industry, filepath
+            )
+
+            log.log(f"   Industria: {result.detected_industry}", "success")
 
             for sheet_name in xls.sheet_names:
                 log.log(f"   Hoja: {sheet_name}")
@@ -708,8 +995,12 @@ class ExcelProcessor(BaseProcessor):
                 if df.empty:
                     continue
 
-                # Mapear columnas
-                products = self._extract_from_dataframe(df, sheet_name)
+                products = self._extract_from_dataframe(df, sheet_name, result.detected_industry)
+
+                for p in products:
+                    p.industria = result.detected_industry
+                    p.cliente = result.detected_client or self.prefix
+
                 result.products.extend(products)
                 log.log(f"      {len(products)} productos", "success")
 
@@ -717,23 +1008,21 @@ class ExcelProcessor(BaseProcessor):
 
         except Exception as e:
             result.errors.append(str(e))
-            log.log(f"Error procesando Excel: {e}", "error")
+            log.log(f"Error: {e}", "error")
 
         result.processing_time = time.time() - start_time
         return result
 
-    def _extract_from_dataframe(self, df: pd.DataFrame, source: str) -> List[ProductData]:
-        # Normalizar nombres de columnas
+    def _extract_from_dataframe(self, df: pd.DataFrame, source: str, industry: str) -> List[ProductData]:
         df.columns = [str(c).lower().strip() for c in df.columns]
 
-        # Mapeo de columnas comunes
         column_maps = {
-            'codigo': ['codigo', 'code', 'ref', 'referencia', 'sku', 'id', 'part_number'],
-            'nombre': ['nombre', 'name', 'descripcion', 'description', 'producto', 'product', 'titulo'],
-            'precio': ['precio', 'price', 'valor', 'value', 'costo', 'cost', 'pvp'],
-            'categoria': ['categoria', 'category', 'familia', 'family', 'tipo', 'type', 'linea'],
-            'marca': ['marca', 'brand', 'fabricante', 'manufacturer'],
-            'stock': ['stock', 'cantidad', 'qty', 'inventory', 'existencia'],
+            'codigo': ['codigo', 'code', 'ref', 'referencia', 'sku', 'id', 'part'],
+            'nombre': ['nombre', 'name', 'descripcion', 'description', 'producto', 'titulo'],
+            'precio': ['precio', 'price', 'valor', 'value', 'costo', 'pvp'],
+            'categoria': ['categoria', 'category', 'familia', 'tipo', 'linea'],
+            'marca': ['marca', 'brand', 'fabricante'],
+            'stock': ['stock', 'cantidad', 'qty', 'existencia'],
         }
 
         mapped = {}
@@ -749,9 +1038,9 @@ class ExcelProcessor(BaseProcessor):
                 codigo=clean_text(row.get(mapped.get('codigo', ''), '')),
                 nombre=clean_text(row.get(mapped.get('nombre', ''), '')),
                 precio=clean_price(row.get(mapped.get('precio', ''), 0)),
-                categoria=normalize_category(
+                categoria=self.detector.detect_category(
                     str(row.get(mapped.get('categoria', ''), '')),
-                    self.industry
+                    industry
                 ),
                 marca=clean_text(row.get(mapped.get('marca', ''), '')),
                 stock=int(row.get(mapped.get('stock', ''), 0) or 0),
@@ -771,159 +1060,37 @@ class CSVProcessor(BaseProcessor):
     def process(self, filepath: str) -> ProcessingResult:
         log.log(f"Procesando CSV: {Path(filepath).name}", "step")
         result = ProcessingResult(source_file=filepath, source_type="csv")
-        start_time = time.time()
 
         try:
-            # Detectar separador
             with open(filepath, 'r', encoding='utf-8-sig') as f:
                 sample = f.read(4096)
 
-            separators = [';', ',', '\t', '|']
-            sep = max(separators, key=lambda s: sample.count(s))
-
+            sep = max([';', ',', '\t', '|'], key=lambda s: sample.count(s))
             df = pd.read_csv(filepath, sep=sep, encoding='utf-8-sig')
 
-            # Usar mismo procesamiento que Excel
-            excel_proc = ExcelProcessor(self.config)
-            products = excel_proc._extract_from_dataframe(df, Path(filepath).name)
-
-            result.products = products
-            result.success = True
-            log.log(f"   {len(products)} productos extraídos", "success")
-
-        except Exception as e:
-            result.errors.append(str(e))
-            log.log(f"Error procesando CSV: {e}", "error")
-
-        result.processing_time = time.time() - start_time
-        return result
-
-
-class WordProcessor(BaseProcessor):
-    """Procesa archivos Word."""
-
-    def process(self, filepath: str) -> ProcessingResult:
-        log.log(f"Procesando Word: {Path(filepath).name}", "step")
-        result = ProcessingResult(source_file=filepath, source_type="word")
-        start_time = time.time()
-
-        try:
-            doc = Document(filepath)
-
-            # Extraer tablas
-            for table in doc.tables:
-                products = self._extract_from_table(table)
-                result.products.extend(products)
-
-            # Si no hay tablas, procesar texto
-            if not result.products:
-                text = '\n'.join([p.text for p in doc.paragraphs])
-                products = self._extract_from_text_with_ai(text)
-                result.products.extend(products)
-
-            result.success = True
-            log.log(f"   {len(result.products)} productos extraídos", "success")
-
-        except Exception as e:
-            result.errors.append(str(e))
-            log.log(f"Error procesando Word: {e}", "error")
-
-        result.processing_time = time.time() - start_time
-        return result
-
-    def _extract_from_table(self, table) -> List[ProductData]:
-        products = []
-        headers = []
-
-        for i, row in enumerate(table.rows):
-            cells = [cell.text.strip() for cell in row.cells]
-
-            if i == 0:
-                headers = [c.lower() for c in cells]
-                continue
-
-            if len(cells) >= 2:
-                product = ProductData(
-                    codigo=cells[0] if len(cells) > 0 else '',
-                    nombre=cells[1] if len(cells) > 1 else '',
-                    precio=clean_price(cells[2]) if len(cells) > 2 else 0,
-                    fuente="word_table"
-                )
-                if product.is_valid():
-                    product.sku = f"{self.prefix}-{product.codigo}" if product.codigo else ""
-                    products.append(product)
-
-        return products
-
-    def _extract_from_text_with_ai(self, text: str) -> List[ProductData]:
-        if len(text) < 50:
-            return []
-
-        try:
-            client = self._get_openai_client()
-
-            response = client.chat.completions.create(
-                model=TEXT_MODEL,
-                messages=[{
-                    "role": "user",
-                    "content": f"""Extrae productos del siguiente texto.
-
-RESPONDE JSON: {{"productos": [{{"codigo": "", "nombre": "", "descripcion": "", "precio": 0}}]}}
-
-TEXTO:
-{text[:8000]}"""
-                }],
-                response_format={"type": "json_object"},
-                max_tokens=2000
+            # Detectar industria
+            all_text = " ".join(df.astype(str).values.flatten()[:500])
+            result.detected_industry, _ = self.detector.detect_industry(all_text, filepath)
+            result.detected_client, _ = self.detector.detect_client(
+                all_text, result.detected_industry, filepath
             )
 
-            data = json.loads(response.choices[0].message.content)
-            products = []
+            excel_proc = ExcelProcessor(self.config)
+            excel_proc.detector = self.detector
+            products = excel_proc._extract_from_dataframe(df, Path(filepath).name, result.detected_industry)
 
-            for p in data.get("productos", []):
-                product = ProductData(
-                    codigo=clean_text(p.get('codigo', '')),
-                    nombre=clean_text(p.get('nombre', '')),
-                    descripcion=clean_text(p.get('descripcion', '')),
-                    precio=clean_price(p.get('precio', 0)),
-                    fuente="word_text"
-                )
-                if product.is_valid():
-                    product.sku = f"{self.prefix}-{product.codigo}" if product.codigo else ""
-                    products.append(product)
-
-            return products
-
-        except Exception as e:
-            log.log(f"Error extrayendo de texto: {e}", "warning")
-            return []
-
-
-class TXTProcessor(BaseProcessor):
-    """Procesa archivos de texto."""
-
-    def process(self, filepath: str) -> ProcessingResult:
-        log.log(f"Procesando TXT: {Path(filepath).name}", "step")
-        result = ProcessingResult(source_file=filepath, source_type="txt")
-        start_time = time.time()
-
-        try:
-            with open(filepath, 'r', encoding='utf-8-sig') as f:
-                text = f.read()
-
-            # Usar el procesador de Word para extraer con AI
-            word_proc = WordProcessor(self.config)
-            products = word_proc._extract_from_text_with_ai(text)
+            for p in products:
+                p.industria = result.detected_industry
+                p.cliente = result.detected_client or self.prefix
 
             result.products = products
             result.success = True
-            log.log(f"   {len(products)} productos extraídos", "success")
+            log.log(f"   {len(products)} productos", "success")
 
         except Exception as e:
             result.errors.append(str(e))
-            log.log(f"Error procesando TXT: {e}", "error")
+            log.log(f"Error: {e}", "error")
 
-        result.processing_time = time.time() - start_time
         return result
 
 
@@ -933,73 +1100,152 @@ class ImageProcessor(BaseProcessor):
     def process(self, filepath: str) -> ProcessingResult:
         log.log(f"Procesando imagen: {Path(filepath).name}", "step")
         result = ProcessingResult(source_file=filepath, source_type="image")
-        start_time = time.time()
 
         try:
-            client = self._get_openai_client()
+            ai = self._get_ai_client()
 
-            with open(filepath, 'rb') as f:
-                image_b64 = base64.b64encode(f.read()).decode('utf-8')
+            data = ai.analyze_image(filepath, """
+Analiza esta imagen de producto e identifica:
+- tipo_industria: motos, carros, ferreteria, electronica, hogar, industrial
+- codigo: código visible
+- nombre: nombre descriptivo para catálogo
+- descripcion: descripción técnica
+- categoria: categoría del producto
+- marca: marca identificable
+- atributos: {material, color, medidas, etc.}
+- tags: [palabras clave]
 
-            response = client.chat.completions.create(
-                model=VISION_MODEL,
-                messages=[{
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": self._get_image_prompt()},
-                        {"type": "image_url", "image_url": {
-                            "url": f"data:image/jpeg;base64,{image_b64}",
-                            "detail": "high"
-                        }}
-                    ]
-                }],
-                max_tokens=2000,
-                response_format={"type": "json_object"}
+RESPONDE JSON con estos campos.""")
+
+            # Detectar industria
+            result.detected_industry, _ = self.detector.detect_industry(
+                json.dumps(data), filepath
             )
-
-            data = json.loads(response.choices[0].message.content)
 
             product = ProductData(
                 codigo=clean_text(data.get('codigo', '')),
                 nombre=clean_text(data.get('nombre', '')),
                 descripcion=clean_text(data.get('descripcion', '')),
-                categoria=normalize_category(data.get('categoria', ''), self.industry),
+                categoria=self.detector.detect_category(
+                    data.get('categoria', ''), result.detected_industry
+                ),
                 marca=clean_text(data.get('marca', '')),
                 imagen=Path(filepath).name,
-                fuente=Path(filepath).name,
-                atributos=data.get('atributos', {}),
-                tags=data.get('tags', [])
+                imagenes=[f"{IMAGE_SERVER_URL}/{Path(filepath).name}"],
+                tags=data.get('tags', []),
+                industria=result.detected_industry,
+                fuente=Path(filepath).name
             )
 
             if product.nombre:
-                product.sku = f"{self.prefix}-{product.codigo}" if product.codigo else f"{self.prefix}-IMG"
+                product.sku = f"{self.prefix}-{product.codigo or 'IMG'}"
                 result.products.append(product)
 
             result.success = True
-            log.log(f"   Producto identificado: {product.nombre[:50]}", "success")
+            log.log(f"   Producto: {product.nombre[:50]}", "success")
 
         except Exception as e:
             result.errors.append(str(e))
-            log.log(f"Error procesando imagen: {e}", "error")
+            log.log(f"Error: {e}", "error")
 
-        result.processing_time = time.time() - start_time
         return result
 
-    def _get_image_prompt(self) -> str:
-        industry_name = INDUSTRY_TAXONOMIES.get(self.industry, {}).get('name', 'productos')
 
-        return f"""Analiza esta imagen de un producto de {industry_name}.
+class URLProcessor(BaseProcessor):
+    """Procesa URLs (scraping)."""
 
-Identifica:
-- codigo: Código si es visible (en etiqueta, grabado, etc.)
-- nombre: Nombre comercial descriptivo para catálogo
-- descripcion: Descripción técnica detallada
-- categoria: Categoría del producto
-- marca: Marca si es identificable
-- atributos: {{material, color, medidas, etc.}}
-- tags: [palabras clave para búsqueda]
+    def process(self, url: str) -> ProcessingResult:
+        log.log(f"Scraping: {url}", "step")
+        result = ProcessingResult(source_file=url, source_type="url")
 
-RESPONDE JSON con estos campos."""
+        if not BS4_AVAILABLE:
+            result.errors.append("BeautifulSoup no disponible")
+            return result
+
+        try:
+            headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'}
+            response = requests.get(url, headers=headers, timeout=30)
+            response.raise_for_status()
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+
+            # Extraer texto para detección
+            text = soup.get_text(separator=' ', strip=True)[:5000]
+            result.detected_industry, _ = self.detector.detect_industry(text, url)
+
+            # Buscar productos
+            products = self._extract_products(soup, url, result.detected_industry)
+
+            if not products:
+                # Usar AI como fallback
+                ai = self._get_ai_client()
+                data = ai.analyze_text(text, """
+Extrae productos de este contenido web.
+RESPONDE JSON: {"productos": [{"codigo": "", "nombre": "", "descripcion": "", "precio": 0}]}
+""")
+                for p in data.get("productos", []):
+                    product = ProductData(
+                        codigo=clean_text(p.get('codigo', '')),
+                        nombre=clean_text(p.get('nombre', '')),
+                        descripcion=clean_text(p.get('descripcion', '')),
+                        precio=clean_price(p.get('precio', 0)),
+                        industria=result.detected_industry,
+                        fuente=url
+                    )
+                    if product.is_valid():
+                        products.append(product)
+
+            result.products = products
+            result.success = True
+            log.log(f"   {len(products)} productos", "success")
+
+        except Exception as e:
+            result.errors.append(str(e))
+            log.log(f"Error: {e}", "error")
+
+        return result
+
+    def _extract_products(self, soup: BeautifulSoup, url: str, industry: str) -> List[ProductData]:
+        products = []
+
+        selectors = ['.product', '.producto', '.item', '[data-product]', '.product-card']
+
+        for selector in selectors:
+            elements = soup.select(selector)
+            if not elements:
+                continue
+
+            for elem in elements:
+                name_elem = elem.select_one('h1, h2, h3, .title, .name, .product-title')
+                name = name_elem.get_text(strip=True) if name_elem else ''
+
+                price_elem = elem.select_one('.price, .precio, [class*="price"]')
+                price = clean_price(price_elem.get_text(strip=True)) if price_elem else 0
+
+                sku_elem = elem.select_one('.sku, .codigo, [class*="sku"]')
+                sku = sku_elem.get_text(strip=True) if sku_elem else ''
+
+                img_elem = elem.select_one('img')
+                img = img_elem.get('src', '') if img_elem else ''
+                if img and not img.startswith('http'):
+                    img = urllib.parse.urljoin(url, img)
+
+                if name:
+                    product = ProductData(
+                        codigo=sku,
+                        nombre=name,
+                        precio=price,
+                        imagen=img,
+                        imagenes=[img] if img else [],
+                        industria=industry,
+                        fuente=url
+                    )
+                    product.sku = f"{self.prefix}-{sku}" if sku else ""
+                    products.append(product)
+
+            break
+
+        return products
 
 
 class ZIPProcessor(BaseProcessor):
@@ -1008,7 +1254,6 @@ class ZIPProcessor(BaseProcessor):
     def process(self, filepath: str) -> ProcessingResult:
         log.log(f"Procesando ZIP: {Path(filepath).name}", "step")
         result = ProcessingResult(source_file=filepath, source_type="zip")
-        start_time = time.time()
 
         try:
             extract_dir = ensure_dir(os.path.join(self.output_dir, "extracted"))
@@ -1016,9 +1261,8 @@ class ZIPProcessor(BaseProcessor):
             with zipfile.ZipFile(filepath, 'r') as zip_ref:
                 zip_ref.extractall(extract_dir)
 
-            # Procesar cada archivo extraído
             for root, dirs, files in os.walk(extract_dir):
-                for file in files[:MAX_IMAGES_PER_ZIP]:
+                for file in files[:500]:
                     file_path = os.path.join(root, file)
                     file_type = detect_file_type(file_path)
 
@@ -1029,214 +1273,62 @@ class ZIPProcessor(BaseProcessor):
                     if processor:
                         sub_result = processor.process(file_path)
                         result.products.extend(sub_result.products)
-                        result.errors.extend(sub_result.errors)
+
+                        if not result.detected_industry and sub_result.detected_industry:
+                            result.detected_industry = sub_result.detected_industry
 
             result.success = True
-            log.log(f"   Total productos del ZIP: {len(result.products)}", "success")
+            log.log(f"   Total: {len(result.products)} productos", "success")
 
         except Exception as e:
             result.errors.append(str(e))
-            log.log(f"Error procesando ZIP: {e}", "error")
+            log.log(f"Error: {e}", "error")
 
-        result.processing_time = time.time() - start_time
         return result
-
-
-class URLProcessor(BaseProcessor):
-    """Procesa URLs (scraping)."""
-
-    def process(self, url: str) -> ProcessingResult:
-        log.log(f"Scraping URL: {url}", "step")
-        result = ProcessingResult(source_file=url, source_type="url")
-        start_time = time.time()
-
-        try:
-            headers = {'User-Agent': DEFAULT_USER_AGENT}
-            response = requests.get(url, headers=headers, timeout=30)
-            response.raise_for_status()
-
-            soup = BeautifulSoup(response.text, 'html.parser')
-
-            # Intentar detectar productos en la página
-            products = self._extract_products_from_html(soup, url)
-
-            if not products:
-                # Usar AI para extraer
-                products = self._extract_with_ai(response.text, url)
-
-            result.products = products
-            result.success = True
-            log.log(f"   {len(products)} productos encontrados", "success")
-
-            # Buscar enlaces a más páginas
-            if self.config.get('scrape_pagination', False):
-                next_urls = self._find_pagination_links(soup, url)
-                for next_url in next_urls[:MAX_PAGES_SCRAPE]:
-                    time.sleep(SCRAPE_DELAY)
-                    sub_result = self.process(next_url)
-                    result.products.extend(sub_result.products)
-
-        except Exception as e:
-            result.errors.append(str(e))
-            log.log(f"Error scraping URL: {e}", "error")
-
-        result.processing_time = time.time() - start_time
-        return result
-
-    def _extract_products_from_html(self, soup: BeautifulSoup, url: str) -> List[ProductData]:
-        products = []
-
-        # Buscar patrones comunes de productos
-        product_selectors = [
-            '.product', '.producto', '.item', '.card',
-            '[data-product]', '[itemtype*="Product"]',
-            '.product-item', '.product-card'
-        ]
-
-        for selector in product_selectors:
-            elements = soup.select(selector)
-            if elements:
-                for elem in elements:
-                    product = self._parse_product_element(elem, url)
-                    if product and product.is_valid():
-                        products.append(product)
-                break
-
-        return products
-
-    def _parse_product_element(self, elem, url: str) -> Optional[ProductData]:
-        try:
-            # Buscar nombre
-            name_elem = elem.select_one('h1, h2, h3, h4, .title, .name, .product-name, .product-title')
-            name = name_elem.get_text(strip=True) if name_elem else ''
-
-            # Buscar precio
-            price_elem = elem.select_one('.price, .precio, [class*="price"]')
-            price_text = price_elem.get_text(strip=True) if price_elem else ''
-            price = clean_price(price_text)
-
-            # Buscar código/SKU
-            sku_elem = elem.select_one('.sku, .codigo, [class*="sku"], [class*="ref"]')
-            sku = sku_elem.get_text(strip=True) if sku_elem else ''
-
-            # Buscar imagen
-            img_elem = elem.select_one('img')
-            img_src = img_elem.get('src', '') if img_elem else ''
-            if img_src and not img_src.startswith('http'):
-                img_src = urllib.parse.urljoin(url, img_src)
-
-            if name:
-                return ProductData(
-                    codigo=sku,
-                    nombre=name,
-                    precio=price,
-                    imagen=img_src,
-                    fuente=url
-                )
-        except:
-            pass
-
-        return None
-
-    def _extract_with_ai(self, html: str, url: str) -> List[ProductData]:
-        try:
-            client = self._get_openai_client()
-
-            # Limpiar HTML
-            soup = BeautifulSoup(html, 'html.parser')
-            for tag in soup(['script', 'style', 'nav', 'footer', 'header']):
-                tag.decompose()
-            text = soup.get_text(separator='\n', strip=True)[:10000]
-
-            response = client.chat.completions.create(
-                model=TEXT_MODEL,
-                messages=[{
-                    "role": "user",
-                    "content": f"""Extrae productos de este contenido web.
-
-RESPONDE JSON: {{"productos": [{{"codigo": "", "nombre": "", "descripcion": "", "precio": 0}}]}}
-
-CONTENIDO:
-{text}"""
-                }],
-                response_format={"type": "json_object"},
-                max_tokens=2000
-            )
-
-            data = json.loads(response.choices[0].message.content)
-            products = []
-
-            for p in data.get("productos", []):
-                product = ProductData(
-                    codigo=clean_text(p.get('codigo', '')),
-                    nombre=clean_text(p.get('nombre', '')),
-                    descripcion=clean_text(p.get('descripcion', '')),
-                    precio=clean_price(p.get('precio', 0)),
-                    fuente=url
-                )
-                if product.is_valid():
-                    product.sku = f"{self.prefix}-{product.codigo}" if product.codigo else ""
-                    products.append(product)
-
-            return products
-
-        except Exception as e:
-            log.log(f"Error AI scraping: {e}", "warning")
-            return []
-
-    def _find_pagination_links(self, soup: BeautifulSoup, base_url: str) -> List[str]:
-        links = []
-        pagination = soup.select('.pagination a, .pager a, [class*="page"] a')
-
-        for link in pagination:
-            href = link.get('href', '')
-            if href and href not in ['#', '']:
-                full_url = urllib.parse.urljoin(base_url, href)
-                if full_url not in links:
-                    links.append(full_url)
-
-        return links
 
 
 # ============================================================================
-# FACTORY DE PROCESADORES
+# FACTORY
 # ============================================================================
 
 def get_processor(file_type: str, config: dict) -> Optional[BaseProcessor]:
-    """Retorna el procesador apropiado según el tipo de archivo."""
     processors = {
         'pdf': PDFProcessor,
         'excel': ExcelProcessor,
         'csv': CSVProcessor,
-        'word': WordProcessor,
-        'txt': TXTProcessor,
         'image': ImageProcessor,
-        'zip': ZIPProcessor,
         'url': URLProcessor,
+        'zip': ZIPProcessor,
     }
 
+    # Word y TXT usan el mismo enfoque que Excel/CSV con AI
+    if file_type == 'word' and DOCX_AVAILABLE:
+        return None  # TODO: Implementar WordProcessor
+    if file_type == 'txt':
+        return None  # TODO: Implementar TXTProcessor
+
     processor_class = processors.get(file_type)
-    if processor_class:
-        return processor_class(config)
-    return None
+    return processor_class(config) if processor_class else None
 
 
 # ============================================================================
-# PIPELINE DE PROCESAMIENTO
+# PIPELINE PRINCIPAL
 # ============================================================================
 
 class SRMPipeline:
-    """Pipeline completo de procesamiento SRM."""
+    """Pipeline completo SRM Intelligent."""
 
     def __init__(self, config: dict):
         self.config = config
         self.output_dir = ensure_dir(config.get('output_dir', DEFAULT_OUTPUT_DIR))
         self.prefix = config.get('prefix', 'SRM')
-        self.industry = config.get('industry', 'generico')
+        self.push_to_shopify = config.get('push_shopify', False)
         self.all_products: List[ProductData] = []
+        self.detected_industry = ""
+        self.detected_client = ""
 
     def process(self, source: str) -> Tuple[str, str]:
-        """Ejecuta el pipeline completo."""
+        """Ejecuta pipeline completo."""
         self._print_banner()
 
         # 1. INGESTA
@@ -1244,13 +1336,19 @@ class SRMPipeline:
         result = self._ingest(source)
 
         if not result.success:
-            log.log(f"Error en ingesta: {result.errors}", "error")
+            log.log(f"Error: {result.errors}", "error")
             return "", ""
 
         self.all_products = result.products
-        log.log(f"Productos ingestados: {len(self.all_products)}", "success")
+        self.detected_industry = result.detected_industry
+        self.detected_client = result.detected_client
 
-        # 2. EXTRACCIÓN (ya hecha en ingesta para la mayoría)
+        log.log(f"Productos: {len(self.all_products)}", "success")
+        log.log(f"Industria: {self.detected_industry}", "success")
+        if self.detected_client:
+            log.log(f"Cliente: {self.detected_client}", "success")
+
+        # 2. EXTRACCIÓN (completada en ingesta)
         log.step(2, 6, "EXTRACCIÓN")
         log.log(f"Datos extraídos de {result.source_type}", "success")
 
@@ -1266,27 +1364,27 @@ class SRMPipeline:
         log.step(5, 6, "ENRIQUECIMIENTO")
         self._enrich()
 
-        # 6. FICHA 360°
+        # 6. FICHA 360° / EXPORTACIÓN
         log.step(6, 6, "FICHA 360°")
         csv_path, json_path = self._export()
 
-        self._print_summary(csv_path, json_path)
+        # Push a Shopify si está configurado
+        if self.push_to_shopify and self.detected_client:
+            self._push_to_shopify()
 
+        self._print_summary(csv_path, json_path)
         return csv_path, json_path
 
     def _ingest(self, source: str) -> ProcessingResult:
-        """Ingesta: detecta tipo y procesa."""
-        # Detectar si es URL
         if source.startswith('http://') or source.startswith('https://'):
             processor = URLProcessor(self.config)
             return processor.process(source)
 
-        # Detectar tipo de archivo
         if not os.path.exists(source):
             return ProcessingResult(errors=[f"Archivo no encontrado: {source}"])
 
         file_type = detect_file_type(source)
-        log.log(f"Tipo detectado: {file_type}")
+        log.log(f"Tipo: {file_type}")
 
         processor = get_processor(file_type, self.config)
         if not processor:
@@ -1295,110 +1393,83 @@ class SRMPipeline:
         return processor.process(source)
 
     def _normalize(self):
-        """Normalización: limpieza y estandarización."""
-        seen_codes = set()
+        seen = set()
         normalized = []
 
-        for product in self.all_products:
-            # Limpiar campos
-            product.nombre = clean_text(product.nombre)
-            product.descripcion = clean_text(product.descripcion)
-            product.codigo = re.sub(r'[^a-zA-Z0-9-]', '', product.codigo)
+        for p in self.all_products:
+            p.nombre = clean_text(p.nombre)
+            p.descripcion = clean_text(p.descripcion)
+            p.codigo = re.sub(r'[^a-zA-Z0-9-]', '', p.codigo)
 
-            # Deduplicar por código
-            if product.codigo:
-                if product.codigo in seen_codes:
+            if p.codigo:
+                if p.codigo in seen:
                     continue
-                seen_codes.add(product.codigo)
+                seen.add(p.codigo)
 
-            # Generar SKU si falta
-            if not product.sku and product.codigo:
-                product.sku = f"{self.prefix}-{product.codigo}"
+            if not p.sku and p.codigo:
+                p.sku = f"{self.prefix}-{p.codigo}"
 
-            normalized.append(product)
+            normalized.append(p)
 
-        duplicates = len(self.all_products) - len(normalized)
+        log.log(f"Normalizados: {len(normalized)} (duplicados: {len(self.all_products) - len(normalized)})", "success")
         self.all_products = normalized
-        log.log(f"Normalizados: {len(normalized)} | Duplicados removidos: {duplicates}", "success")
 
     def _unify(self):
-        """Unificación: clasificación bajo taxonomía."""
-        for product in self.all_products:
-            # Normalizar categoría
-            product.categoria = normalize_category(
-                product.categoria or product.nombre,
-                self.industry
-            )
+        detector = IndustryDetector()
+        for p in self.all_products:
+            if not p.categoria or p.categoria == "OTROS":
+                p.categoria = detector.detect_category(p.nombre, self.detected_industry)
 
-            # Generar descripción corta si falta
-            if not product.descripcion_corta and product.descripcion:
-                product.descripcion_corta = product.descripcion[:150]
+            if not p.descripcion_corta and p.descripcion:
+                p.descripcion_corta = p.descripcion[:150]
 
-        # Estadísticas de categorías
         categories = {}
         for p in self.all_products:
             categories[p.categoria] = categories.get(p.categoria, 0) + 1
 
         log.log(f"Categorías: {len(categories)}", "success")
-        for cat, count in sorted(categories.items(), key=lambda x: -x[1])[:5]:
-            log.log(f"   {cat}: {count}", "debug")
 
     def _enrich(self):
-        """Enriquecimiento: añadir fitment y atributos."""
-        for product in self.all_products:
-            # Generar ID único
-            if not product.id:
-                product.id = f"{self.prefix}-{hashlib.md5(f'{product.codigo}{product.nombre}'.encode()).hexdigest()[:8]}"
+        for p in self.all_products:
+            if not p.id:
+                p.id = f"{self.prefix}-{hashlib.md5(f'{p.codigo}{p.nombre}'.encode()).hexdigest()[:8]}"
 
-            # Tags automáticos
-            if not product.tags:
-                tags = []
-                if product.categoria:
-                    tags.append(product.categoria.lower())
-                if product.marca:
-                    tags.append(product.marca.lower())
-                words = product.nombre.lower().split()[:3]
-                tags.extend(words)
-                product.tags = list(set(tags))
+            if not p.tags:
+                tags = [p.categoria.lower()] if p.categoria else []
+                if p.marca:
+                    tags.append(p.marca.lower())
+                tags.extend(p.nombre.lower().split()[:3])
+                p.tags = list(set(tags))
 
-        log.log(f"Productos enriquecidos: {len(self.all_products)}", "success")
+        log.log(f"Enriquecidos: {len(self.all_products)}", "success")
 
     def _export(self) -> Tuple[str, str]:
-        """Exporta a CSV y JSON."""
         if not self.all_products:
-            log.log("No hay productos para exportar", "warning")
             return "", ""
 
-        # Crear DataFrame
         records = [p.to_dict() for p in self.all_products]
         df = pd.DataFrame(records)
 
-        # Ordenar columnas
         priority_cols = ['sku', 'codigo', 'nombre', 'descripcion', 'precio',
-                        'categoria', 'marca', 'imagen', 'stock']
+                        'categoria', 'marca', 'imagen', 'stock', 'industria', 'cliente']
         cols = [c for c in priority_cols if c in df.columns]
         cols += [c for c in df.columns if c not in cols]
         df = df[cols]
 
-        # Guardar CSV
         csv_path = os.path.join(self.output_dir, f"{self.prefix}_catalogo.csv")
         df.to_csv(csv_path, sep=';', index=False, encoding='utf-8')
 
-        # Guardar JSON
         json_path = os.path.join(self.output_dir, f"{self.prefix}_catalogo.json")
-
-        # JSON con estructura para Shopify/E-commerce
         export_data = {
             "metadata": {
                 "version": VERSION,
                 "generated": datetime.now().isoformat(),
-                "industry": self.industry,
+                "industry": self.detected_industry,
+                "client": self.detected_client,
                 "total_products": len(self.all_products),
-                "prefix": self.prefix
             },
             "products": records
         }
-
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(export_data, f, ensure_ascii=False, indent=2)
 
@@ -1407,30 +1478,78 @@ class SRMPipeline:
 
         return csv_path, json_path
 
+    def _push_to_shopify(self):
+        """Push productos a Shopify del cliente detectado."""
+        if not SHOPIFY_AVAILABLE:
+            log.log("Shopify SDK no disponible", "warning")
+            return
+
+        client_config = CLIENTS.get(self.detected_industry, {}).get(self.detected_client)
+        if not client_config:
+            log.log(f"Cliente {self.detected_client} no configurado", "warning")
+            return
+
+        shop = client_config.get('shop')
+        token = client_config.get('token')
+
+        if not shop or not token:
+            log.log(f"Credenciales Shopify incompletas para {self.detected_client}", "warning")
+            return
+
+        log.log(f"Pushing a Shopify: {shop}...")
+        shopify_client = ShopifyClient(shop, token)
+
+        created = 0
+        updated = 0
+        errors = 0
+
+        for product in self.all_products:
+            try:
+                # Buscar si existe
+                existing = shopify_client.find_product_by_sku(product.sku)
+
+                if existing:
+                    result = shopify_client.update_product(existing['id'], product)
+                    if result:
+                        updated += 1
+                else:
+                    result = shopify_client.create_product(product)
+                    if result:
+                        created += 1
+
+                time.sleep(0.5)  # Rate limiting
+
+            except Exception as e:
+                errors += 1
+                log.log(f"Error Shopify: {e}", "warning")
+
+        log.log(f"Shopify: {created} creados, {updated} actualizados, {errors} errores", "success")
+
     def _print_banner(self):
         print(f"""
 {Colors.BOLD}╔══════════════════════════════════════════════════════════════════════╗
 ║                    🚀 {SCRIPT_NAME} v{VERSION}                       ║
-║                 Procesador Universal Multi-Industria                 ║
+║              Procesador Universal Multi-Industria Multi-Tenant       ║
 ╚══════════════════════════════════════════════════════════════════════╝{Colors.RESET}
 """)
-        log.log(f"Industria: {INDUSTRY_TAXONOMIES.get(self.industry, {}).get('name', self.industry)}")
-        log.log(f"Prefijo: {self.prefix}")
-        log.log(f"Output: {self.output_dir}")
 
     def _print_summary(self, csv_path: str, json_path: str):
         with_price = sum(1 for p in self.all_products if p.precio > 0)
         with_image = sum(1 for p in self.all_products if p.imagen)
 
+        industry_name = INDUSTRIES.get(self.detected_industry, {}).get('name', self.detected_industry)
+
         print(f"""
 {Colors.BOLD}{'='*70}
-📊 RESUMEN FINAL - FICHA 360°
+📊 RESUMEN - FICHA 360°
 {'='*70}{Colors.RESET}
 
-{Colors.GREEN}✓ Total productos:{Colors.RESET}     {len(self.all_products)}
-{Colors.GREEN}✓ Con precio:{Colors.RESET}          {with_price}
-{Colors.GREEN}✓ Con imagen:{Colors.RESET}          {with_image}
-{Colors.CYAN}○ Tiempo:{Colors.RESET}              {log.elapsed()}
+{Colors.GREEN}✓ Industria:{Colors.RESET}          {industry_name}
+{Colors.GREEN}✓ Cliente:{Colors.RESET}            {self.detected_client or 'No detectado'}
+{Colors.GREEN}✓ Total productos:{Colors.RESET}   {len(self.all_products)}
+{Colors.GREEN}✓ Con precio:{Colors.RESET}        {with_price}
+{Colors.GREEN}✓ Con imagen:{Colors.RESET}        {with_image}
+{Colors.CYAN}○ Tiempo:{Colors.RESET}            {log.elapsed()}
 
 {Colors.BOLD}📁 ARCHIVOS:{Colors.RESET}
    {csv_path}
@@ -1444,24 +1563,62 @@ class SRMPipeline:
 # CLI
 # ============================================================================
 
-def parse_args():
-    """Parsea argumentos de línea de comandos."""
-    if len(sys.argv) < 2:
-        return None
+def print_help():
+    industries = ", ".join(INDUSTRIES.keys())
+
+    print(f"""
+{Colors.BOLD}{SCRIPT_NAME} v{VERSION}{Colors.RESET}
+{'='*70}
+
+{Colors.CYAN}USO:{Colors.RESET}
+    python3 srm_intelligent_processor.py <archivo_o_url> [opciones]
+
+{Colors.CYAN}FORMATOS:{Colors.RESET}
+    PDF, Excel, CSV, Word, TXT, Imágenes, ZIP, URLs
+
+{Colors.CYAN}OPCIONES:{Colors.RESET}
+    --output, -o DIR      Directorio de salida
+    --prefix PREFIX       Prefijo SKU (default: SRM)
+    --industry INDUSTRY   Forzar industria: {industries}
+    --client CLIENT       Forzar cliente (KAIQI, BARA, DFG, etc.)
+    --pages PAGES         Páginas PDF: "2-50", "all"
+    --push-shopify        Push automático a Shopify del cliente
+    --help, -h            Mostrar ayuda
+
+{Colors.CYAN}EJEMPLOS:{Colors.RESET}
+    # Auto-detecta industria y cliente
+    python3 srm_intelligent_processor.py catalogo_kaiqi.pdf
+
+    # Forzar industria
+    python3 srm_intelligent_processor.py productos.xlsx --industry autopartes_motos
+
+    # Push a Shopify
+    python3 srm_intelligent_processor.py catalogo.pdf --push-shopify
+
+    # Scraping
+    python3 srm_intelligent_processor.py "https://competencia.com/catalogo"
+
+{Colors.CYAN}VARIABLES DE ENTORNO:{Colors.RESET}
+    OPENAI_API_KEY, ANTHROPIC_API_KEY
+    KAIQI_SHOP, KAIQI_TOKEN, BARA_SHOP, BARA_TOKEN, etc.
+""")
+
+
+def main():
+    if '--help' in sys.argv or '-h' in sys.argv or len(sys.argv) < 2:
+        print_help()
+        sys.exit(0)
 
     config = {
         'source': sys.argv[1],
         'output_dir': DEFAULT_OUTPUT_DIR,
         'prefix': 'SRM',
-        'industry': 'generico',
-        'dpi': 150,
-        'pages': None,
+        'push_shopify': False,
     }
 
     i = 2
     while i < len(sys.argv):
         arg = sys.argv[i]
-
         if arg in ['--output', '-o'] and i + 1 < len(sys.argv):
             config['output_dir'] = sys.argv[i + 1]
             i += 2
@@ -1469,16 +1626,14 @@ def parse_args():
             config['prefix'] = sys.argv[i + 1].upper()
             i += 2
         elif arg == '--industry' and i + 1 < len(sys.argv):
-            config['industry'] = sys.argv[i + 1].lower()
+            config['force_industry'] = sys.argv[i + 1]
             i += 2
-        elif arg == '--dpi' and i + 1 < len(sys.argv):
-            config['dpi'] = int(sys.argv[i + 1])
+        elif arg == '--client' and i + 1 < len(sys.argv):
+            config['force_client'] = sys.argv[i + 1].upper()
             i += 2
         elif arg == '--pages' and i + 1 < len(sys.argv):
             pages_str = sys.argv[i + 1]
-            if pages_str.lower() == 'all':
-                config['pages'] = None
-            else:
+            if pages_str.lower() != 'all':
                 pages = set()
                 for part in pages_str.split(','):
                     if '-' in part:
@@ -1488,81 +1643,22 @@ def parse_args():
                         pages.add(int(part))
                 config['pages'] = sorted(pages)
             i += 2
-        elif arg == '--scrape':
-            config['scrape_pagination'] = True
+        elif arg == '--push-shopify':
+            config['push_shopify'] = True
             i += 1
         else:
             i += 1
 
-    return config
-
-
-def print_help():
-    industries = ", ".join(INDUSTRY_TAXONOMIES.keys())
-
-    print(f"""
-{Colors.BOLD}{SCRIPT_NAME} v{VERSION}{Colors.RESET}
-{'='*70}
-
-{Colors.CYAN}USO:{Colors.RESET}
-    python3 srm_intelligent_processor.py <archivo_o_url> [opciones]
-
-{Colors.CYAN}FORMATOS SOPORTADOS:{Colors.RESET}
-    PDF, Excel (.xlsx/.xls), CSV, Word (.docx), TXT,
-    Imágenes (JPG/PNG/WEBP), ZIP, URLs
-
-{Colors.CYAN}OPCIONES:{Colors.RESET}
-    --output, -o DIR      Directorio de salida
-    --prefix PREFIX       Prefijo para SKU (default: SRM)
-    --industry INDUSTRY   Industria: {industries}
-    --dpi DPI             Resolución para PDFs (default: 150)
-    --pages PAGES         Páginas de PDF: "2-50", "1,3,5", "all"
-    --scrape              Seguir paginación en URLs
-    --help, -h            Mostrar esta ayuda
-
-{Colors.CYAN}EJEMPLOS:{Colors.RESET}
-    # Procesar PDF de autopartes
-    python3 srm_intelligent_processor.py catalogo.pdf --industry autopartes --prefix ARM
-
-    # Procesar Excel de ferretería
-    python3 srm_intelligent_processor.py productos.xlsx --industry ferreteria
-
-    # Scraping de competencia
-    python3 srm_intelligent_processor.py "https://competencia.com/catalogo" --scrape
-
-    # Procesar ZIP con imágenes
-    python3 srm_intelligent_processor.py fotos_productos.zip --industry electronica
-
-{Colors.CYAN}VARIABLES DE ENTORNO:{Colors.RESET}
-    OPENAI_API_KEY       API key de OpenAI (requerido)
-
-{Colors.CYAN}DEPENDENCIAS:{Colors.RESET}
-    pip install openai pandas openpyxl python-docx beautifulsoup4 requests pillow opencv-python numpy
-    apt install poppler-utils  # Para PDFs
-""")
-
-
-def main():
-    if '--help' in sys.argv or '-h' in sys.argv or len(sys.argv) < 2:
-        print_help()
-        sys.exit(0)
-
-    config = parse_args()
-    if not config:
-        print_help()
-        sys.exit(1)
-
     # Validar API key
-    if not os.getenv("OPENAI_API_KEY"):
-        log.log("OPENAI_API_KEY no configurada", "error")
+    if not os.getenv('OPENAI_API_KEY') and not os.getenv('ANTHROPIC_API_KEY'):
+        log.log("Se requiere OPENAI_API_KEY o ANTHROPIC_API_KEY", "error")
         sys.exit(1)
 
-    # Ejecutar pipeline
     try:
         pipeline = SRMPipeline(config)
         pipeline.process(config['source'])
     except KeyboardInterrupt:
-        log.log("\nProceso interrumpido", "warning")
+        log.log("\nInterrumpido", "warning")
         sys.exit(130)
     except Exception as e:
         log.log(f"Error: {e}", "error")
