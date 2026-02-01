@@ -95,6 +95,14 @@ import requests
 from PIL import Image
 from openai import OpenAI
 
+# Event Emitter para Cortex Visual
+try:
+    from odi_event_emitter import ODIEventEmitter
+    EMITTER_AVAILABLE = True
+except ImportError:
+    EMITTER_AVAILABLE = False
+    ODIEventEmitter = None
+
 # Imports opcionales
 try:
     import cv2
@@ -1327,16 +1335,30 @@ class SRMPipeline:
         self.detected_industry = ""
         self.detected_client = ""
 
+        # Event Emitter para Cortex Visual (Tony narra)
+        if EMITTER_AVAILABLE:
+            self.emitter = ODIEventEmitter(source="srm", actor="SRM_PROCESSOR_v4")
+        else:
+            self.emitter = None
+
     def process(self, source: str) -> Tuple[str, str]:
         """Ejecuta pipeline completo."""
         self._print_banner()
 
+        # === EMIT: Pipeline Start ===
+        if self.emitter:
+            self.emitter.srm_pipeline_start(source)
+
         # 1. INGESTA
         log.step(1, 6, "INGESTA")
+        if self.emitter:
+            self.emitter.srm_step(1, "INGESTA", {"source": os.path.basename(source)})
         result = self._ingest(source)
 
         if not result.success:
             log.log(f"Error: {result.errors}", "error")
+            if self.emitter:
+                self.emitter.error(f"Ingesta fallida: {result.errors}")
             return "", ""
 
         self.all_products = result.products
@@ -1345,32 +1367,56 @@ class SRMPipeline:
 
         log.log(f"Productos: {len(self.all_products)}", "success")
         log.log(f"Industria: {self.detected_industry}", "success")
+
+        # === EMIT: Industry/Client Detected ===
+        if self.emitter and self.detected_industry:
+            self.emitter.srm_industry_detected(self.detected_industry, 0.9)
         if self.detected_client:
             log.log(f"Cliente: {self.detected_client}", "success")
+            if self.emitter:
+                self.emitter.srm_client_detected(self.detected_client, "auto-detected")
 
         # 2. EXTRACCIÓN (completada en ingesta)
         log.step(2, 6, "EXTRACCIÓN")
+        if self.emitter:
+            self.emitter.srm_step(2, "EXTRACCION", {"products_found": len(self.all_products)})
         log.log(f"Datos extraídos de {result.source_type}", "success")
 
         # 3. NORMALIZACIÓN
         log.step(3, 6, "NORMALIZACIÓN")
+        if self.emitter:
+            self.emitter.srm_step(3, "NORMALIZACION", {"products_before": len(self.all_products)})
         self._normalize()
 
         # 4. UNIFICACIÓN
         log.step(4, 6, "UNIFICACIÓN")
+        if self.emitter:
+            self.emitter.srm_step(4, "UNIFICACION", {"products": len(self.all_products)})
         self._unify()
 
         # 5. ENRIQUECIMIENTO
         log.step(5, 6, "ENRIQUECIMIENTO")
+        if self.emitter:
+            self.emitter.srm_step(5, "ENRIQUECIMIENTO", {"products": len(self.all_products)})
         self._enrich()
 
         # 6. FICHA 360° / EXPORTACIÓN
         log.step(6, 6, "FICHA 360°")
+        if self.emitter:
+            self.emitter.srm_step(6, "FICHA_360", {"products": len(self.all_products)})
         csv_path, json_path = self._export()
 
         # Push a Shopify si está configurado
         if self.push_to_shopify and self.detected_client:
+            if self.emitter:
+                client_config = CLIENTS.get(self.detected_industry, {}).get(self.detected_client, {})
+                shop = client_config.get('shop', 'unknown')
+                self.emitter.srm_shopify_push(shop, len(self.all_products))
             self._push_to_shopify()
+
+        # === EMIT: Pipeline Complete ===
+        if self.emitter:
+            self.emitter.srm_complete(len(self.all_products), csv_path, json_path)
 
         self._print_summary(csv_path, json_path)
         return csv_path, json_path
