@@ -1,0 +1,95 @@
+# ODI Configuration
+# =================
+# Configuracion central del Organismo Digital Industrial
+
+# Paths
+paths:
+  home: /opt/odi
+  profesion: /mnt/volume_sfo3_01/profesion
+  embeddings: /opt/odi/embeddings
+  cache: /opt/odi/cache
+  logs: /opt/odi/logs
+  data: /opt/odi/data
+
+# Embedding Configuration
+embeddings:
+  model: text-embedding-3-small
+  chunk_size: 1000
+  chunk_overlap: 200
+  batch_size: 100
+
+# Vector Store
+vectorstore:
+  type: chroma
+  collection_name: odi_knowledge_base
+  persist: true
+
+# LLM Configuration
+llm:
+  model: gpt-4o-mini
+  temperature: 0.3
+  max_tokens: 1000
+
+# Voice Configuration (Tony/Ramona)
+voice:
+  tony:
+    personality: tecnico
+    tone: directo
+    use_for:
+      - datos_tecnicos
+      - alertas
+      - metricas
+      - fitment
+  ramona:
+    personality: amigable
+    tone: calido
+    use_for:
+      - bienvenidas
+      - consultas_usuario
+      - errores
+      - cierre
+
+# API Configuration
+api:
+  host: 0.0.0.0
+  port: 8000
+  cors_origins:
+    - "*"
+  rate_limit: 100  # requests per minute
+
+# Redis Configuration
+redis:
+  host: localhost
+  port: 6379
+  db: 0
+  channels:
+    queries: odi:queries
+    feedbacks: odi:feedbacks
+    indexed: odi:indexed
+    alerts: odi:alert
+    metrics: odi:metrics
+
+# Feedback Configuration
+feedback:
+  webhook_enabled: true
+  alert_threshold_rating: 2
+  alert_threshold_count: 3
+  metrics_window_minutes: 60
+
+# Supported File Types
+supported_files:
+  - .pdf
+  - .md
+  - .txt
+  - .json
+  - .csv
+  - .html
+
+# Logging
+logging:
+  level: INFO
+  format: "%(asctime)s [%(levelname)s] %(message)s"
+  files:
+    indexer: /opt/odi/logs/indexer.log
+    query: /opt/odi/logs/query.log
+    feedback: /opt/odi/logs/feedback_loop.log
