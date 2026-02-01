@@ -97,6 +97,14 @@ import cv2
 from PIL import Image
 from openai import OpenAI
 
+# Event Emitter para Cortex Visual
+try:
+    from odi_event_emitter import ODIEventEmitter
+    EMITTER_AVAILABLE = True
+except ImportError:
+    EMITTER_AVAILABLE = False
+    ODIEventEmitter = None
+
 
 # ============================================================================
 # CONFIGURACIÓN GLOBAL
@@ -704,6 +712,12 @@ class VisionExtractor:
         self.last_request_time = 0
         self.stats = ProcessingStats()
 
+        # Event Emitter para Cortex Visual (Tony narra)
+        if EMITTER_AVAILABLE:
+            self.emitter = ODIEventEmitter(source="vision", actor="ODI_VISION_v3")
+        else:
+            self.emitter = None
+
     def _throttle(self):
         """Aplica throttling entre requests."""
         elapsed = time.time() - self.last_request_time
@@ -1024,6 +1038,10 @@ class CatalogProcessor:
         # Filtrar páginas pendientes
         pages_pending = [p for p in self.pages if p not in self.processed_pages]
 
+        # === EMIT: Vision Start ===
+        if self.emitter:
+            self.emitter.vision_start(os.path.basename(self.pdf_path), len(self.pages))
+
         if not pages_pending:
             log.log("Todas las páginas ya procesadas", "success")
         else:
@@ -1034,10 +1052,35 @@ class CatalogProcessor:
                 for i, page_num in enumerate(pages_pending, 1):
                     log.log(f"\n[{i}/{len(pages_pending)}] Página {page_num}", "header")
 
+                    # === EMIT: Page Start ===
+                    if self.emitter:
+                        self.emitter.vision_page_start(page_num, len(self.pages))
+
                     productos = self._process_page(page_num)
                     self.all_products.extend(productos)
                     self.stats.products_extracted += len(productos)
                     self.stats.products_with_image += sum(1 for p in productos if p.imagen)
+
+                    # === EMIT: Products Found ===
+                    if self.emitter:
+                        for p in productos:
+                            self.emitter.vision_product_found(
+                                p.codigo,
+                                p.nombre[:50],
+                                p.precio,
+                                p.categoria,
+                                p.imagen
+                            )
+
+                    # === EMIT: Page Complete ===
+                    if self.emitter:
+                        crops_this_page = sum(1 for p in productos if p.imagen)
+                        self.emitter.vision_page_complete(
+                            page_num,
+                            len(self.pages),
+                            len(productos),
+                            crops_this_page
+                        )
 
                     self.processed_pages.add(page_num)
 
@@ -1066,6 +1109,10 @@ class CatalogProcessor:
         # Limpiar checkpoint si completó
         if self.checkpoint and len(self.processed_pages) >= len(self.pages):
             self.checkpoint.clear()
+
+        # === EMIT: Vision Complete ===
+        if self.emitter:
+            self.emitter.vision_complete(len(self.all_products), log.elapsed())
 
         # Estadísticas finales
         self._print_stats(csv_path, json_path)
