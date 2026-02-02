@@ -94,7 +94,7 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "DeepL-Auth-Key {{ $env.DEEPL_API_KEY }}" },
+            { "name": "Authorization", "value": "DeepL-Auth-Key 6076c331-11ca-4934-a1fa-b6ca05d56686" },
             { "name": "Content-Type", "value": "application/json" }
           ]
         },
@@ -237,7 +237,7 @@
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
-            { "name": "Authorization", "value": "DeepL-Auth-Key {{ $env.DEEPL_API_KEY }}" },
+            { "name": "Authorization", "value": "DeepL-Auth-Key 6076c331-11ca-4934-a1fa-b6ca05d56686" },
             { "name": "Content-Type", "value": "application/json" }
           ]
         },
