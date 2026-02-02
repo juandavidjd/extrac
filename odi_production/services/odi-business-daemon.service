@@ -1,0 +1,24 @@
+[Unit]
+Description=ODI Business Daemon - Detecta catalogos y dispara pipeline
+After=network.target
+Documentation=https://github.com/juandavidjd/extrac
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/odi
+ExecStart=/usr/bin/python3 /opt/odi/core/odi_business_daemon.py
+Restart=always
+RestartSec=30
+Environment=PYTHONUNBUFFERED=1
+
+# Logs
+StandardOutput=append:/opt/odi/logs/business_daemon_stdout.log
+StandardError=append:/opt/odi/logs/business_daemon_stderr.log
+
+# Limites de memoria
+MemoryMax=1G
+MemoryHigh=800M
+
+[Install]
+WantedBy=multi-user.target
