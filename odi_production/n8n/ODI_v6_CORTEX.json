@@ -80,7 +80,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "http://172.17.0.1:8803/query",
+        "url": "http://64.23.170.118:8803/query",
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={\n  \"question\": {{ JSON.stringify($json.text) }},\n  \"voice\": \"tony\",\n  \"k\": 5\n}",
