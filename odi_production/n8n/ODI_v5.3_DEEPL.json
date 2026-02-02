@@ -1,0 +1,866 @@
+{
+  "name": "ODI_v5.3_DEEPL",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "odi-ingest",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1469336-6f0b-44f7-bb2c-efd9a515d54e",
+      "name": "Webhook Ingest",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -4560,
+        368
+      ],
+      "webhookId": "odi-ingest"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ODI NORMALIZER v5.3 DEEPL\nconst input = $json.body || $json;\n\n// WhatsApp incoming\nif (input.entry && input.entry[0] && input.entry[0].changes) {\n  const value = input.entry[0].changes[0]?.value;\n  if (!value || !value.messages || !value.messages[0]) {\n    return [{ json: { ignore: true, reason: 'status_update' } }];\n  }\n  const msg = value.messages[0];\n  const contact = value.contacts ? value.contacts[0] : null;\n  \n  let text = '';\n  if (msg.type === 'text') text = msg.text?.body || '';\n  else if (msg.type === 'button') text = msg.button?.text || '';\n  else if (msg.type === 'interactive') {\n    text = msg.interactive?.button_reply?.title || \n           msg.interactive?.list_reply?.title || '';\n  }\n  \n  return [{\n    json: {\n      ignore: false,\n      odi_event_id: 'ODI-' + Date.now().toString(36).toUpperCase(),\n      canal: 'whatsapp',\n      from: msg.from,\n      phone_number_id: value.metadata?.phone_number_id,\n      message_id: msg.id,\n      text: text,\n      original_text: text,\n      contact_name: contact?.profile?.name || 'Usuario',\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\n// API directa\nif (input.text) {\n  return [{\n    json: {\n      ignore: false,\n      odi_event_id: 'ODI-' + Date.now().toString(36).toUpperCase(),\n      canal: input.canal || 'api',\n      from: input.user_id || 'anonymous',\n      text: input.text,\n      original_text: input.text,\n      contact_name: input.contact_name || 'Usuario',\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nreturn [{ json: { ignore: true, reason: 'unknown_format' } }];"
+      },
+      "id": "f93602df-166e-4b91-9de3-0de207eab789",
+      "name": "Normalizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -4352,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.ignore }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "3f57620c-7df1-400b-9c1b-93edb390cd15",
+      "name": "Ignorar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -4160,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'ignored', reason: $json.reason }) }}",
+        "options": {}
+      },
+      "id": "c0358610-9524-4af6-a266-04249eb2da12",
+      "name": "OK Ignored",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        -3952,
+        208
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// DETECTAR IDIOMA\nconst text = $json.text || '';\n\n// Patrones simples para detectar idioma\nconst patterns = {\n  EN: /\\b(hello|hi|hey|do you have|looking for|need|want|please|thank|yes|no|price|how much|brake|filter|chain|oil)\\b/i,\n  PT: /\\b(olá|oi|bom dia|boa tarde|vocês|têm|tenho|preciso|quero|obrigado|sim|não|preço|quanto|freio|filtro|corrente|óleo)\\b/i,\n  ES: /\\b(hola|buenos|buenas|tienen|tengo|necesito|quiero|gracias|sí|no|precio|cuánto|freno|filtro|cadena|aceite|pastilla)\\b/i\n};\n\nlet detected_lang = 'ES'; // Default español\nlet confidence = 0;\n\nfor (const [lang, pattern] of Object.entries(patterns)) {\n  const matches = (text.match(pattern) || []).length;\n  if (matches > confidence) {\n    confidence = matches;\n    detected_lang = lang;\n  }\n}\n\n// Si hay caracteres específicos del portugués\nif (/[ãõç]/.test(text)) detected_lang = 'PT';\n\nconst needs_translation = detected_lang !== 'ES';\n\nreturn [{\n  json: {\n    ...$json,\n    detected_lang,\n    needs_translation,\n    lang_confidence: confidence\n  }\n}];"
+      },
+      "id": "717cb006-2d63-4bc5-93fb-7c7a84cf9966",
+      "name": "Detectar Idioma",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -3952,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.needs_translation }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "7bb9bf89-95ee-4801-97de-7934cfff2860",
+      "name": "Traducir?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -3760,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-free.deepl.com/v2/translate",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "DeepL-Auth-Key {{$env.DEEPL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ [$json.text] }}"
+            },
+            {
+              "name": "target_lang",
+              "value": "ES"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a36dd17a-5807-437d-a743-b8a0532b115c",
+      "name": "DeepL → Español",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -3552,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Actualizar texto con traducción\nconst translation = $json.translations?.[0]?.text || $('Detectar Idioma').item.json.text;\n\nreturn [{\n  json: {\n    ...$('Detectar Idioma').item.json,\n    text: translation,\n    translated_input: true\n  }\n}];"
+      },
+      "id": "69c9deb1-511c-4c33-bb86-37cac7fd2d81",
+      "name": "Aplicar Traducción",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -3360,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "a36e3dc7-a490-4846-b6ca-c54f2b4fb5a6",
+      "name": "Merge Idioma",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        -3152,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ODI INTENT CLASSIFIER v5.3 DEEPL\nconst text = ($json.text || '').toLowerCase();\nlet goToFitment = false;\nlet intent = 'GENERAL';\nlet entities = {};\n\n// Extraer marca\nconst marcas = ['yamaha', 'honda', 'suzuki', 'kawasaki', 'bajaj', 'pulsar', 'ktm', 'tvs', 'akt', 'hero', 'auteco', 'victory', 'kymco', 'sym', 'piaggio', 'vespa', 'benelli', 'royal enfield', 'cfmoto', 'zontes'];\nfor (const m of marcas) {\n  if (text.includes(m)) { entities.marca = m.toUpperCase(); break; }\n}\n\n// Extraer modelo\nconst modelos = ['fz', 'mt', 'r15', 'r3', 'r6', 'r1', 'nmax', 'bws', 'xtz', 'ybr', 'fazer', 'crypton', 'cb', 'cbr', 'crf', 'ninja', 'duke', 'dominar', 'ns', 'rs', 'discover', 'boxer', 'platino', 'ct100', 'gixxer', 'gsxr', 'agility'];\nfor (const m of modelos) {\n  if (text.includes(m)) { entities.modelo = m.toUpperCase(); break; }\n}\n\n// Extraer año\nconst year = text.match(/(20[0-2][0-9]|19[89][0-9])/);\nif (year) entities.year = year[0];\n\n// Extraer cilindraje\nconst cc = text.match(/(\\d{2,4})\\s*cc/);\nif (cc) entities.cilindraje = cc[1];\n\n// Extraer repuesto (español + traducciones comunes)\nconst repuestos = ['pastilla', 'freno', 'filtro', 'aceite', 'cadena', 'piñon', 'kit', 'llanta', 'bateria', 'faro', 'espejo', 'cable', 'clutch', 'embrague', 'suspension', 'amortiguador', 'rodamiento', 'empaque', 'piston', 'biela', 'cigueñal', 'carburador', 'bujia', 'bobina', 'brake', 'pad', 'filter', 'oil', 'chain', 'tire', 'battery', 'mirror'];\nfor (const r of repuestos) {\n  if (text.includes(r)) { \n    // Normalizar a español\n    let repuesto_es = r;\n    if (r === 'brake' || r === 'pad') repuesto_es = 'pastilla';\n    if (r === 'filter') repuesto_es = 'filtro';\n    if (r === 'oil') repuesto_es = 'aceite';\n    if (r === 'chain') repuesto_es = 'cadena';\n    if (r === 'tire') repuesto_es = 'llanta';\n    if (r === 'battery') repuesto_es = 'bateria';\n    if (r === 'mirror') repuesto_es = 'espejo';\n    entities.repuesto = repuesto_es;\n    break;\n  }\n}\n\n// CLASIFICACIÓN\nif (entities.repuesto || entities.marca || entities.modelo || entities.cilindraje) {\n  goToFitment = true;\n  intent = 'FITMENT';\n} else if (text.match(/^(hola|buenos|buenas|hi|hey|hello|oi|olá)/)) {\n  intent = 'SALUDO';\n} else if (text.includes('precio') || text.includes('cuanto') || text.includes('price') || text.includes('how much')) {\n  intent = 'PRECIO';\n} else if (text.includes('comprar') || text.includes('quiero') || text.includes('buy') || text.includes('want')) {\n  intent = 'COMPRA';\n} else if (text.includes('pedido') || text.includes('orden') || text.includes('order')) {\n  intent = 'ESTADO_PEDIDO';\n} else if (text.includes('ayuda') || text.includes('problema') || text.includes('help')) {\n  intent = 'SOPORTE';\n}\n\nreturn [{ json: { ...$json, intent, entities, goToFitment } }];"
+      },
+      "id": "e866acb9-730f-4b20-87ba-c08eb78ff764",
+      "name": "Intent Classifier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -2960,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ODI CES EVALUATOR v5.3\nconst intent = $json.intent;\nconst amount = parseFloat($json.amount) || 0;\n\nlet ces = { action: 'PROCEED', risk: 'LOW' };\n\nif (intent === 'COMPRA' && amount > 200000) {\n  ces = { action: 'AWAIT_HUMAN', risk: 'HIGH', reason: 'Monto supera umbral' };\n}\n\nreturn [{ json: { ...$json, ces } }];"
+      },
+      "id": "550a87f8-f887-4e0a-bbc2-224d02024e6c",
+      "name": "CES Evaluator",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -2752,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO audit_events (\n  event_id, event_type, category, user_id, action_type,\n  target_type, target_id, risk_level, metadata, event_hash\n) VALUES (\n  '{{ $json.odi_event_id }}',\n  'ACTION_STARTED',\n  'ACTION',\n  '{{ $json.from }}',\n  '{{ $json.intent }}',\n  'message',\n  '{{ $json.message_id || $json.odi_event_id }}',\n  '{{ $json.ces.risk }}',\n  '{{ JSON.stringify({ canal: $json.canal, text: $json.original_text, text_es: $json.text, detected_lang: $json.detected_lang, entities: $json.entities, ces_action: $json.ces.action, goToFitment: $json.goToFitment }) }}'::jsonb,\n  encode(sha256(('{{ $json.odi_event_id }}' || '{{ $json.from }}' || '{{ $json.message_id || $json.odi_event_id }}' || now()::text)::bytea), 'hex')\n) RETURNING event_id, sequence_num, created_at;",
+        "options": {}
+      },
+      "id": "7c6520e3-3757-4fbd-88b8-20593a9044ed",
+      "name": "Ledger Ingest",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        -2560,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "717969e5-339b-4c2e-a4a2-d3c057907d25",
+      "name": "Merge Ledger",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        -2352,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $('CES Evaluator').item.json.goToFitment }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "9d57e590-c728-4ae7-8309-c3a69e8fe36d",
+      "name": "goToFitment?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -2160,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8803/query",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"question\": \"{{ $('CES Evaluator').item.json.text }}\",\n  \"voice\": \"tony\",\n  \"k\": 5,\n  \"lobe\": \"ind_motos\",\n  \"include_sources\": true\n}",
+        "options": {
+          "timeout": 30000
+        }
+      },
+      "id": "6740d56a-6f74-4d1d-8a77-a65776cc3614",
+      "name": "Consultar ODI Cortex",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -1952,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// FORMATEAR RESPUESTA FITMENT desde ODI Cortex\nconst cesData = $('CES Evaluator').item.json;\nconst cortexData = $json;\n\nconst answer = cortexData.answer || 'No encontré información relevante.';\nconst sources = cortexData.sources || [];\nconst voice = cortexData.voice || 'tony';\n\nlet response_es = answer;\n\n// Si hay fuentes, agregar referencia\nif (sources.length > 0) {\n  const sourceList = sources.slice(0, 3).map(s => s.source || 'documento').join(', ');\n  response_es += `\\n\\nFuentes: ${sourceList}`;\n}\n\nreturn [{\n  json: {\n    ...cesData,\n    fitment_query_id: cortexData.timestamp,\n    fitment_count: sources.length,\n    cortex_voice: voice,\n    cortex_lobes: cortexData.lobe_used || [],\n    response_es: response_es,\n    needs_response_translation: cesData.detected_lang !== 'ES'\n  }\n}];"
+      },
+      "id": "85588f8c-0420-4366-83ad-23dc4ab01900",
+      "name": "Formatear Fitment",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -1760,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// RESPUESTA GENERAL (no fitment)\nconst data = $('CES Evaluator').item.json;\nconst intent = data.intent;\nconst contact = data.contact_name || 'Usuario';\n\nlet response_es = '';\n\nswitch(intent) {\n  case 'SALUDO':\n    response_es = `¡Hola ${contact}! Soy ODI, tu asistente de repuestos de motos. ¿En qué puedo ayudarte hoy?`;\n    break;\n  case 'PRECIO':\n    response_es = 'Para darte precios necesito saber: ¿qué repuesto buscas y para qué moto?';\n    break;\n  case 'COMPRA':\n    response_es = 'Excelente, quieres hacer una compra. Por favor indícame el producto y la cantidad.';\n    break;\n  case 'ESTADO_PEDIDO':\n    response_es = 'Para consultar tu pedido necesito el número de orden. ¿Lo tienes?';\n    break;\n  case 'SOPORTE':\n    response_es = 'Entiendo que tienes un inconveniente. Cuéntame más para ayudarte.';\n    break;\n  default:\n    response_es = 'Soy ODI, especialista en repuestos de motos. Dime qué marca, modelo y año de moto tienes, y qué repuesto necesitas.';\n}\n\nreturn [{\n  json: {\n    ...data,\n    fitment_query_id: null,\n    fitment_count: 0,\n    best_option: null,\n    response_es: response_es,\n    needs_response_translation: data.detected_lang !== 'ES'\n  }\n}];"
+      },
+      "id": "8638ee9b-52ef-4b42-95d6-675aec1fa2b4",
+      "name": "Response General",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -1952,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "efac9558-4c03-487c-b0ab-7780e1dd5f5b",
+      "name": "Merge Responses",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        -1552,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.needs_response_translation }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "4dd2403a-4894-426d-b580-be258ceabc85",
+      "name": "Traducir Respuesta?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -1360,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-free.deepl.com/v2/translate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "DeepL-Auth-Key {{$env.DEEPL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "={{ [$json.response_es] }}"
+            },
+            {
+              "name": "target_lang",
+              "value": "={{ $json.detected_lang }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "cdbf3849-4f2f-4c28-b34e-1e219fcb13d7",
+      "name": "DeepL → Idioma Original",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        -1152,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aplicar traducción de respuesta\nconst prevData = $('Traducir Respuesta?').item.json;\nconst translation = $json.translations?.[0]?.text || prevData.response_es;\n\nreturn [{\n  json: {\n    ...prevData,\n    response: translation,\n    response_translated: true\n  }\n}];"
+      },
+      "id": "812358b9-ecaf-48ad-b825-4fcf1b7a140e",
+      "name": "Aplicar Traducción Respuesta",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -960,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sin traducción necesaria\nreturn [{\n  json: {\n    ...$json,\n    response: $json.response_es,\n    response_translated: false\n  }\n}];"
+      },
+      "id": "8425f2bd-174f-47ba-90de-c8adfa3c0a78",
+      "name": "Sin Traducción",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        -1152,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "97922211-c1ec-4b6f-8955-dc40d4574ac7",
+      "name": "Merge Final",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        -752,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO audit_events (\n  event_id, event_type, category, user_id, action_type,\n  target_type, target_id, risk_level, metadata, event_hash\n) VALUES (\n  '{{ $json.odi_event_id }}-R',\n  'ACTION_COMPLETED',\n  'RESPONSE',\n  '{{ $json.from }}',\n  'RESPONSE',\n  'message',\n  '{{ $json.fitment_query_id || $json.odi_event_id }}',\n  '{{ $json.ces.risk }}',\n  '{{ JSON.stringify({ intent: $json.intent, fitment_count: $json.fitment_count, cortex_voice: $json.cortex_voice, cortex_lobes: $json.cortex_lobes, detected_lang: $json.detected_lang, response_translated: $json.response_translated, response_length: ($json.response || \"\").length }) }}'::jsonb,\n  encode(sha256(('{{ $json.odi_event_id }}-R' || '{{ $json.from }}' || now()::text)::bytea), 'hex')\n) RETURNING event_id, sequence_num;",
+        "options": {}
+      },
+      "id": "c705b506-1b4e-4194-884b-d140696b4c39",
+      "name": "Ledger Response",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        -560,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      },
+      "id": "9b79dfe0-640e-4c63-a91b-5933e1355cb8",
+      "name": "Merge Ledger Response",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 2,
+      "position": [
+        -352,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $('Merge Final').item.json.canal }}",
+              "value2": "whatsapp"
+            }
+          ]
+        }
+      },
+      "id": "58a4ea2e-bd07-4550-8783-00d1308370fd",
+      "name": "Es WhatsApp?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        -160,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v18.0/{{ $('Merge Final').item.json.phone_number_id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"to\": \"{{ $('Merge Final').item.json.from }}\",\n  \"type\": \"text\",\n  \"text\": {\n    \"body\": {{ JSON.stringify($('Merge Final').item.json.response) }}\n  }\n}",
+        "options": {}
+      },
+      "id": "d5f8e0a2-4156-4716-826a-62e8e21e7112",
+      "name": "Send WA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        48,
+        368
+      ],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'ok_wa', event_id: $('Merge Final').item.json.odi_event_id }) }}",
+        "options": {}
+      },
+      "id": "476ba201-a723-421c-a9eb-c1a88edc14f9",
+      "name": "OK WA",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        256,
+        368
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// PREPARAR API RESPONSE\nconst data = $('Merge Final').item.json;\nconst ledger = $('Ledger Response').item.json;\n\nreturn [{\n  json: {\n    status: 'ok',\n    event_id: data.odi_event_id,\n    intent: data.intent,\n    detected_lang: data.detected_lang,\n    translated: data.needs_translation || false,\n    ledger_sequence: $('Ledger Ingest').item.json.sequence_num?.toString() || '0',\n    ledger_response_seq: ledger.sequence_num?.toString() || '0',\n    fitment_query_id: data.fitment_query_id,\n    fitment_count: data.fitment_count || 0,\n    entities: data.entities,\n    cortex_voice: data.cortex_voice,\n    cortex_lobes: data.cortex_lobes,\n    response: data.response,\n    response_es: data.response_es\n  }\n}];"
+      },
+      "id": "f26b61df-81fa-4871-9b43-c9ca59a67a54",
+      "name": "Preparar API Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        48,
+        560
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "fb92a03b-b369-463f-8aa8-5fd849751484",
+      "name": "OK API",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        256,
+        560
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook Ingest": {
+      "main": [
+        [
+          {
+            "node": "Normalizer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalizer": {
+      "main": [
+        [
+          {
+            "node": "Ignorar?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ignorar?": {
+      "main": [
+        [
+          {
+            "node": "OK Ignored",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Detectar Idioma",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Detectar Idioma": {
+      "main": [
+        [
+          {
+            "node": "Traducir?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Traducir?": {
+      "main": [
+        [
+          {
+            "node": "DeepL → Español",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Merge Idioma",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "DeepL → Español": {
+      "main": [
+        [
+          {
+            "node": "Aplicar Traducción",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aplicar Traducción": {
+      "main": [
+        [
+          {
+            "node": "Merge Idioma",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Idioma": {
+      "main": [
+        [
+          {
+            "node": "Intent Classifier",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Classifier": {
+      "main": [
+        [
+          {
+            "node": "CES Evaluator",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "CES Evaluator": {
+      "main": [
+        [
+          {
+            "node": "Ledger Ingest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ledger Ingest": {
+      "main": [
+        [
+          {
+            "node": "Merge Ledger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Ledger": {
+      "main": [
+        [
+          {
+            "node": "goToFitment?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "goToFitment?": {
+      "main": [
+        [
+          {
+            "node": "Consultar ODI Cortex",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Response General",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consultar ODI Cortex": {
+      "main": [
+        [
+          {
+            "node": "Formatear Fitment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Formatear Fitment": {
+      "main": [
+        [
+          {
+            "node": "Merge Responses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Response General": {
+      "main": [
+        [
+          {
+            "node": "Merge Responses",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Responses": {
+      "main": [
+        [
+          {
+            "node": "Traducir Respuesta?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Traducir Respuesta?": {
+      "main": [
+        [
+          {
+            "node": "DeepL → Idioma Original",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sin Traducción",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DeepL → Idioma Original": {
+      "main": [
+        [
+          {
+            "node": "Aplicar Traducción Respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aplicar Traducción Respuesta": {
+      "main": [
+        [
+          {
+            "node": "Merge Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sin Traducción": {
+      "main": [
+        [
+          {
+            "node": "Merge Final",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge Final": {
+      "main": [
+        [
+          {
+            "node": "Ledger Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ledger Response": {
+      "main": [
+        [
+          {
+            "node": "Merge Ledger Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge Ledger Response": {
+      "main": [
+        [
+          {
+            "node": "Es WhatsApp?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Es WhatsApp?": {
+      "main": [
+        [
+          {
+            "node": "Send WA",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Preparar API Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send WA": {
+      "main": [
+        [
+          {
+            "node": "OK WA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar API Response": {
+      "main": [
+        [
+          {
+            "node": "OK API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "odi-cortex-integrated",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "odi-production-server"
+  },
+  "id": "ODI_v5_3_DEEPL_CORTEX",
+  "tags": ["odi", "production", "cortex"]
+}
