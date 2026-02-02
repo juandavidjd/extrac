@@ -1,0 +1,24 @@
+[Unit]
+Description=ODI Pipeline Service - Pipeline 6 pasos catalogo a Shopify
+After=network.target
+Documentation=https://github.com/juandavidjd/extrac
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/odi
+ExecStart=/usr/bin/python3 -m uvicorn odi_pipeline_service:app --host 0.0.0.0 --port 8804
+Restart=always
+RestartSec=30
+Environment=PYTHONUNBUFFERED=1
+
+# Logs
+StandardOutput=append:/opt/odi/logs/pipeline_service_stdout.log
+StandardError=append:/opt/odi/logs/pipeline_service_stderr.log
+
+# Limites de memoria para Vision AI
+MemoryMax=2G
+MemoryHigh=1500M
+
+[Install]
+WantedBy=multi-user.target
