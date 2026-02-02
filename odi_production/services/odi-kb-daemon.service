@@ -1,0 +1,24 @@
+[Unit]
+Description=ODI Knowledge Base Daemon - Auto-indexa documentos de /profesion
+After=network.target
+Documentation=https://github.com/juandavidjd/extrac
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/odi
+ExecStart=/usr/bin/python3 /opt/odi/core/odi_kb_daemon.py
+Restart=always
+RestartSec=30
+Environment=PYTHONUNBUFFERED=1
+
+# Logs
+StandardOutput=append:/opt/odi/logs/kb_daemon_stdout.log
+StandardError=append:/opt/odi/logs/kb_daemon_stderr.log
+
+# Limites de memoria para evitar OOM
+MemoryMax=1G
+MemoryHigh=800M
+
+[Install]
+WantedBy=multi-user.target
