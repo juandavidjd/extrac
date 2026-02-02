@@ -1,0 +1,457 @@
+{
+  "name": "ODI_v6_CORTEX",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "odi-ingest",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-ingest",
+      "name": "Webhook Ingest",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [-1200, 300],
+      "webhookId": "odi-ingest"
+    },
+    {
+      "parameters": {
+        "jsCode": "// ══════════════════════════════════════════════════════════════\n// ODI NORMALIZER v6.0 - Compatible WhatsApp + API\n// ══════════════════════════════════════════════════════════════\nconst input = $json.body || $json;\nconst timestamp = new Date().toISOString();\nconst eventId = 'ODI-' + Date.now().toString(36).toUpperCase();\n\n// ─────────────────────────────────────────────────────────────\n// WhatsApp Cloud API Format\n// ─────────────────────────────────────────────────────────────\nif (input.entry && input.entry[0]?.changes) {\n  const change = input.entry[0].changes[0];\n  const value = change?.value;\n  \n  // Verificar si es un mensaje real (no status update)\n  if (!value?.messages?.[0]) {\n    return [{ json: { \n      ignore: true, \n      reason: 'status_update_or_empty',\n      event_id: eventId \n    }}];\n  }\n  \n  const msg = value.messages[0];\n  const contact = value.contacts?.[0];\n  \n  // Extraer texto según tipo de mensaje\n  let text = '';\n  const msgType = msg.type;\n  \n  switch(msgType) {\n    case 'text':\n      text = msg.text?.body || '';\n      break;\n    case 'button':\n      text = msg.button?.text || '';\n      break;\n    case 'interactive':\n      text = msg.interactive?.button_reply?.title || \n             msg.interactive?.list_reply?.title || \n             msg.interactive?.list_reply?.description || '';\n      break;\n    case 'image':\n    case 'document':\n    case 'audio':\n    case 'video':\n      text = msg[msgType]?.caption || `[${msgType.toUpperCase()}]`;\n      break;\n    default:\n      text = `[${msgType.toUpperCase()}]`;\n  }\n  \n  return [{\n    json: {\n      ignore: false,\n      event_id: eventId,\n      canal: 'whatsapp',\n      from: msg.from,\n      phone_number_id: value.metadata?.phone_number_id,\n      message_id: msg.id,\n      message_type: msgType,\n      text: text,\n      original_text: text,\n      contact_name: contact?.profile?.name || 'Usuario',\n      timestamp: timestamp\n    }\n  }];\n}\n\n// ─────────────────────────────────────────────────────────────\n// API Direct Format\n// ─────────────────────────────────────────────────────────────\nif (input.text || input.message || input.query) {\n  const text = input.text || input.message || input.query;\n  \n  return [{\n    json: {\n      ignore: false,\n      event_id: eventId,\n      canal: input.canal || input.channel || 'api',\n      from: input.user_id || input.from || input.phone || 'api-user',\n      phone_number_id: input.phone_number_id || null,\n      message_id: input.message_id || eventId,\n      message_type: 'text',\n      text: text,\n      original_text: text,\n      contact_name: input.contact_name || input.name || 'Usuario API',\n      timestamp: timestamp,\n      metadata: input.metadata || {}\n    }\n  }];\n}\n\n// ─────────────────────────────────────────────────────────────\n// Unknown Format\n// ─────────────────────────────────────────────────────────────\nreturn [{ \n  json: { \n    ignore: true, \n    reason: 'unknown_format',\n    event_id: eventId,\n    received: JSON.stringify(input).substring(0, 500)\n  } \n}];"
+      },
+      "id": "normalizer",
+      "name": "Normalizer",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-960, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.ignore }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "check-ignore",
+      "name": "Ignorar?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-720, 300]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'ignored', reason: $json.reason, event_id: $json.event_id }) }}",
+        "options": {}
+      },
+      "id": "response-ignored",
+      "name": "OK Ignored",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [-480, 160]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ══════════════════════════════════════════════════════════════\n// DETECTOR DE IDIOMA + INTENT CLASSIFIER v6.0\n// ══════════════════════════════════════════════════════════════\nconst text = ($json.text || '').toLowerCase().trim();\nconst originalText = $json.text || '';\n\n// ─────────────────────────────────────────────────────────────\n// 1. DETECCIÓN DE IDIOMA\n// ─────────────────────────────────────────────────────────────\nconst langPatterns = {\n  EN: {\n    patterns: /\\b(hello|hi|hey|good morning|good afternoon|do you have|looking for|need|want|please|thank|thanks|yes|no|price|how much|brake|filter|chain|oil|part|spare|motorcycle|bike)\\b/gi,\n    chars: /[]/\n  },\n  PT: {\n    patterns: /\\b(olá|oi|bom dia|boa tarde|boa noite|vocês|têm|tenho|preciso|quero|obrigado|obrigada|sim|não|preço|quanto|freio|filtro|corrente|óleo|peça|moto|motocicleta)\\b/gi,\n    chars: /[ãõçêâô]/\n  },\n  ES: {\n    patterns: /\\b(hola|buenos|buenas|buen día|tienen|tengo|necesito|quiero|busco|gracias|sí|no|precio|cuánto|cuanto|freno|filtro|cadena|aceite|pieza|repuesto|moto|motocicleta|pastilla)\\b/gi,\n    chars: /[ñáéíóú¿¡]/\n  }\n};\n\nlet detectedLang = 'ES'; // Default\nlet maxScore = 0;\nlet langScores = {};\n\nfor (const [lang, config] of Object.entries(langPatterns)) {\n  const patternMatches = (text.match(config.patterns) || []).length;\n  const charMatches = (text.match(config.chars) || []).length;\n  const score = patternMatches * 2 + charMatches * 3;\n  langScores[lang] = score;\n  \n  if (score > maxScore) {\n    maxScore = score;\n    detectedLang = lang;\n  }\n}\n\n// Portugués tiene caracteres muy distintivos\nif (/[ãõ]/.test(text)) detectedLang = 'PT';\n\nconst needsTranslation = detectedLang !== 'ES';\n\n// ─────────────────────────────────────────────────────────────\n// 2. EXTRACCIÓN DE ENTIDADES\n// ─────────────────────────────────────────────────────────────\nconst entities = {};\n\n// Marcas de motos\nconst marcas = ['yamaha', 'honda', 'suzuki', 'kawasaki', 'bajaj', 'pulsar', 'ktm', 'tvs', 'akt', 'hero', 'auteco', 'victory', 'kymco', 'sym', 'piaggio', 'vespa', 'benelli', 'royal enfield', 'cfmoto', 'zontes', 'um', 'ava', 'jialing', 'keller', 'motomel', 'zanella', 'corven', 'mondial', 'gilera'];\nfor (const m of marcas) {\n  if (text.includes(m)) { \n    entities.marca = m.toUpperCase(); \n    break; \n  }\n}\n\n// Modelos\nconst modelos = ['fz', 'fz16', 'fz25', 'mt', 'mt03', 'mt07', 'mt09', 'r15', 'r3', 'r6', 'r1', 'nmax', 'xmax', 'bws', 'xtz', 'ybr', 'fazer', 'crypton', 'cb', 'cbr', 'crf', 'xr', 'xl', 'cg', 'titan', 'fan', 'ninja', 'z', 'versys', 'duke', 'rc', 'dominar', 'ns', 'rs', 'as', 'discover', 'boxer', 'platino', 'ct100', 'gixxer', 'gsxr', 'hayabusa', 'agility', 'like', 'twist'];\nfor (const m of modelos) {\n  if (text.includes(m)) { \n    entities.modelo = m.toUpperCase(); \n    break; \n  }\n}\n\n// Año (1990-2029)\nconst yearMatch = text.match(/\\b(19[89]\\d|20[0-2]\\d)\\b/);\nif (yearMatch) entities.year = yearMatch[0];\n\n// Cilindraje\nconst ccMatch = text.match(/\\b(\\d{2,4})\\s*cc\\b/i);\nif (ccMatch) entities.cilindraje = ccMatch[1] + 'cc';\n\n// Repuestos (multi-idioma)\nconst repuestosMap = {\n  // Español\n  'pastilla': 'pastilla de freno', 'freno': 'freno', 'filtro': 'filtro', \n  'aceite': 'aceite', 'cadena': 'cadena', 'piñon': 'piñón', 'piñón': 'piñón',\n  'corona': 'corona', 'kit': 'kit de arrastre', 'llanta': 'llanta', \n  'bateria': 'batería', 'batería': 'batería', 'faro': 'faro', 'farola': 'farola',\n  'espejo': 'espejo', 'retrovisor': 'retrovisor', 'cable': 'cable', \n  'clutch': 'clutch', 'embrague': 'embrague', 'suspension': 'suspensión',\n  'amortiguador': 'amortiguador', 'rodamiento': 'rodamiento', \n  'empaque': 'empaque', 'piston': 'pistón', 'pistón': 'pistón',\n  'biela': 'biela', 'cigueñal': 'cigüeñal', 'cigüeñal': 'cigüeñal',\n  'carburador': 'carburador', 'bujia': 'bujía', 'bujía': 'bujía',\n  'bobina': 'bobina', 'cdi': 'CDI', 'regulador': 'regulador',\n  // Inglés\n  'brake': 'pastilla de freno', 'pad': 'pastilla', 'filter': 'filtro',\n  'oil': 'aceite', 'chain': 'cadena', 'tire': 'llanta', 'tyre': 'llanta',\n  'battery': 'batería', 'mirror': 'espejo', 'clutch': 'clutch',\n  'piston': 'pistón', 'spark plug': 'bujía',\n  // Portugués  \n  'freio': 'pastilla de freno', 'filtro': 'filtro', 'óleo': 'aceite',\n  'corrente': 'cadena', 'pneu': 'llanta', 'bateria': 'batería',\n  'espelho': 'espejo', 'embreagem': 'embrague', 'vela': 'bujía'\n};\n\nfor (const [key, value] of Object.entries(repuestosMap)) {\n  if (text.includes(key)) {\n    entities.repuesto = value;\n    break;\n  }\n}\n\n// ─────────────────────────────────────────────────────────────\n// 3. CLASIFICACIÓN DE INTENT\n// ─────────────────────────────────────────────────────────────\nlet intent = 'GENERAL';\nlet goToCortex = false;\nlet confidence = 0.5;\n\n// FITMENT/BÚSQUEDA - Tiene entidades de producto\nif (entities.repuesto || entities.marca || entities.modelo || entities.cilindraje) {\n  intent = 'FITMENT';\n  goToCortex = true;\n  confidence = 0.9;\n}\n// SALUDO\nelse if (/^(hola|buenos|buenas|hi|hey|hello|oi|olá|bom dia|good morning)/i.test(text)) {\n  intent = 'SALUDO';\n  confidence = 0.95;\n}\n// PRECIO\nelse if (/\\b(precio|cuanto|cuánto|cuesta|vale|price|how much|quanto|preço)\\b/i.test(text)) {\n  intent = 'PRECIO';\n  goToCortex = true;\n  confidence = 0.8;\n}\n// COMPRA\nelse if (/\\b(comprar|ordenar|pedir|quiero|necesito|buy|order|want|need|comprar|quero)\\b/i.test(text)) {\n  intent = 'COMPRA';\n  goToCortex = true;\n  confidence = 0.8;\n}\n// ESTADO PEDIDO\nelse if (/\\b(pedido|orden|envio|envío|tracking|rastreo|order|shipping)\\b/i.test(text)) {\n  intent = 'ESTADO_PEDIDO';\n  confidence = 0.85;\n}\n// SOPORTE\nelse if (/\\b(ayuda|problema|help|support|ajuda|problema|error|falla)\\b/i.test(text)) {\n  intent = 'SOPORTE';\n  confidence = 0.8;\n}\n// Si el texto es largo, probablemente sea una consulta\nelse if (text.length > 30) {\n  intent = 'CONSULTA';\n  goToCortex = true;\n  confidence = 0.6;\n}\n\nreturn [{\n  json: {\n    ...$json,\n    detected_lang: detectedLang,\n    lang_scores: langScores,\n    needs_translation: needsTranslation,\n    intent: intent,\n    intent_confidence: confidence,\n    entities: entities,\n    go_to_cortex: goToCortex,\n    has_entities: Object.keys(entities).length > 0\n  }\n}];"
+      },
+      "id": "classifier",
+      "name": "Clasificador",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-480, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.needs_translation }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "check-translation",
+      "name": "Traducir?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [-240, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-free.deepl.com/v2/translate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "DeepL-Auth-Key {{ $env.DEEPL_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": [{{ JSON.stringify($json.text) }}],\n  \"target_lang\": \"ES\"\n}",
+        "options": { "timeout": 10000 }
+      },
+      "id": "deepl-translate",
+      "name": "DeepL Traducir",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [0, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aplicar traducción o mantener original si falló\nconst prevData = $('Clasificador').item.json;\nlet translatedText = prevData.text;\nlet translationSuccess = false;\n\ntry {\n  if ($json.translations && $json.translations[0]) {\n    translatedText = $json.translations[0].text;\n    translationSuccess = true;\n  }\n} catch (e) {\n  // Mantener texto original\n}\n\nreturn [{\n  json: {\n    ...prevData,\n    text: translatedText,\n    text_es: translatedText,\n    translation_applied: translationSuccess\n  }\n}];"
+      },
+      "id": "apply-translation",
+      "name": "Aplicar Traducción",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sin traducción necesaria\nreturn [{\n  json: {\n    ...$json,\n    text_es: $json.text,\n    translation_applied: false\n  }\n}];"
+      },
+      "id": "no-translation",
+      "name": "Sin Traducción",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [0, 500]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": { "values": [{ "field1": "event_id", "field2": "event_id" }] },
+        "options": {}
+      },
+      "id": "merge-translation",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [480, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.go_to_cortex }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "check-cortex",
+      "name": "Usar Cortex?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:8803/query",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"question\": {{ JSON.stringify($json.text_es || $json.text) }},\n  \"voice\": \"tony\",\n  \"k\": 5,\n  \"include_sources\": true\n}",
+        "options": { "timeout": 30000 }
+      },
+      "id": "cortex-query",
+      "name": "ODI Cortex",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [960, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// ══════════════════════════════════════════════════════════════\n// FORMATEAR RESPUESTA CORTEX\n// ══════════════════════════════════════════════════════════════\nconst prevData = $('Usar Cortex?').item.json;\nconst cortexResponse = $json;\n\nlet response_es = '';\nlet cortexSuccess = false;\nlet voice = 'tony';\nlet lobesUsed = [];\nlet sources = [];\n\ntry {\n  if (cortexResponse.answer) {\n    response_es = cortexResponse.answer;\n    voice = cortexResponse.voice || 'tony';\n    lobesUsed = cortexResponse.lobe_used || [];\n    sources = cortexResponse.sources || [];\n    cortexSuccess = true;\n  } else if (cortexResponse.error) {\n    response_es = 'Disculpa, tuve un problema buscando la información. ¿Podrías reformular tu pregunta?';\n  } else {\n    response_es = 'No encontré información específica sobre eso. ¿Puedes darme más detalles sobre la moto o el repuesto que necesitas?';\n  }\n} catch (e) {\n  response_es = 'Hubo un error procesando tu consulta. Por favor intenta de nuevo.';\n}\n\n// Agregar fuentes si existen\nif (sources.length > 0 && cortexSuccess) {\n  const sourceList = sources.slice(0, 3).map(s => s.source || 'documento').join(', ');\n  // Solo agregar si no es muy largo\n  if (response_es.length < 1500) {\n    response_es += `\\n\\n📚 Fuentes: ${sourceList}`;\n  }\n}\n\nreturn [{\n  json: {\n    ...prevData,\n    response_es: response_es,\n    cortex_success: cortexSuccess,\n    cortex_voice: voice,\n    cortex_lobes: lobesUsed,\n    cortex_sources: sources,\n    needs_response_translation: prevData.detected_lang !== 'ES'\n  }\n}];"
+      },
+      "id": "format-cortex",
+      "name": "Formatear Cortex",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ══════════════════════════════════════════════════════════════\n// RESPUESTAS GENERALES (sin Cortex)\n// ══════════════════════════════════════════════════════════════\nconst data = $json;\nconst intent = data.intent;\nconst contact = data.contact_name || 'Usuario';\nconst entities = data.entities || {};\n\nlet response_es = '';\n\nswitch(intent) {\n  case 'SALUDO':\n    const hora = new Date().getHours();\n    let saludo = 'Hola';\n    if (hora < 12) saludo = 'Buenos días';\n    else if (hora < 18) saludo = 'Buenas tardes';\n    else saludo = 'Buenas noches';\n    \n    response_es = `¡${saludo} ${contact}! 👋\\n\\nSoy ODI, tu asistente especializado en repuestos de motos.\\n\\n¿En qué puedo ayudarte hoy?\\n\\n💡 Tip: Dime la marca, modelo y año de tu moto, junto con el repuesto que necesitas.`;\n    break;\n    \n  case 'ESTADO_PEDIDO':\n    response_es = `Para consultar el estado de tu pedido necesito:\\n\\n📦 Número de orden\\n📱 O el número de teléfono con el que hiciste la compra\\n\\n¿Tienes alguno de estos datos?`;\n    break;\n    \n  case 'SOPORTE':\n    response_es = `Entiendo que necesitas ayuda. 🤝\\n\\nPor favor cuéntame:\\n\\n1. ¿Cuál es el problema?\\n2. ¿Tienes un número de pedido relacionado?\\n\\nHaré lo posible por ayudarte.`;\n    break;\n    \n  case 'PRECIO':\n    response_es = `Para darte precios precisos necesito saber:\\n\\n🏍️ Marca y modelo de tu moto\\n📅 Año\\n🔧 Qué repuesto necesitas\\n\\nEjemplo: \"Pastillas de freno para Yamaha FZ 2020\"`;\n    break;\n    \n  default:\n    response_es = `Soy ODI, especialista en repuestos de motos. 🏍️\\n\\nPuedo ayudarte a:\\n\\n🔍 Buscar repuestos compatibles\\n💰 Consultar precios\\n📦 Rastrear pedidos\\n\\nDime qué marca, modelo y año de moto tienes, y qué repuesto necesitas.`;\n}\n\nreturn [{\n  json: {\n    ...data,\n    response_es: response_es,\n    cortex_success: false,\n    cortex_voice: 'ramona',\n    cortex_lobes: [],\n    cortex_sources: [],\n    needs_response_translation: data.detected_lang !== 'ES'\n  }\n}];"
+      },
+      "id": "general-response",
+      "name": "Respuesta General",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 500]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": { "values": [{ "field1": "event_id", "field2": "event_id" }] },
+        "options": {}
+      },
+      "id": "merge-responses",
+      "name": "Merge Respuestas",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [1440, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.needs_response_translation }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "check-response-translation",
+      "name": "Traducir Respuesta?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1680, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api-free.deepl.com/v2/translate",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "Authorization", "value": "DeepL-Auth-Key {{ $env.DEEPL_API_KEY }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": [{{ JSON.stringify($json.response_es) }}],\n  \"target_lang\": {{ JSON.stringify($json.detected_lang) }}\n}",
+        "options": { "timeout": 10000 }
+      },
+      "id": "deepl-response",
+      "name": "DeepL Respuesta",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1920, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aplicar traducción de respuesta\nconst prevData = $('Traducir Respuesta?').item.json;\nlet response = prevData.response_es;\n\ntry {\n  if ($json.translations && $json.translations[0]) {\n    response = $json.translations[0].text;\n  }\n} catch (e) {\n  // Mantener respuesta en español\n}\n\nreturn [{\n  json: {\n    ...prevData,\n    response: response,\n    response_translated: true\n  }\n}];"
+      },
+      "id": "apply-response-translation",
+      "name": "Aplicar Trad. Resp.",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2160, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Sin traducción de respuesta\nreturn [{\n  json: {\n    ...$json,\n    response: $json.response_es,\n    response_translated: false\n  }\n}];"
+      },
+      "id": "no-response-translation",
+      "name": "Resp. Sin Traducir",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1920, 500]
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "mergeByFields": { "values": [{ "field1": "event_id", "field2": "event_id" }] },
+        "options": {}
+      },
+      "id": "merge-final",
+      "name": "Merge Final",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [2400, 400]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "version": 2 },
+          "combinator": "and",
+          "conditions": [
+            {
+              "leftValue": "={{ $json.canal }}",
+              "rightValue": "whatsapp",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ]
+        }
+      },
+      "id": "check-whatsapp",
+      "name": "Es WhatsApp?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2640, 400]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/v18.0/{{ $json.phone_number_id }}/messages",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"messaging_product\": \"whatsapp\",\n  \"recipient_type\": \"individual\",\n  \"to\": {{ JSON.stringify($json.from) }},\n  \"type\": \"text\",\n  \"text\": {\n    \"preview_url\": false,\n    \"body\": {{ JSON.stringify($json.response) }}\n  }\n}",
+        "options": { "timeout": 15000 }
+      },
+      "id": "send-whatsapp",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2880, 300],
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ status: 'ok_whatsapp', event_id: $json.event_id, wa_sent: true }) }}",
+        "options": {}
+      },
+      "id": "response-whatsapp",
+      "name": "OK WhatsApp",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3120, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ══════════════════════════════════════════════════════════════\n// PREPARAR RESPUESTA API\n// ══════════════════════════════════════════════════════════════\nconst data = $json;\n\nreturn [{\n  json: {\n    status: 'ok',\n    event_id: data.event_id,\n    \n    // Input\n    input: {\n      text: data.original_text,\n      canal: data.canal,\n      from: data.from,\n      detected_lang: data.detected_lang\n    },\n    \n    // Processing\n    processing: {\n      intent: data.intent,\n      intent_confidence: data.intent_confidence,\n      entities: data.entities,\n      translation_applied: data.translation_applied || false,\n      text_es: data.text_es\n    },\n    \n    // Cortex\n    cortex: {\n      used: data.cortex_success || false,\n      voice: data.cortex_voice,\n      lobes: data.cortex_lobes,\n      sources_count: (data.cortex_sources || []).length\n    },\n    \n    // Response\n    response: data.response,\n    response_es: data.response_es,\n    response_translated: data.response_translated || false,\n    \n    // Metadata\n    timestamp: data.timestamp\n  }\n}];"
+      },
+      "id": "prepare-api-response",
+      "name": "Preparar API Response",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2880, 500]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "response-api",
+      "name": "OK API",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3120, 500]
+    }
+  ],
+  "connections": {
+    "Webhook Ingest": {
+      "main": [[{ "node": "Normalizer", "type": "main", "index": 0 }]]
+    },
+    "Normalizer": {
+      "main": [[{ "node": "Ignorar?", "type": "main", "index": 0 }]]
+    },
+    "Ignorar?": {
+      "main": [
+        [{ "node": "OK Ignored", "type": "main", "index": 0 }],
+        [{ "node": "Clasificador", "type": "main", "index": 0 }]
+      ]
+    },
+    "Clasificador": {
+      "main": [[{ "node": "Traducir?", "type": "main", "index": 0 }]]
+    },
+    "Traducir?": {
+      "main": [
+        [{ "node": "DeepL Traducir", "type": "main", "index": 0 }],
+        [{ "node": "Sin Traducción", "type": "main", "index": 0 }]
+      ]
+    },
+    "DeepL Traducir": {
+      "main": [[{ "node": "Aplicar Traducción", "type": "main", "index": 0 }]]
+    },
+    "Aplicar Traducción": {
+      "main": [[{ "node": "Merge", "type": "main", "index": 0 }]]
+    },
+    "Sin Traducción": {
+      "main": [[{ "node": "Merge", "type": "main", "index": 1 }]]
+    },
+    "Merge": {
+      "main": [[{ "node": "Usar Cortex?", "type": "main", "index": 0 }]]
+    },
+    "Usar Cortex?": {
+      "main": [
+        [{ "node": "ODI Cortex", "type": "main", "index": 0 }],
+        [{ "node": "Respuesta General", "type": "main", "index": 0 }]
+      ]
+    },
+    "ODI Cortex": {
+      "main": [[{ "node": "Formatear Cortex", "type": "main", "index": 0 }]]
+    },
+    "Formatear Cortex": {
+      "main": [[{ "node": "Merge Respuestas", "type": "main", "index": 0 }]]
+    },
+    "Respuesta General": {
+      "main": [[{ "node": "Merge Respuestas", "type": "main", "index": 1 }]]
+    },
+    "Merge Respuestas": {
+      "main": [[{ "node": "Traducir Respuesta?", "type": "main", "index": 0 }]]
+    },
+    "Traducir Respuesta?": {
+      "main": [
+        [{ "node": "DeepL Respuesta", "type": "main", "index": 0 }],
+        [{ "node": "Resp. Sin Traducir", "type": "main", "index": 0 }]
+      ]
+    },
+    "DeepL Respuesta": {
+      "main": [[{ "node": "Aplicar Trad. Resp.", "type": "main", "index": 0 }]]
+    },
+    "Aplicar Trad. Resp.": {
+      "main": [[{ "node": "Merge Final", "type": "main", "index": 0 }]]
+    },
+    "Resp. Sin Traducir": {
+      "main": [[{ "node": "Merge Final", "type": "main", "index": 1 }]]
+    },
+    "Merge Final": {
+      "main": [[{ "node": "Es WhatsApp?", "type": "main", "index": 0 }]]
+    },
+    "Es WhatsApp?": {
+      "main": [
+        [{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }],
+        [{ "node": "Preparar API Response", "type": "main", "index": 0 }]
+      ]
+    },
+    "Enviar WhatsApp": {
+      "main": [[{ "node": "OK WhatsApp", "type": "main", "index": 0 }]]
+    },
+    "Preparar API Response": {
+      "main": [[{ "node": "OK API", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "odi-v6-cortex",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "odi-production"
+  },
+  "id": "ODI_v6_CORTEX",
+  "tags": ["odi", "production", "cortex", "v6"]
+}
