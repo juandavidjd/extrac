@@ -1,0 +1,169 @@
+# ============================================================================
+# PLANTILLA DE PERFIL ODI
+# Copiar este archivo como <empresa>.yaml y completar los campos
+# ============================================================================
+
+# Informacion de la empresa
+empresa:
+  nombre: "NOMBRE_EMPRESA"           # Nombre corto para logs
+  nombre_legal: "Razon Social SAS"   # Nombre legal completo
+  nit: "123456789-0"                 # NIT o identificacion fiscal
+  prefijo_sku: "EMP"                 # Prefijo para SKUs (3-4 chars)
+  vendor: "NOMBRE_EMPRESA"           # Vendor en Shopify
+  industria: "autopartes_moto"       # autopartes_moto, autopartes_auto, textiles, etc.
+  region: "CO"                       # Codigo pais ISO
+
+# Configuracion de archivos de entrada
+archivos:
+  csv_separator: ";"                 # Separador CSV (; o ,)
+  encoding: "utf-8-sig"              # Encoding (utf-8-sig para Excel)
+  base_datos_pattern: "Base_Datos*.csv"
+  lista_precios_pattern: "Lista_Precios*.csv"
+  directorio_default: "/ruta/a/datos/empresa"
+
+# Configuracion de procesamiento
+procesamiento:
+  price_margin: 1.0                  # Multiplicador de precio (1.0 = sin cambio)
+  moneda: "COP"                      # Moneda (COP, USD, EUR)
+  generar_json: true
+  generar_csv_normalizer: true
+
+# Mapeo de columnas de entrada a campos ODI
+# Lista de nombres posibles para cada campo (en orden de prioridad)
+mapeo_columnas:
+  codigo:
+    - "CODIGO"
+    - "codigo"
+    - "SKU"
+    - "sku"
+    - "REFERENCIA"
+  descripcion:
+    - "DESCRIPCION"
+    - "descripcion"
+    - "Title"
+    - "NOMBRE"
+    - "PRODUCTO"
+  precio:
+    - "PRECIO"
+    - "precio"
+    - "Price"
+    - "PRICE"
+    - "VALOR"
+  imagen:
+    - "Imagen_URL_Origen"
+    - "imagen"
+    - "Image Src"
+    - "IMAGE"
+    - "URL_IMAGEN"
+  url_producto:
+    - "URL_Producto"
+    - "url"
+    - "URL"
+    - "LINK"
+
+# ============================================================================
+# TAXONOMIA DE MARCAS (para industria moto/auto)
+# Eliminar o modificar segun industria
+# ============================================================================
+
+marcas_moto:
+  # Prefijos cortos usados en catalogos
+  prefijos:
+    "H.": "HONDA"
+    "Y.": "YAMAHA"
+    # Agregar mas...
+
+  # Palabras clave que identifican marcas
+  keywords:
+    "PULSAR": "BAJAJ"
+    "APACHE": "TVS"
+    # Agregar mas...
+
+  # Lista de marcas completas
+  marcas_completas:
+    - "HONDA"
+    - "YAMAHA"
+    - "SUZUKI"
+    # Agregar mas...
+
+# ============================================================================
+# TAXONOMIA DE MODELOS (para industria moto/auto)
+# Eliminar o modificar segun industria
+# ============================================================================
+
+modelos_moto:
+  honda:
+    - "XR150"
+    - "CB190R"
+    # Agregar mas...
+  yamaha:
+    - "FZ25"
+    - "MT03"
+    # Agregar mas...
+  # Agregar mas marcas...
+
+# ============================================================================
+# CILINDRAJES (para industria moto)
+# Eliminar si no aplica
+# ============================================================================
+
+cilindrajes:
+  "125":
+    - "125"
+    - "XR125"
+    - "CBF125"
+  "150":
+    - "150"
+    - "XR150"
+    - "CBF150"
+  # Agregar mas...
+
+# ============================================================================
+# TAXONOMIA DE CATEGORIAS
+# Esta seccion es OBLIGATORIA para cualquier industria
+# ============================================================================
+
+categorias:
+  # Ejemplo para industria moto
+  motor:
+    nombre: "MOTOR"
+    keywords:
+      - "CILINDRO"
+      - "PISTON"
+      - "BIELA"
+      # Agregar mas...
+
+  electrico:
+    nombre: "ELECTRICO"
+    keywords:
+      - "CDI"
+      - "BOBINA"
+      - "FARO"
+      # Agregar mas...
+
+  transmision:
+    nombre: "TRANSMISION"
+    keywords:
+      - "CADENA"
+      - "CLUTCH"
+      - "CATALINA"
+      # Agregar mas...
+
+  # Agregar mas categorias segun industria...
+
+  # Categoria por defecto (siempre incluir)
+  otros:
+    nombre: "OTROS"
+    keywords: []
+
+# ============================================================================
+# CONFIGURACION SHOPIFY (opcional)
+# ============================================================================
+
+shopify:
+  store: "tienda.myshopify.com"
+  default_status: "draft"
+  collection_rules:
+    - field: "vendor"
+      relation: "equals"
+      condition: "NOMBRE_EMPRESA"
