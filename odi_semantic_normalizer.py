@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ODI Semantic Normalizer v1.0
+ODI Semantic Normalizer v1.1
 ============================
 Capa de normalización semántica para el sistema ODI.
 
@@ -12,8 +12,13 @@ Responsabilidades:
 - Herencia de imágenes + precios
 - Parsing de fitment (marca/modelo/cilindraje/año)
 
+v1.1 Changes:
+- Added persistent SQLite cache for embeddings (~/.odi/cache/embeddings_cache.db)
+- Machine-friendly ODI_STATS output line for robust parsing
+- sklearn AgglomerativeClustering compatibility (metric/affinity)
+
 Autor: ODI Team
-Versión: 1.0
+Versión: 1.1
 """
 
 import os
@@ -22,6 +27,7 @@ import json
 import re
 import argparse
 import hashlib
+import sqlite3
 from pathlib import Path
 from dataclasses import dataclass, field, asdict
 from typing import List, Dict, Optional, Tuple, Set, Any
@@ -345,13 +351,77 @@ class FitmentParser:
 
 
 # =============================================================================
+# EMBEDDING CACHE (SQLite)
+# =============================================================================
+
+# Default cache location
+DEFAULT_CACHE_DIR = Path.home() / ".odi" / "cache"
+DEFAULT_CACHE_DB = DEFAULT_CACHE_DIR / "embeddings_cache.db"
+
+
+class EmbeddingCache:
+    """Cache persistente de embeddings usando SQLite."""
+
+    def __init__(self, db_path: Optional[Path] = None):
+        self.db_path = db_path or DEFAULT_CACHE_DB
+        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._init_db()
+
+    def _init_db(self):
+        """Inicializa la base de datos."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS embeddings (
+                    text_hash TEXT PRIMARY KEY,
+                    model TEXT,
+                    dimensions INTEGER,
+                    embedding BLOB,
+                    created_at TEXT
+                )
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_model ON embeddings(model)")
+            conn.commit()
+
+    def get(self, text_hash: str, model: str) -> Optional[List[float]]:
+        """Obtiene embedding del cache."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute(
+                "SELECT embedding FROM embeddings WHERE text_hash = ? AND model = ?",
+                (text_hash, model)
+            )
+            row = cursor.fetchone()
+            if row:
+                # Deserialize from JSON blob
+                return json.loads(row[0])
+            return None
+
+    def set(self, text_hash: str, model: str, dimensions: int, embedding: List[float]):
+        """Guarda embedding en cache."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.execute(
+                """INSERT OR REPLACE INTO embeddings
+                   (text_hash, model, dimensions, embedding, created_at)
+                   VALUES (?, ?, ?, ?, ?)""",
+                (text_hash, model, dimensions, json.dumps(embedding), datetime.now().isoformat())
+            )
+            conn.commit()
+
+    def get_stats(self) -> Dict[str, int]:
+        """Obtiene estadísticas del cache."""
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.execute("SELECT COUNT(*) FROM embeddings")
+            count = cursor.fetchone()[0]
+            return {"total_cached": count, "db_path": str(self.db_path)}
+
+
+# =============================================================================
 # EMBEDDING GENERATOR
 # =============================================================================
 
 class EmbeddingGenerator:
-    """Genera embeddings usando OpenAI."""
+    """Genera embeddings usando OpenAI con cache persistente."""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, cache_db: Optional[Path] = None):
         if not HAS_OPENAI:
             raise RuntimeError("OpenAI no está instalado")
 
@@ -362,7 +432,12 @@ class EmbeddingGenerator:
         self.client = OpenAI(api_key=self.api_key)
         self.model = EMBEDDING_MODEL
         self.dimensions = EMBEDDING_DIMENSIONS
-        self.cache: Dict[str, List[float]] = {}
+
+        # Persistent cache (SQLite) + in-memory cache for session
+        self.persistent_cache = EmbeddingCache(cache_db)
+        self.memory_cache: Dict[str, List[float]] = {}
+        self.cache_hits = 0
+        self.cache_misses = 0
 
     def _create_text_for_embedding(self, row: pd.Series) -> str:
         """Crea texto combinado para embedding."""
@@ -391,11 +466,23 @@ class EmbeddingGenerator:
         if not text.strip():
             return [0.0] * self.dimensions
 
-        # Cache lookup
+        # Cache lookup (memory first, then persistent)
         cache_key = hashlib.md5(text.encode()).hexdigest()
-        if cache_key in self.cache:
-            return self.cache[cache_key]
 
+        # 1. Check memory cache
+        if cache_key in self.memory_cache:
+            self.cache_hits += 1
+            return self.memory_cache[cache_key]
+
+        # 2. Check persistent cache
+        cached = self.persistent_cache.get(cache_key, self.model)
+        if cached:
+            self.memory_cache[cache_key] = cached  # Warm up memory cache
+            self.cache_hits += 1
+            return cached
+
+        # 3. Generate new embedding
+        self.cache_misses += 1
         try:
             response = self.client.embeddings.create(
                 input=text,
@@ -403,46 +490,78 @@ class EmbeddingGenerator:
                 dimensions=self.dimensions
             )
             embedding = response.data[0].embedding
-            self.cache[cache_key] = embedding
+
+            # Save to both caches
+            self.memory_cache[cache_key] = embedding
+            self.persistent_cache.set(cache_key, self.model, self.dimensions, embedding)
+
             return embedding
         except Exception as e:
             print(f"⚠️  Error generando embedding: {e}")
             return [0.0] * self.dimensions
 
     def generate_batch(self, texts: List[str], batch_size: int = 100) -> List[List[float]]:
-        """Genera embeddings en batch."""
-        all_embeddings = []
+        """Genera embeddings en batch con cache check."""
+        all_embeddings: List[Optional[List[float]]] = [None] * len(texts)
 
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
-
-            # Filtrar textos vacíos
-            non_empty_indices = [j for j, t in enumerate(batch) if t.strip()]
-            non_empty_texts = [batch[j] for j in non_empty_indices]
-
-            if not non_empty_texts:
-                all_embeddings.extend([[0.0] * self.dimensions] * len(batch))
+        # First pass: check cache for all texts
+        texts_to_generate = []  # (original_index, text, cache_key)
+        for i, text in enumerate(texts):
+            if not text.strip():
+                all_embeddings[i] = [0.0] * self.dimensions
                 continue
+
+            cache_key = hashlib.md5(text.encode()).hexdigest()
+
+            # Check memory cache
+            if cache_key in self.memory_cache:
+                all_embeddings[i] = self.memory_cache[cache_key]
+                self.cache_hits += 1
+                continue
+
+            # Check persistent cache
+            cached = self.persistent_cache.get(cache_key, self.model)
+            if cached:
+                all_embeddings[i] = cached
+                self.memory_cache[cache_key] = cached
+                self.cache_hits += 1
+                continue
+
+            # Need to generate
+            texts_to_generate.append((i, text, cache_key))
+
+        if texts_to_generate:
+            print(f"   📦 Cache: {self.cache_hits} hits, {len(texts_to_generate)} to generate")
+
+        # Second pass: generate missing embeddings in batches
+        for batch_start in range(0, len(texts_to_generate), batch_size):
+            batch = texts_to_generate[batch_start:batch_start + batch_size]
+            batch_texts = [t[1] for t in batch]
 
             try:
                 response = self.client.embeddings.create(
-                    input=non_empty_texts,
+                    input=batch_texts,
                     model=self.model,
                     dimensions=self.dimensions
                 )
 
-                # Mapear respuestas a índices originales
-                batch_embeddings = [[0.0] * self.dimensions] * len(batch)
-                for j, idx in enumerate(non_empty_indices):
-                    batch_embeddings[idx] = response.data[j].embedding
+                for j, (orig_idx, text, cache_key) in enumerate(batch):
+                    embedding = response.data[j].embedding
+                    all_embeddings[orig_idx] = embedding
 
-                all_embeddings.extend(batch_embeddings)
+                    # Save to both caches
+                    self.memory_cache[cache_key] = embedding
+                    self.persistent_cache.set(cache_key, self.model, self.dimensions, embedding)
+                    self.cache_misses += 1
 
             except Exception as e:
-                print(f"⚠️  Error en batch {i//batch_size}: {e}")
-                all_embeddings.extend([[0.0] * self.dimensions] * len(batch))
+                print(f"⚠️  Error en batch {batch_start//batch_size}: {e}")
+                for orig_idx, _, _ in batch:
+                    if all_embeddings[orig_idx] is None:
+                        all_embeddings[orig_idx] = [0.0] * self.dimensions
 
-        return all_embeddings
+        # Ensure all embeddings are filled
+        return [e if e is not None else [0.0] * self.dimensions for e in all_embeddings]
 
     def generate_for_dataframe(self, df: pd.DataFrame) -> List[ProductEmbedding]:
         """Genera embeddings para un DataFrame de productos."""
@@ -456,7 +575,11 @@ class EmbeddingGenerator:
 
         print(f"📊 Generando embeddings para {len(texts)} productos...")
 
-        # Generar en batch
+        # Reset counters
+        self.cache_hits = 0
+        self.cache_misses = 0
+
+        # Generar en batch (with cache optimization)
         raw_embeddings = self.generate_batch(texts)
 
         # Crear objetos ProductEmbedding
@@ -470,6 +593,10 @@ class EmbeddingGenerator:
                 embedding=raw_embeddings[i]
             )
             embeddings.append(pe)
+
+        # Print cache stats
+        cache_stats = self.persistent_cache.get_stats()
+        print(f"   💾 Cache stats: {self.cache_hits} hits, {self.cache_misses} generated, {cache_stats['total_cached']} total in DB")
 
         return embeddings
 
@@ -709,15 +836,26 @@ class VariantDetector:
         # Matriz de embeddings
         embedding_matrix = np.array([e.embedding for e in embeddings])
 
-        # Clustering jerárquico
-        clustering = AgglomerativeClustering(
-            n_clusters=None,
-            distance_threshold=1 - self.threshold,
-            metric='cosine',
-            linkage='average'
-        )
-
-        labels = clustering.fit_predict(embedding_matrix)
+        # Clustering jerárquico with sklearn version compatibility
+        # sklearn >= 1.2 uses 'metric', older versions use 'affinity'
+        try:
+            # Try new sklearn API first (>= 1.2)
+            clustering = AgglomerativeClustering(
+                n_clusters=None,
+                distance_threshold=1 - self.threshold,
+                metric='cosine',
+                linkage='average'
+            )
+            labels = clustering.fit_predict(embedding_matrix)
+        except TypeError:
+            # Fallback to legacy sklearn API (< 1.2)
+            clustering = AgglomerativeClustering(
+                n_clusters=None,
+                distance_threshold=1 - self.threshold,
+                affinity='cosine',
+                linkage='average'
+            )
+            labels = clustering.fit_predict(embedding_matrix)
 
         # Agrupar por cluster
         cluster_groups = defaultdict(list)
@@ -937,7 +1075,7 @@ class SemanticNormalizer:
         start_time = datetime.now()
 
         print(f"\n{'='*60}")
-        print(f"🧠 ODI SEMANTIC NORMALIZER v1.0")
+        print(f"🧠 ODI SEMANTIC NORMALIZER v1.1")
         print(f"{'='*60}")
         print(f"📂 Input: {input_file}")
 
@@ -1168,7 +1306,10 @@ class SemanticNormalizer:
         print(f"   Familias creadas:       {result.families_created}")
         print(f"   Productos con fitment:  {result.products_with_fitment}")
         print(f"   Tiempo de proceso:      {result.processing_time_seconds:.2f}s")
-        print(f"{'='*60}\n")
+        print(f"{'='*60}")
+        # Machine-friendly line for parsing by orchestrator
+        print(f"ODI_STATS duplicates={result.duplicates_found} families={result.families_created} fitment={result.products_with_fitment} embeddings={result.embeddings_generated}")
+        print()
 
 
 # =============================================================================
@@ -1177,7 +1318,7 @@ class SemanticNormalizer:
 
 def main():
     parser = argparse.ArgumentParser(
-        description='ODI Semantic Normalizer v1.0 - Normalización semántica de catálogos',
+        description='ODI Semantic Normalizer v1.1 - Normalización semántica de catálogos',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Ejemplos:
