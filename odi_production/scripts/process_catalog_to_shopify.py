@@ -97,6 +97,27 @@ EMPRESA_CONFIG = {
         "tags_base": ["repuestos", "motos", "store"],
         "csv_separator": ";",
         "price_margin": 1.3
+    },
+    "Armotos": {
+        "shop_domain": "armotos.myshopify.com",
+        "vendor": "ARMOTOS",
+        "tags_base": ["repuestos", "motos", "armotos"],
+        "csv_separator": ";",
+        "price_margin": 1.28
+    },
+    "Vitton": {
+        "shop_domain": "vitton.myshopify.com",
+        "vendor": "VITTON",
+        "tags_base": ["repuestos", "motos", "vitton"],
+        "csv_separator": ";",
+        "price_margin": 1.25
+    },
+    "CBI": {
+        "shop_domain": "cbi.myshopify.com",
+        "vendor": "CBI MOTOS",
+        "tags_base": ["repuestos", "motos", "cbi"],
+        "csv_separator": ";",
+        "price_margin": 1.3
     }
 }
 
