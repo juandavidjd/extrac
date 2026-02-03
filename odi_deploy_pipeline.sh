@@ -92,6 +92,7 @@ deploy_scripts() {
     cp "$REPO_DIR"/odi_price_list_processor.py "$SCRIPTS_DIR/" 2>/dev/null || true
     cp "$REPO_DIR"/odi_catalog_enricher.py "$SCRIPTS_DIR/" 2>/dev/null || true
     cp "$REPO_DIR"/odi_pipeline_orchestrator.py "$SCRIPTS_DIR/" 2>/dev/null || true
+    cp "$REPO_DIR"/odi_semantic_normalizer.py "$SCRIPTS_DIR/" 2>/dev/null || true
     cp "$REPO_DIR"/odi_event_emitter.py "$SCRIPTS_DIR/" 2>/dev/null || true
 
     # Fix line endings
@@ -173,7 +174,7 @@ show_status() {
 
     # Check scripts
     echo "Scripts:"
-    for script in odi_vision_extractor_v3.py odi_price_list_processor.py odi_catalog_enricher.py odi_pipeline_orchestrator.py; do
+    for script in odi_vision_extractor_v3.py odi_price_list_processor.py odi_catalog_enricher.py odi_semantic_normalizer.py odi_pipeline_orchestrator.py; do
         if [ -f "$SCRIPTS_DIR/$script" ]; then
             echo "  ✓ $script"
         else
