@@ -1,0 +1,722 @@
+{
+  "timestamp": "2026-02-03T20:21:40.867669",
+  "total_products": 459,
+  "duplicates": [
+    {
+      "group_id": "DUP-0001",
+      "canonical": "YOK-00002",
+      "members": [
+        "YOK-00002",
+        "YOK-00106",
+        "YOK-00124",
+        "YOK-00157",
+        "YOK-00187"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7583333333333333
+    },
+    {
+      "group_id": "DUP-0002",
+      "canonical": "YOK-00007",
+      "members": [
+        "YOK-00007",
+        "YOK-00018",
+        "YOK-00038",
+        "YOK-00090",
+        "YOK-00115"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0003",
+      "canonical": "YOK-00011",
+      "members": [
+        "YOK-00011",
+        "YOK-00335",
+        "YOK-00356"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0004",
+      "canonical": "YOK-00028",
+      "members": [
+        "YOK-00028",
+        "YOK-00030",
+        "YOK-00152",
+        "YOK-00306"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7142857142857143
+    },
+    {
+      "group_id": "DUP-0005",
+      "canonical": "YOK-00048",
+      "members": [
+        "YOK-00048",
+        "YOK-00096",
+        "YOK-00150",
+        "YOK-00401"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0006",
+      "canonical": "YOK-00051",
+      "members": [
+        "YOK-00051",
+        "YOK-00292",
+        "YOK-00321"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0007",
+      "canonical": "YOK-00058",
+      "members": [
+        "YOK-00058",
+        "YOK-00198",
+        "YOK-00348"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0008",
+      "canonical": "YOK-00060",
+      "members": [
+        "YOK-00060",
+        "YOK-00111",
+        "YOK-00158",
+        "YOK-00178",
+        "YOK-00226"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0009",
+      "canonical": "YOK-00061",
+      "members": [
+        "YOK-00061",
+        "YOK-00135",
+        "YOK-00175",
+        "YOK-00215",
+        "YOK-00224"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7583333333333333
+    },
+    {
+      "group_id": "DUP-0010",
+      "canonical": "YOK-00063",
+      "members": [
+        "YOK-00063",
+        "YOK-00188",
+        "YOK-00251"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7388888888888889
+    },
+    {
+      "group_id": "DUP-0011",
+      "canonical": "YOK-00079",
+      "members": [
+        "YOK-00079",
+        "YOK-00305",
+        "YOK-00400"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0012",
+      "canonical": "YOK-00092",
+      "members": [
+        "YOK-00092",
+        "YOK-00343",
+        "YOK-00429"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0013",
+      "canonical": "YOK-00097",
+      "members": [
+        "YOK-00097",
+        "YOK-00163",
+        "YOK-00164",
+        "YOK-00199",
+        "YOK-00342"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7583333333333333
+    },
+    {
+      "group_id": "DUP-0014",
+      "canonical": "YOK-00100",
+      "members": [
+        "YOK-00100",
+        "YOK-00165",
+        "YOK-00174",
+        "YOK-00177",
+        "YOK-00269"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7583333333333333
+    },
+    {
+      "group_id": "DUP-0015",
+      "canonical": "YOK-00110",
+      "members": [
+        "YOK-00110",
+        "YOK-00449"
+      ],
+      "recommendation": "review",
+      "confidence": 1.0
+    },
+    {
+      "group_id": "DUP-0016",
+      "canonical": "YOK-00126",
+      "members": [
+        "YOK-00126",
+        "YOK-00296",
+        "YOK-00319"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0017",
+      "canonical": "YOK-00130",
+      "members": [
+        "YOK-00130",
+        "YOK-00142",
+        "YOK-00420"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0018",
+      "canonical": "YOK-00168",
+      "members": [
+        "YOK-00168",
+        "YOK-00398"
+      ],
+      "recommendation": "review",
+      "confidence": 0.8
+    },
+    {
+      "group_id": "DUP-0019",
+      "canonical": "YOK-00170",
+      "members": [
+        "YOK-00170",
+        "YOK-00375"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0020",
+      "canonical": "YOK-00171",
+      "members": [
+        "YOK-00171",
+        "YOK-00334",
+        "YOK-00440"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0021",
+      "canonical": "YOK-00208",
+      "members": [
+        "YOK-00208",
+        "YOK-00316",
+        "YOK-00345"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0022",
+      "canonical": "YOK-00213",
+      "members": [
+        "YOK-00213",
+        "YOK-00273"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0023",
+      "canonical": "YOK-00244",
+      "members": [
+        "YOK-00244",
+        "YOK-00338",
+        "YOK-00457"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0024",
+      "canonical": "YOK-00250",
+      "members": [
+        "YOK-00250",
+        "YOK-00357",
+        "YOK-00374",
+        "YOK-00422"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7142857142857143
+    },
+    {
+      "group_id": "DUP-0025",
+      "canonical": "YOK-00311",
+      "members": [
+        "YOK-00311",
+        "YOK-00333"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0026",
+      "canonical": "YOK-00359",
+      "members": [
+        "YOK-00359",
+        "YOK-00388"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    }
+  ],
+  "families": [
+    {
+      "family_id": "VFAM-0001",
+      "parent_sku": "YOK-00091",
+      "parent_nombre": "ACEITE MOTUL 7100 4T 10W40 SINTETICO 20L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0002",
+      "parent_sku": "YOK-00210",
+      "parent_nombre": "CASCO INTEGRAL LS2 FF800 STORM BLANCO TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0003",
+      "parent_sku": "YOK-00267",
+      "parent_nombre": "CASCO INTEGRAL SHAFT SH-881 BLANCO TALLA XXL",
+      "variant_count": 4,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0004",
+      "parent_sku": "YOK-00294",
+      "parent_nombre": "CASCO ABIERTO SHAFT SH-202 BLANCO TALLA XXL",
+      "variant_count": 4,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0005",
+      "parent_sku": "YOK-00020",
+      "parent_nombre": "ACEITE YAMALUBE 4T 20W50 20L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0006",
+      "parent_sku": "YOK-00021",
+      "parent_nombre": "CASCO ABIERTO SHAFT SH-202 ROJO TALLA XXL",
+      "variant_count": 4,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0007",
+      "parent_sku": "YOK-00323",
+      "parent_nombre": "CASCO JET LS2 OF558 SPHERE NEGRO MATE TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0008",
+      "parent_sku": "YOK-00363",
+      "parent_nombre": "ACEITE LIQUI MOLY 4T 10W40 20L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0009",
+      "parent_sku": "YOK-00053",
+      "parent_nombre": "CASCO JET LS2 OF558 SPHERE BLANCO TALLA XXL",
+      "variant_count": 4,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0010",
+      "parent_sku": "YOK-00035",
+      "parent_nombre": "CASCO MODULAR HJC RPHA 90 BLANCO TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0011",
+      "parent_sku": "YOK-00036",
+      "parent_nombre": "CADENA RK 428HSB 118L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0012",
+      "parent_sku": "YOK-00423",
+      "parent_nombre": "CASCO ABIERTO LS2 OF562 AIRFLOW NEGRO MATE TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0013",
+      "parent_sku": "YOK-00410",
+      "parent_nombre": "ACEITE HONDA GN4 10W30 20L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0014",
+      "parent_sku": "YOK-00054",
+      "parent_nombre": "CASCO MODULAR HJC RPHA 90 ROJO TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0015",
+      "parent_sku": "YOK-00055",
+      "parent_nombre": "CADENA DID 428VX ORO 124L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0016",
+      "parent_sku": "YOK-00413",
+      "parent_nombre": "ACEITE CASTROL ACTEVO 4T 20W50 20L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0017",
+      "parent_sku": "YOK-00057",
+      "parent_nombre": "CATALINA TRASERA JT 120L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0018",
+      "parent_sku": "YOK-00059",
+      "parent_nombre": "CASCO ABIERTO SHAFT SH-202 NEGRO MATE TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0019",
+      "parent_sku": "YOK-00216",
+      "parent_nombre": "CASCO INTEGRAL LS2 FF800 STORM ROJO TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0020",
+      "parent_sku": "YOK-00369",
+      "parent_nombre": "CASCO ABIERTO LS2 OF562 AIRFLOW BLANCO TALLA XXL",
+      "variant_count": 4,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0021",
+      "parent_sku": "YOK-00077",
+      "parent_nombre": "CASCO ABIERTO LS2 OF562 AIRFLOW ROJO TALLA XXL",
+      "variant_count": 4,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0022",
+      "parent_sku": "YOK-00233",
+      "parent_nombre": "CASCO CROSS SHAFT SH-MX200 BLANCO TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0023",
+      "parent_sku": "YOK-00381",
+      "parent_nombre": "CASCO MODULAR HJC RPHA 90 NEGRO MATE TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0024",
+      "parent_sku": "YOK-00200",
+      "parent_nombre": "CASCO JET LS2 OF558 SPHERE ROJO TALLA XXL",
+      "variant_count": 4,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0025",
+      "parent_sku": "YOK-00312",
+      "parent_nombre": "ACEITE MOTUL 3000 4T 20W50 MINERAL 20L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0026",
+      "parent_sku": "YOK-00098",
+      "parent_nombre": "ACEITE CASTROL POWER 1 4T 10W40 20L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0027",
+      "parent_sku": "YOK-00099",
+      "parent_nombre": "CADENA RK 520KRX ORO 118L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0028",
+      "parent_sku": "YOK-00107",
+      "parent_nombre": "KIT ARRASTRE RK 120L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0029",
+      "parent_sku": "YOK-00454",
+      "parent_nombre": "CASCO INTEGRAL LS2 FF800 STORM NEGRO MATE TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0030",
+      "parent_sku": "YOK-00112",
+      "parent_nombre": "CASCO CROSS LS2 MX437 FAST ROJO TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0031",
+      "parent_sku": "YOK-00211",
+      "parent_nombre": "CASCO CROSS LS2 MX437 FAST BLANCO TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0032",
+      "parent_sku": "YOK-00332",
+      "parent_nombre": "CASCO INTEGRAL SHAFT SH-881 ROJO TALLA XXL",
+      "variant_count": 4,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0033",
+      "parent_sku": "YOK-00281",
+      "parent_nombre": "ACEITE MOBIL SUPER MOTO 4T 20W50 20L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0034",
+      "parent_sku": "YOK-00169",
+      "parent_nombre": "CASCO INTEGRAL HJC I70 BLANCO TALLA XXL",
+      "variant_count": 4,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0035",
+      "parent_sku": "YOK-00252",
+      "parent_nombre": "ACEITE MOTUL 5100 4T 10W40 SEMI 20L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0036",
+      "parent_sku": "YOK-00256",
+      "parent_nombre": "CASCO INTEGRAL HJC I70 NEGRO MATE TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0037",
+      "parent_sku": "YOK-00459",
+      "parent_nombre": "CASCO MODULAR LS2 FF906 ADVANT BLANCO TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0038",
+      "parent_sku": "YOK-00202",
+      "parent_nombre": "PIÑON DELANTERO JT 120L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0039",
+      "parent_sku": "YOK-00317",
+      "parent_nombre": "CASCO CROSS SHAFT SH-MX200 NEGRO MATE TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0040",
+      "parent_sku": "YOK-00221",
+      "parent_nombre": "CADENA OSAKI 428H 124L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0041",
+      "parent_sku": "YOK-00362",
+      "parent_nombre": "CASCO INTEGRAL SHAFT SH-881 NEGRO MATE TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0042",
+      "parent_sku": "YOK-00441",
+      "parent_nombre": "ACEITE SHELL ADVANCE AX5 20W50 20L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0043",
+      "parent_sku": "YOK-00242",
+      "parent_nombre": "CASCO CROSS LS2 MX437 FAST NEGRO MATE TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0044",
+      "parent_sku": "YOK-00270",
+      "parent_nombre": "CASCO INTEGRAL HJC I70 ROJO TALLA XXL",
+      "variant_count": 4,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0045",
+      "parent_sku": "YOK-00403",
+      "parent_nombre": "CASCO MODULAR LS2 FF906 ADVANT NEGRO MATE TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0046",
+      "parent_sku": "YOK-00355",
+      "parent_nombre": "CASCO MODULAR LS2 FF906 ADVANT ROJO TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0047",
+      "parent_sku": "YOK-00314",
+      "parent_nombre": "KIT ARRASTRE DID 118L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0048",
+      "parent_sku": "YOK-00340",
+      "parent_nombre": "CASCO CROSS SHAFT SH-MX200 ROJO TALLA XXL",
+      "variant_count": 3,
+      "variant_type": "size",
+      "is_preclassified": true
+    },
+    {
+      "family_id": "VFAM-0049",
+      "parent_sku": "YOK-00330",
+      "parent_nombre": "CADENA DID 520VX3 ORO 120L",
+      "variant_count": 3,
+      "variant_type": "volume",
+      "is_preclassified": true
+    }
+  ],
+  "preclassified_families": {
+    "count": 49,
+    "by_type": {
+      "size": 30,
+      "volume": 19,
+      "color": 0
+    }
+  },
+  "fitment_summary": {
+    "total_with_fitment": 79,
+    "by_brand": {
+      "PULSAR": 4,
+      "HONDA": 3,
+      "AKT": 2,
+      "BAJAJ": 1
+    },
+    "by_cc": {
+      "90cc": 28,
+      "100cc": 11,
+      "110cc": 10,
+      "70cc": 10,
+      "125cc": 5,
+      "200cc": 3,
+      "180cc": 2,
+      "150cc": 1
+    }
+  }
+}
