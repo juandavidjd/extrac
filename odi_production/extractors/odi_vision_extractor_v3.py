@@ -1010,6 +1010,12 @@ class CatalogProcessor:
         self.all_products: List[ProductData] = []
         self.processed_pages: set = set()
 
+        # Event Emitter para Cortex Visual
+        if EMITTER_AVAILABLE:
+            self.emitter = ODIEventEmitter(source="vision", actor="ODI_VISION_v3")
+        else:
+            self.emitter = None
+
         # Checkpoint
         if self.use_checkpoint:
             self.checkpoint = CheckpointManager(
