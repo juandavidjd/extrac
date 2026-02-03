@@ -24,7 +24,7 @@ interface RoleNews {
   id: string
   name: string
   tagline: string
-  icon: React.ComponentType<{ className?: string }>
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>
   color: string
   bgColor: string
   news: NewsItem[]
