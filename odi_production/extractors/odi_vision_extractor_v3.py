@@ -956,6 +956,7 @@ class CatalogProcessor:
         self.stats = ProcessingStats()
         self.all_products: List[ProductData] = []
         self.processed_pages: set = set()
+        self.emitter = None  # Event emitter para Cortex Visual (opcional)
 
         # Checkpoint
         if self.use_checkpoint:
