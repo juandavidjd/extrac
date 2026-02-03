@@ -68,7 +68,7 @@ from enum import Enum
 # CONFIGURATION
 # ==============================================================================
 
-VERSION = "1.0"
+VERSION = "1.1"
 SCRIPT_NAME = "ODI Pipeline Orchestrator"
 
 # Default data directory
@@ -182,6 +182,9 @@ class PipelineResult:
     products_count: int = 0
     prices_loaded: int = 0
     enriched: bool = False
+    normalized: bool = False
+    duplicates_found: int = 0
+    families_created: int = 0
     output_file: str = ""
     error: str = ""
     duration_seconds: float = 0.0
@@ -458,6 +461,7 @@ class PipelineExecutor:
         self.vision_extractor = None
         self.price_processor = None
         self.catalog_enricher = None
+        self.semantic_normalizer = None
 
         # Try primary location
         for scripts_path in [self.scripts_dir, Path(FALLBACK_SCRIPTS_DIR)]:
@@ -465,6 +469,7 @@ class PipelineExecutor:
                 vision = scripts_path / "odi_vision_extractor_v3.py"
                 price = scripts_path / "odi_price_list_processor.py"
                 enricher = scripts_path / "odi_catalog_enricher.py"
+                normalizer = scripts_path / "odi_semantic_normalizer.py"
 
                 if vision.exists():
                     self.vision_extractor = vision
@@ -472,6 +477,8 @@ class PipelineExecutor:
                     self.price_processor = price
                 if enricher.exists():
                     self.catalog_enricher = enricher
+                if normalizer.exists():
+                    self.semantic_normalizer = normalizer
 
                 if self.vision_extractor:
                     break
@@ -482,6 +489,7 @@ class PipelineExecutor:
             self.vision_extractor = cwd / "odi_vision_extractor_v3.py"
             self.price_processor = cwd / "odi_price_list_processor.py"
             self.catalog_enricher = cwd / "odi_catalog_enricher.py"
+            self.semantic_normalizer = cwd / "odi_semantic_normalizer.py"
 
     def execute_company(self, company: CompanyData) -> PipelineResult:
         """Execute the full pipeline for a company."""
@@ -574,6 +582,29 @@ class PipelineExecutor:
                     result.output_file = str(
                         company_output / f"{company.prefix}_catalogo_enriched.csv"
                     )
+
+            # Step 5: Semantic Normalization
+            if result.enriched and self.semantic_normalizer:
+                log.section("STEP 5: Semantic Normalization")
+
+                enriched_csv = company_output / f"{company.prefix}_catalogo_enriched.csv"
+
+                if not self.dry_run:
+                    if enriched_csv.exists():
+                        normalized, duplicates, families = self._run_semantic_normalizer(
+                            enriched_csv,
+                            company_output
+                        )
+                        result.normalized = normalized
+                        result.duplicates_found = duplicates
+                        result.families_created = families
+                        if normalized:
+                            result.output_file = str(
+                                company_output / f"{company.prefix}_catalogo_enriched_normalized.csv"
+                            )
+                else:
+                    log.log(f"[DRY RUN] Would run semantic normalization")
+                    result.normalized = True
 
             result.status = PipelineStatus.COMPLETED
 
@@ -705,6 +736,57 @@ class PipelineExecutor:
             log.log(f"Enrichment error: {e}", "error")
             return False
 
+    def _run_semantic_normalizer(self, catalog_path: Path,
+                                  output_dir: Path) -> Tuple[bool, int, int]:
+        """Run the semantic normalizer."""
+        if not self.semantic_normalizer or not self.semantic_normalizer.exists():
+            log.log("Semantic normalizer not found", "warning")
+            return False, 0, 0
+
+        output_file = catalog_path.with_stem(catalog_path.stem + "_normalized")
+
+        cmd = [
+            "python3", str(self.semantic_normalizer),
+            str(catalog_path),
+            "-o", str(output_file)
+        ]
+
+        log.log(f"Running semantic normalization...")
+
+        try:
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=1800  # 30 min timeout (embeddings can be slow)
+            )
+
+            if result.returncode == 0:
+                # Extract stats from output
+                duplicates = 0
+                families = 0
+
+                dup_match = re.search(r'Duplicados detectados:\s*(\d+)', result.stdout)
+                if dup_match:
+                    duplicates = int(dup_match.group(1))
+
+                fam_match = re.search(r'Familias creadas:\s*(\d+)', result.stdout)
+                if fam_match:
+                    families = int(fam_match.group(1))
+
+                log.log(f"Normalization completed: {duplicates} duplicates, {families} families", "success")
+                return True, duplicates, families
+            else:
+                log.log(f"Normalization failed: {result.stderr[:200]}", "warning")
+                return False, 0, 0
+
+        except subprocess.TimeoutExpired:
+            log.log("Normalization timed out", "error")
+            return False, 0, 0
+        except Exception as e:
+            log.log(f"Normalization error: {e}", "error")
+            return False, 0, 0
+
     def _print_result_summary(self, result: PipelineResult):
         """Print a summary of the pipeline result."""
         log.section("RESULT SUMMARY")
@@ -723,6 +805,10 @@ class PipelineExecutor:
         print(f"  Products Found: {result.products_count}")
         print(f"  Prices Loaded: {result.prices_loaded}")
         print(f"  Enriched: {'Yes' if result.enriched else 'No'}")
+        print(f"  Normalized: {'Yes' if result.normalized else 'No'}")
+        if result.normalized:
+            print(f"  Duplicates Found: {result.duplicates_found}")
+            print(f"  Families Created: {result.families_created}")
         print(f"  Duration: {result.duration_seconds:.1f}s")
 
         if result.output_file:
@@ -804,6 +890,8 @@ class ODIPipelineOrchestrator:
         failed = sum(1 for r in results if r.status == PipelineStatus.FAILED)
         total_products = sum(r.products_count for r in results)
         total_prices = sum(r.prices_loaded for r in results)
+        total_duplicates = sum(r.duplicates_found for r in results)
+        total_families = sum(r.families_created for r in results)
         total_time = sum(r.duration_seconds for r in results)
 
         print(f"  Companies Processed: {len(results)}")
@@ -811,6 +899,8 @@ class ODIPipelineOrchestrator:
         print(f"  Failed: {failed}")
         print(f"  Total Products: {total_products}")
         print(f"  Total Prices: {total_prices}")
+        print(f"  Total Duplicates Found: {total_duplicates}")
+        print(f"  Total Families Created: {total_families}")
         print(f"  Total Time: {total_time:.1f}s")
 
         print("\n  Details:")
@@ -818,7 +908,8 @@ class ODIPipelineOrchestrator:
             status = "✓" if r.status == PipelineStatus.COMPLETED else "✗"
             color = "\033[92m" if r.status == PipelineStatus.COMPLETED else "\033[91m"
             reset = "\033[0m"
-            print(f"    {color}{status}{reset} {r.company}: {r.products_count} products, {r.prices_loaded} prices")
+            norm_info = f", {r.duplicates_found} dups, {r.families_created} fam" if r.normalized else ""
+            print(f"    {color}{status}{reset} {r.company}: {r.products_count} products, {r.prices_loaded} prices{norm_info}")
 
 
 # ==============================================================================
