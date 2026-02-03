@@ -112,12 +112,22 @@ class KBIngestRequest(BaseModel):
     lobe: str = "ind_motos"
     metadata: Optional[Dict[str, Any]] = None
 
+class SystemeLead(BaseModel):
+    """Lead capturado desde Systeme.io"""
+    email: str
+    name: Optional[str] = None
+    phone: Optional[str] = None
+    source: str = "systeme_io"
+    funnel: Optional[str] = None
+    timestamp: Optional[str] = None
+
 # ══════════════════════════════════════════════════════════════════════════════
 # BASE DE DATOS EN MEMORIA (Reemplazar con Supabase/PostgreSQL en producción)
 # ══════════════════════════════════════════════════════════════════════════════
 
 users_db: Dict[str, Dict] = {}
 orders_db: Dict[str, Dict] = {}
+leads_db: Dict[str, Dict] = {}  # Leads de Systeme.io
 
 # ══════════════════════════════════════════════════════════════════════════════
 # UTILIDADES
@@ -488,6 +498,75 @@ async def kb_stats():
         "total_documents": 759,
         "total_size_mb": 460
     }
+
+# ══════════════════════════════════════════════════════════════════════════════
+# ENDPOINTS: SYSTEME.IO WEBHOOKS
+# ══════════════════════════════════════════════════════════════════════════════
+
+@app.post("/v1/webhook/systeme/new-lead")
+async def receive_systeme_lead(lead: SystemeLead):
+    """
+    Recibe leads desde los funnels de Systeme.io.
+    Activa el protocolo de bienvenida y notifica a n8n.
+    """
+    event_id = secrets.token_hex(8)
+    timestamp = datetime.utcnow().isoformat()
+
+    # Almacenar lead
+    lead_data = {
+        "event_id": event_id,
+        "email": lead.email,
+        "name": lead.name,
+        "phone": lead.phone,
+        "source": lead.source,
+        "funnel": lead.funnel,
+        "created_at": timestamp,
+        "status": "new"
+    }
+    leads_db[event_id] = lead_data
+
+    print(f"📥 [{timestamp}] NUEVO LEAD SYSTEME: {lead.email} via {lead.funnel}")
+
+    # Notificar a n8n para iniciar contacto WhatsApp (Tony/Ramona)
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            await client.post(
+                "http://localhost:5678/webhook/odi-ingest",
+                json={
+                    "text": f"Nuevo lead: {lead.name or lead.email} quiere una demo de ODI.",
+                    "canal": "systeme_io",
+                    "metadata": lead_data,
+                    "event_id": event_id
+                }
+            )
+    except Exception as e:
+        print(f"⚠️ n8n no disponible: {e}")
+
+    return {
+        "status": "success",
+        "event_id": event_id,
+        "message": "Lead capturado y procesado por ODI"
+    }
+
+@app.get("/v1/leads")
+async def list_leads():
+    """
+    Listar todos los leads capturados
+    """
+    return {
+        "total": len(leads_db),
+        "leads": list(leads_db.values())
+    }
+
+@app.get("/v1/leads/{event_id}")
+async def get_lead(event_id: str):
+    """
+    Obtener un lead específico
+    """
+    lead = leads_db.get(event_id)
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead no encontrado")
+    return lead
 
 # ══════════════════════════════════════════════════════════════════════════════
 # MAIN
