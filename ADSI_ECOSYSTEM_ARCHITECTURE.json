@@ -1,0 +1,425 @@
+{
+  "meta": {
+    "version": "1.0",
+    "nombre": "Arquitectura Ecosistema ADSI",
+    "descripcion": "Jerarquía de dominios, industrias, empresas, roles y usuarios",
+    "fecha": "2025-01-31"
+  },
+
+  "jerarquia_dominios": {
+    "descripcion": "Estructura de catálogos anidados del ecosistema ADSI",
+    "niveles": [
+      {
+        "nivel": 1,
+        "dominio": "ecosistema-adsi.com",
+        "tipo": "raiz",
+        "funcion": "Contenedor raíz del ecosistema. Metodología ADSI (Análisis, Diseño, Desarrollo). Portal de acceso general.",
+        "contiene": ["somosindustrias.com"],
+        "branding": {
+          "colores": {
+            "primario": "#06B6D4",
+            "secundario": "#3B82F6",
+            "acento": "#8B5CF6"
+          },
+          "logo": "ADSI",
+          "tagline": "Conocimiento | Colaboración | Tecnología"
+        }
+      },
+      {
+        "nivel": 2,
+        "dominio": "somosindustrias.com",
+        "tipo": "portal_industrias",
+        "funcion": "Portal multi-industria. Carga la 'piel' (skin) según la industria del usuario autenticado. Punto de acceso a Academia y Login.",
+        "contiene": ["somosrepuestosmotos.com", "somosferreteria.com", "somoselectronica.com"],
+        "caracteristicas": {
+          "carga_dinamica_skin": true,
+          "detecta_industria_por_usuario": true,
+          "academia_link": "/academia",
+          "login_link": "/acceso"
+        }
+      },
+      {
+        "nivel": 3,
+        "dominio": "somosrepuestosmotos.com",
+        "alias": "SRM",
+        "tipo": "industria",
+        "funcion": "Industria de repuestos de motocicletas. Catálogo unificado + Fitment + Academia especializada.",
+        "contiene": ["KAIQI", "JAPAN", "ARMOTOS", "BARA", "DFG", "YOKOMAR", "VAISAND", "LEO", "DUNA", "IMBRA"],
+        "branding": {
+          "colores": {
+            "primario": "#E53B47",
+            "secundario": "#0090FF",
+            "fondo": "#0D0D0D"
+          },
+          "logo": "SRM",
+          "tagline": "Tecnología + Catálogo Unificado + Conocimiento Técnico"
+        },
+        "modulos": [
+          "Catálogo SRM",
+          "SRM Intelligent Processor",
+          "Fitment M6.2",
+          "Academia SRM",
+          "Panel Clientes"
+        ]
+      },
+      {
+        "nivel": 3,
+        "dominio": "somosferreteria.com",
+        "tipo": "industria",
+        "estado": "futuro",
+        "funcion": "Industria de ferretería y herramientas."
+      },
+      {
+        "nivel": 3,
+        "dominio": "somoselectronica.com",
+        "tipo": "industria",
+        "estado": "futuro",
+        "funcion": "Industria de electrónica y componentes."
+      },
+      {
+        "nivel": 4,
+        "tipo": "empresa",
+        "ejemplos": ["KAIQI", "JAPAN", "ARMOTOS"],
+        "funcion": "Empresas dentro de cada industria. Cada una tiene sus productos, usuarios y roles.",
+        "atributos": {
+          "tienda_shopify": true,
+          "productos_catalogados": true,
+          "usuarios_por_rol": true,
+          "panel_admin": true
+        }
+      }
+    ]
+  },
+
+  "flujo_usuario": {
+    "descripcion": "Cómo un usuario navega y se autentica en el ecosistema",
+    "escenarios": [
+      {
+        "nombre": "Acceso desde somosindustrias.com",
+        "pasos": [
+          "Usuario llega a somosindustrias.com",
+          "Ve portal general con opciones de industria",
+          "Hace clic en 'Iniciar Sesión' o 'Academia'",
+          "Si Login: Ingresa credenciales → Sistema detecta industria y empresa → Carga skin correspondiente",
+          "Si Academia: Ve cursos generales ADSI + cursos específicos si está autenticado"
+        ]
+      },
+      {
+        "nombre": "Acceso desde somosrepuestosmotos.com",
+        "pasos": [
+          "Usuario llega directo a SRM",
+          "Ya ve la skin de SRM (rojo/negro)",
+          "Puede navegar catálogo público",
+          "Para acciones avanzadas: Login requerido",
+          "Login → Sistema detecta empresa y rol → Panel personalizado"
+        ]
+      },
+      {
+        "nombre": "Nuevo usuario via ODI",
+        "pasos": [
+          "Usuario interactúa con ODI (WhatsApp/Web)",
+          "ODI detecta contexto: industria, necesidad, tipo de negocio",
+          "ODI pregunta información clave y determina rol apropiado",
+          "ODI crea usuario en base de datos con rol asignado",
+          "Usuario recibe credenciales o link de activación",
+          "Al entrar, ve su panel según rol y empresa"
+        ]
+      }
+    ]
+  },
+
+  "academia": {
+    "descripcion": "Sistema de formación técnica del ecosistema",
+    "estructura": {
+      "contenido_general_adsi": {
+        "descripcion": "Cursos aplicables a todo el ecosistema",
+        "ejemplos": [
+          "Introducción a ODI",
+          "Metodología ADSI",
+          "Trabajo con catálogos unificados",
+          "Psicología de ventas técnicas"
+        ],
+        "acceso": "Todos los usuarios autenticados"
+      },
+      "contenido_por_industria": {
+        "SRM": {
+          "niveles": 5,
+          "modulos": 20,
+          "rutas_por_rol": 5,
+          "certificacion": "SRM PRO",
+          "cursos": [
+            "Fundamentos SRM",
+            "Terminología Técnica SRM",
+            "Fitment y Compatibilidad 360°",
+            "Ventas Técnicas Inteligentes",
+            "Diagnóstico Asistido",
+            "Gestión de Inventarios 360°",
+            "Importación con Riesgo Controlado",
+            "SRM Intelligent Processor"
+          ],
+          "rutas": {
+            "talleres": {"modulos": 6, "horas": 12, "enfoque": "Diagnóstico y fichas técnicas"},
+            "almacenes": {"modulos": 6, "horas": 12, "enfoque": "Ventas y nomenclatura"},
+            "distribuidores": {"modulos": 5, "horas": 10, "enfoque": "Inventarios y e-commerce"},
+            "importadores": {"modulos": 5, "horas": 10, "enfoque": "Homologación y riesgo"},
+            "fabricantes": {"modulos": 5, "horas": 10, "enfoque": "Nomenclatura avanzada y certificación"}
+          }
+        }
+      }
+    },
+    "acceso": {
+      "desde_somosindustrias": "/academia",
+      "desde_industria": "/academia",
+      "autenticacion_requerida": "Para cursos específicos y progreso guardado"
+    }
+  },
+
+  "roles_y_permisos": {
+    "descripcion": "Sistema de roles por empresa dentro de cada industria",
+    "niveles_roles": [
+      {
+        "nivel": "ecosistema",
+        "roles": [
+          {
+            "id": "admin_adsi",
+            "nombre": "Administrador ADSI",
+            "descripcion": "Acceso total al ecosistema",
+            "permisos": ["*"]
+          }
+        ]
+      },
+      {
+        "nivel": "industria",
+        "roles": [
+          {
+            "id": "admin_industria",
+            "nombre": "Administrador de Industria",
+            "ejemplo": "Admin SRM",
+            "permisos": [
+              "gestionar_empresas",
+              "ver_metricas_industria",
+              "configurar_catalogo_maestro",
+              "gestionar_academia_industria"
+            ]
+          }
+        ]
+      },
+      {
+        "nivel": "empresa",
+        "roles": [
+          {
+            "id": "admin_empresa",
+            "nombre": "Administrador de Empresa",
+            "ejemplo": "Admin KAIQI",
+            "permisos": [
+              "gestionar_usuarios_empresa",
+              "ver_catalogo_empresa",
+              "configurar_tienda_shopify",
+              "ver_reportes_empresa"
+            ]
+          },
+          {
+            "id": "jefe_catalogo",
+            "nombre": "Jefe de Catálogo",
+            "permisos": [
+              "cargar_catalogos",
+              "revisar_fichas",
+              "aprobar_productos",
+              "exportar_datos"
+            ]
+          },
+          {
+            "id": "vendedor",
+            "nombre": "Vendedor",
+            "permisos": [
+              "buscar_productos",
+              "ver_fichas_tecnicas",
+              "ver_compatibilidades",
+              "generar_cotizaciones"
+            ]
+          },
+          {
+            "id": "tecnico_taller",
+            "nombre": "Técnico de Taller",
+            "permisos": [
+              "buscar_por_sistema",
+              "ver_fichas_tecnicas",
+              "registrar_diagnosticos",
+              "consultar_historial"
+            ]
+          },
+          {
+            "id": "invitado",
+            "nombre": "Invitado",
+            "permisos": [
+              "ver_catalogo_publico",
+              "buscar_productos"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+
+  "odi_user_creation": {
+    "descripcion": "Flujo de creación de usuarios via conversación con ODI",
+    "proceso": {
+      "trigger": "Usuario inicia conversación con ODI (WhatsApp, Web, Voice)",
+      "etapas": [
+        {
+          "etapa": 1,
+          "nombre": "Detección de contexto",
+          "acciones": [
+            "ODI analiza mensaje inicial",
+            "Detecta industria mencionada (motos, ferretería, etc.)",
+            "Identifica tipo de consulta (compra, técnica, registro)"
+          ],
+          "ejemplo_dialogo": {
+            "usuario": "Hola, tengo un taller de motos en Medellín",
+            "odi_detecta": {"industria": "SRM", "tipo_negocio": "taller", "ubicacion": "Medellín"}
+          }
+        },
+        {
+          "etapa": 2,
+          "nombre": "Recolección de información",
+          "acciones": [
+            "ODI hace preguntas específicas según contexto",
+            "Valida información ingresada",
+            "Determina rol apropiado"
+          ],
+          "preguntas_por_contexto": {
+            "taller": ["¿Cuál es el nombre del taller?", "¿Cuántos mecánicos tienen?", "¿Qué marcas de motos atienden principalmente?"],
+            "almacen": ["¿Cuál es el nombre del almacén?", "¿Cuántas referencias manejan aproximadamente?", "¿Tienen presencia online?"],
+            "distribuidor": ["¿Cuál es el nombre de la empresa?", "¿Qué zonas cubren?", "¿Trabajan con qué fabricantes?"],
+            "importador": ["¿Qué líneas importan?", "¿De qué países?", "¿Ya tienen catálogo digitalizado?"]
+          }
+        },
+        {
+          "etapa": 3,
+          "nombre": "Creación de usuario",
+          "acciones": [
+            "ODI confirma información recopilada",
+            "Crea registro en base de datos",
+            "Asigna rol según tipo de negocio",
+            "Vincula a industria y empresa (si aplica)",
+            "Genera credenciales o link de activación"
+          ],
+          "evento_emitido": "USER_CREATED",
+          "datos_guardados": {
+            "email": "required",
+            "nombre": "required",
+            "telefono": "optional",
+            "empresa": "detected_or_created",
+            "industria": "detected",
+            "rol": "assigned",
+            "ubicacion": "optional",
+            "metadata_odi": {
+              "session_id": "uuid",
+              "conversation_summary": "text",
+              "detected_intent": "string",
+              "confidence": "float"
+            }
+          }
+        },
+        {
+          "etapa": 4,
+          "nombre": "Onboarding",
+          "acciones": [
+            "ODI envía bienvenida con instrucciones",
+            "Sugiere cursos de Academia según rol",
+            "Ofrece tour guiado del sistema",
+            "Registra en CRM (Systeme.io) si aplica"
+          ]
+        }
+      ]
+    },
+    "roles_auto_asignados": {
+      "mencion_taller": "tecnico_taller",
+      "mencion_almacen": "vendedor",
+      "mencion_distribuidor": "admin_empresa",
+      "mencion_importador": "admin_empresa",
+      "mencion_fabricante": "jefe_catalogo",
+      "sin_contexto_claro": "invitado"
+    }
+  },
+
+  "skin_system": {
+    "descripcion": "Sistema de 'pieles' visuales por industria",
+    "funcionamiento": {
+      "trigger": "Usuario autenticado accede a somosindustrias.com",
+      "proceso": [
+        "Sistema lee industria del usuario desde token/sesión",
+        "Carga configuración visual de la industria",
+        "Aplica colores, logo, menús específicos",
+        "Muestra contenido relevante a esa industria"
+      ]
+    },
+    "skins_disponibles": {
+      "SRM": {
+        "dominio_origen": "somosrepuestosmotos.com",
+        "colores": {"primario": "#E53B47", "secundario": "#0090FF", "fondo": "#0D0D0D"},
+        "logo": "/logos/srm-logo.svg",
+        "menu": ["Catálogo SRM", "Clientes", "SRM Intelligent", "Academia"],
+        "footer": "Tecnología + Catálogo Unificado + Conocimiento Técnico"
+      },
+      "FERRETERIA": {
+        "dominio_origen": "somosferreteria.com",
+        "estado": "futuro",
+        "colores": {"primario": "#F59E0B", "secundario": "#78350F"}
+      },
+      "ELECTRONICA": {
+        "dominio_origen": "somoselectronica.com",
+        "estado": "futuro",
+        "colores": {"primario": "#10B981", "secundario": "#064E3B"}
+      }
+    }
+  },
+
+  "base_datos_esquema": {
+    "descripcion": "Esquema simplificado de tablas principales",
+    "tablas": {
+      "industrias": {
+        "campos": ["id", "nombre", "dominio", "config_skin", "activa"],
+        "ejemplo": {"id": 1, "nombre": "SRM", "dominio": "somosrepuestosmotos.com"}
+      },
+      "empresas": {
+        "campos": ["id", "industria_id", "nombre", "shopify_shop", "shopify_token", "activa"],
+        "ejemplo": {"id": 1, "industria_id": 1, "nombre": "KAIQI"}
+      },
+      "usuarios": {
+        "campos": ["id", "email", "nombre", "empresa_id", "rol_id", "metadata_odi", "created_at", "created_by_odi"],
+        "ejemplo": {"id": 1, "email": "mecanico@taller.com", "empresa_id": null, "rol_id": 4, "created_by_odi": true}
+      },
+      "roles": {
+        "campos": ["id", "nivel", "nombre", "permisos"],
+        "ejemplo": {"id": 4, "nivel": "empresa", "nombre": "tecnico_taller"}
+      },
+      "sesiones_odi": {
+        "campos": ["id", "usuario_id", "session_id", "conversacion", "intents_detectados", "acciones_tomadas"],
+        "descripcion": "Historial de conversaciones con ODI para trazabilidad"
+      }
+    }
+  },
+
+  "endpoints_principales": {
+    "auth": {
+      "/api/auth/login": "POST - Login con email/password",
+      "/api/auth/register": "POST - Registro manual (alternativo a ODI)",
+      "/api/auth/me": "GET - Info del usuario autenticado incluyendo industria y rol"
+    },
+    "odi": {
+      "/api/odi/conversation": "POST - Procesar mensaje de usuario",
+      "/api/odi/create-user": "POST - ODI crea usuario (interno)",
+      "/api/odi/detect-role": "POST - ODI determina rol basado en contexto"
+    },
+    "industria": {
+      "/api/industria/:id/skin": "GET - Configuración visual de industria",
+      "/api/industria/:id/empresas": "GET - Empresas de la industria"
+    },
+    "academia": {
+      "/api/academia/cursos": "GET - Cursos generales + específicos según industria",
+      "/api/academia/progreso/:usuario_id": "GET - Progreso del usuario",
+      "/api/academia/certificacion/:usuario_id": "GET - Estado de certificación"
+    }
+  }
+}

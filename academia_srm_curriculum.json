@@ -1,0 +1,386 @@
+{
+  "academia": {
+    "nombre": "Academia SRM",
+    "tagline": "Donde el conocimiento técnico se convierte en resultados",
+    "version": "1.0",
+    "total_cursos": 8,
+    "total_lecciones": 42
+  },
+  "cursos": [
+    {
+      "id": "fundamentos-srm",
+      "titulo": "Fundamentos SRM",
+      "descripcion": "Introducción al ecosistema SRM y su metodología de estandarización técnica.",
+      "duracion_horas": 4,
+      "nivel": "Principiante",
+      "roles_objetivo": ["Todos"],
+      "objetivos": [
+        "Comprender qué es SRM y su propósito en la industria",
+        "Conocer los actores del ecosistema (fabricantes, importadores, distribuidores, almacenes, talleres)",
+        "Entender el flujo de información técnica en SRM",
+        "Identificar los beneficios de la estandarización"
+      ],
+      "modulos": [
+        {
+          "id": "m1",
+          "titulo": "¿Qué es SRM?",
+          "lecciones": [
+            {
+              "titulo": "El problema de la industria de repuestos",
+              "contenido": "La industria de repuestos de motocicletas en Colombia enfrenta un problema crítico: la falta de estandarización. Un mismo repuesto puede tener 10 nombres diferentes, códigos incompatibles y descripciones contradictorias. SRM nace para resolver esto.",
+              "duracion_minutos": 15
+            },
+            {
+              "titulo": "La solución SRM: Catálogo Unificado",
+              "contenido": "SRM crea un lenguaje común para toda la industria. Cada pieza tiene: nombre estandarizado, código único, compatibilidades verificadas, ficha técnica 360°.",
+              "duracion_minutos": 20
+            },
+            {
+              "titulo": "Los 5 pilares de SRM",
+              "contenido": "1. Terminología unificada, 2. Compatibilidad verificada (Fitment), 3. Fichas técnicas 360°, 4. Trazabilidad completa, 5. Conocimiento compartido.",
+              "duracion_minutos": 15
+            }
+          ]
+        },
+        {
+          "id": "m2",
+          "titulo": "El Ecosistema SRM",
+          "lecciones": [
+            {
+              "titulo": "Fabricantes en SRM",
+              "contenido": "Los fabricantes son el origen de la información técnica. En SRM, sus catálogos se procesan para extraer datos verificados y crear fichas maestras.",
+              "duracion_minutos": 15
+            },
+            {
+              "titulo": "Importadores en SRM",
+              "contenido": "Los importadores traen tecnología internacional. SRM les ayuda a homologar nomenclaturas extranjeras con terminología colombiana.",
+              "duracion_minutos": 15
+            },
+            {
+              "titulo": "Distribuidores, Almacenes y Talleres",
+              "contenido": "La cadena de valor se completa con distribuidores que mueven inventario, almacenes que venden al mecánico, y talleres que instalan con confianza.",
+              "duracion_minutos": 20
+            }
+          ]
+        }
+      ],
+      "ejercicios": [
+        {
+          "pregunta": "¿Cuál es el problema principal que SRM resuelve?",
+          "opciones": [
+            "Falta de repuestos en el mercado",
+            "Falta de estandarización en nombres, códigos y compatibilidades",
+            "Precios altos de repuestos",
+            "Falta de mecánicos"
+          ],
+          "respuesta_correcta": 1
+        },
+        {
+          "pregunta": "¿Cuáles son los 5 pilares de SRM?",
+          "tipo": "abierta",
+          "respuesta_ejemplo": "Terminología unificada, Compatibilidad verificada, Fichas técnicas 360°, Trazabilidad completa, Conocimiento compartido"
+        }
+      ]
+    },
+    {
+      "id": "terminologia-tecnica",
+      "titulo": "Terminología Técnica SRM",
+      "descripcion": "Domina el vocabulario técnico estandarizado de la industria de motocicletas.",
+      "duracion_horas": 6,
+      "nivel": "Principiante",
+      "roles_objetivo": ["Vendedores", "Mecánicos", "Jefes de Inventario"],
+      "objetivos": [
+        "Conocer los sistemas y subsistemas de una motocicleta",
+        "Identificar piezas por nombre técnico estandarizado",
+        "Evitar confusiones por nombres comerciales vs técnicos",
+        "Usar la terminología SRM en ventas y diagnóstico"
+      ],
+      "modulos": [
+        {
+          "id": "m1",
+          "titulo": "Sistemas de la Motocicleta",
+          "lecciones": [
+            {
+              "titulo": "Sistema de Motor",
+              "contenido": "El motor es el corazón de la moto. Componentes principales: cilindro, pistón, biela, cigüeñal, válvulas, árbol de levas, culata, cárter.",
+              "duracion_minutos": 25
+            },
+            {
+              "titulo": "Sistema de Transmisión",
+              "contenido": "Transfiere potencia a la rueda. Incluye: embrague, caja de cambios, piñón, catalina, cadena (kit de arrastre).",
+              "duracion_minutos": 25
+            },
+            {
+              "titulo": "Sistema de Frenos",
+              "contenido": "Detiene la moto de forma segura. Tipos: tambor, disco. Componentes: pastillas, discos, zapatas, bombas, maniguetas.",
+              "duracion_minutos": 20
+            },
+            {
+              "titulo": "Sistema Eléctrico",
+              "contenido": "Energía y control. Incluye: batería, alternador, regulador rectificador, CDI/ECU, bobina, bujía.",
+              "duracion_minutos": 25
+            },
+            {
+              "titulo": "Sistema de Suspensión",
+              "contenido": "Absorbe impactos. Delantera: barras, horquilla. Trasera: amortiguadores, basculante.",
+              "duracion_minutos": 20
+            }
+          ]
+        },
+        {
+          "id": "m2",
+          "titulo": "Nomenclatura SRM",
+          "lecciones": [
+            {
+              "titulo": "Nombres comerciales vs técnicos",
+              "contenido": "El mercado usa nombres como 'piñón loco', 'la morena', 'el chicote'. SRM estandariza: Piñón de distribución, Corona de embrague, Cable de acelerador.",
+              "duracion_minutos": 20
+            },
+            {
+              "titulo": "Cómo leer una ficha SRM",
+              "contenido": "Cada ficha incluye: Nombre SRM, Código único, Sistema, Subsistema, Compatibilidades, Especificaciones técnicas, Imagen verificada.",
+              "duracion_minutos": 25
+            }
+          ]
+        }
+      ],
+      "glosario": [
+        {"termino": "Kit de arrastre", "definicion": "Conjunto de piñón, catalina y cadena para transmisión secundaria."},
+        {"termino": "Regulador rectificador", "definicion": "Componente eléctrico que convierte corriente alterna en continua y regula el voltaje."},
+        {"termino": "CDI", "definicion": "Capacitor Discharge Ignition. Sistema de encendido electrónico por descarga de capacitor."},
+        {"termino": "Fitment", "definicion": "Compatibilidad verificada de una pieza con marcas, modelos y años específicos."}
+      ]
+    },
+    {
+      "id": "fitment-compatibilidad",
+      "titulo": "Fitment y Compatibilidad 360°",
+      "descripcion": "Aprende a verificar y usar compatibilidades técnicas para evitar errores y devoluciones.",
+      "duracion_horas": 5,
+      "nivel": "Intermedio",
+      "roles_objetivo": ["Vendedores", "Jefes de Inventario", "Importadores"],
+      "objetivos": [
+        "Entender qué es Fitment y por qué es crítico",
+        "Leer tablas de compatibilidad SRM",
+        "Identificar compatibilidades cruzadas entre marcas",
+        "Reducir errores de venta por incompatibilidad"
+      ],
+      "modulos": [
+        {
+          "id": "m1",
+          "titulo": "Fundamentos de Fitment",
+          "lecciones": [
+            {
+              "titulo": "¿Qué es Fitment?",
+              "contenido": "Fitment es la verificación técnica de que una pieza es compatible con un modelo específico de motocicleta. No basta con 'parece que sirve', debe estar verificado.",
+              "duracion_minutos": 20
+            },
+            {
+              "titulo": "El costo de la incompatibilidad",
+              "contenido": "Una pieza incompatible genera: devolución, pérdida de tiempo, pérdida de confianza, riesgo de daño al vehículo. SRM elimina este riesgo.",
+              "duracion_minutos": 15
+            }
+          ]
+        },
+        {
+          "id": "m2",
+          "titulo": "Sistema M6.2 de Fitment",
+          "lecciones": [
+            {
+              "titulo": "Estructura de compatibilidad SRM",
+              "contenido": "Cada pieza tiene una matriz: Marca → Línea → Modelo → Año → Versión. Ejemplo: Honda → CB → CB150 Invicta → 2018-2023 → Todas.",
+              "duracion_minutos": 25
+            },
+            {
+              "titulo": "Compatibilidades cruzadas",
+              "contenido": "Muchas piezas sirven para múltiples marcas. SRM mapea estas equivalencias: 'Pastillas X sirven para Honda CB150, AKT NKD, Bajaj Pulsar 150'.",
+              "duracion_minutos": 25
+            },
+            {
+              "titulo": "Cómo consultar Fitment en SRM",
+              "contenido": "En SRM Intelligent, ingresa el código o nombre. El sistema muestra todas las aplicaciones verificadas con nivel de confianza.",
+              "duracion_minutos": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ventas-tecnicas",
+      "titulo": "Ventas Técnicas Inteligentes",
+      "descripcion": "Transforma el conocimiento técnico en ventas efectivas y confianza del cliente.",
+      "duracion_horas": 4,
+      "nivel": "Intermedio",
+      "roles_objetivo": ["Vendedores", "Almacenes"],
+      "objetivos": [
+        "Aplicar técnicas de venta consultiva en repuestos",
+        "Usar fichas SRM para generar confianza",
+        "Manejar objeciones técnicas del mecánico",
+        "Incrementar ticket promedio con ventas cruzadas"
+      ],
+      "modulos": [
+        {
+          "id": "m1",
+          "titulo": "Psicología del comprador técnico",
+          "lecciones": [
+            {
+              "titulo": "El mecánico como cliente",
+              "contenido": "El mecánico no busca el repuesto más barato. Busca el repuesto correcto que no le genere retrabajo ni reclamos de su cliente.",
+              "duracion_minutos": 20
+            },
+            {
+              "titulo": "Palabras que generan confianza",
+              "contenido": "Usa: 'verificado', 'garantizado', 'compatible confirmado', 'ficha técnica disponible'. Evita: 'creo que sirve', 'debería funcionar', 'pruébalo'.",
+              "duracion_minutos": 15
+            }
+          ]
+        },
+        {
+          "id": "m2",
+          "titulo": "Venta con fichas SRM",
+          "lecciones": [
+            {
+              "titulo": "Mostrar la ficha 360°",
+              "contenido": "Cuando el mecánico pregunta, no solo des el repuesto. Muéstrale la ficha: 'Mira, este es el código, estas son las motos compatibles, estas son las especificaciones'.",
+              "duracion_minutos": 20
+            },
+            {
+              "titulo": "Ventas cruzadas inteligentes",
+              "contenido": "Si compra pastillas, ofrece disco. Si compra kit de arrastre, ofrece lubricante. SRM sugiere productos relacionados automáticamente.",
+              "duracion_minutos": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "diagnostico-asistido",
+      "titulo": "Diagnóstico Asistido SRM",
+      "descripcion": "Usa SRM para identificar piezas correctas basándote en síntomas y sistemas.",
+      "duracion_horas": 5,
+      "nivel": "Avanzado",
+      "roles_objetivo": ["Mecánicos", "Talleres"],
+      "objetivos": [
+        "Diagnosticar fallas por sistema usando SRM",
+        "Identificar piezas correctas sin adivinar",
+        "Reducir tiempo de diagnóstico en 80%",
+        "Evitar cambios innecesarios de piezas"
+      ],
+      "modulos": [
+        {
+          "id": "m1",
+          "titulo": "Diagnóstico por sistema",
+          "lecciones": [
+            {
+              "titulo": "Motor: síntomas y piezas",
+              "contenido": "Ruido en motor → posibles causas: cadena de distribución, balancines, pistón. SRM muestra piezas por sistema para cada modelo.",
+              "duracion_minutos": 30
+            },
+            {
+              "titulo": "Eléctrico: síntomas y piezas",
+              "contenido": "No enciende → verificar: batería, regulador, CDI, bobina, bujía. SRM permite buscar por 'sistema eléctrico' + modelo.",
+              "duracion_minutos": 30
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gestion-inventarios-360",
+      "titulo": "Gestión de Inventarios 360°",
+      "descripcion": "Optimiza tu inventario usando datos SRM para rotación y demanda.",
+      "duracion_horas": 6,
+      "nivel": "Avanzado",
+      "roles_objetivo": ["Jefes de Inventario", "Distribuidores", "Almacenes"],
+      "objetivos": [
+        "Analizar rotación de inventario con métricas SRM",
+        "Identificar productos de alta y baja demanda",
+        "Optimizar pedidos basándose en compatibilidades",
+        "Reducir sobreinventario y faltantes"
+      ],
+      "modulos": [
+        {
+          "id": "m1",
+          "titulo": "Métricas de inventario",
+          "lecciones": [
+            {
+              "titulo": "Rotación y demanda regional",
+              "contenido": "SRM analiza qué productos se venden más en cada zona. Un almacén en Medellín puede tener demanda diferente a uno en Cali.",
+              "duracion_minutos": 25
+            },
+            {
+              "titulo": "Alertas de stock",
+              "contenido": "SRM puede alertar cuando un producto de alta rotación está por agotarse, antes de que pierdas ventas.",
+              "duracion_minutos": 20
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "importacion-riesgo-tecnico",
+      "titulo": "Importación con Riesgo Técnico Controlado",
+      "descripcion": "Importa repuestos minimizando riesgos de compatibilidad y homologación.",
+      "duracion_horas": 5,
+      "nivel": "Avanzado",
+      "roles_objetivo": ["Importadores"],
+      "objetivos": [
+        "Evaluar riesgo técnico antes de importar",
+        "Homologar nomenclaturas extranjeras con SRM",
+        "Verificar compatibilidades cruzadas internacionales",
+        "Documentar productos importados con fichas SRM"
+      ],
+      "modulos": [
+        {
+          "id": "m1",
+          "titulo": "Evaluación pre-importación",
+          "lecciones": [
+            {
+              "titulo": "Análisis de catálogo extranjero",
+              "contenido": "Antes de importar, valida: ¿Los códigos son compatibles? ¿Las especificaciones coinciden con mercado colombiano? SRM ayuda a mapear.",
+              "duracion_minutos": 30
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "srm-intelligent-processor",
+      "titulo": "SRM Intelligent Processor",
+      "descripcion": "Domina la herramienta de procesamiento de catálogos de SRM.",
+      "duracion_horas": 4,
+      "nivel": "Intermedio",
+      "roles_objetivo": ["Administradores", "Jefes de Catálogo"],
+      "objetivos": [
+        "Cargar catálogos en SRM Intelligent",
+        "Entender el pipeline de 6 etapas",
+        "Revisar y aprobar fichas generadas",
+        "Exportar datos a Shopify y otros canales"
+      ],
+      "modulos": [
+        {
+          "id": "m1",
+          "titulo": "El Pipeline SRM",
+          "lecciones": [
+            {
+              "titulo": "Las 6 etapas del procesamiento",
+              "contenido": "1. Ingesta (cargar archivo), 2. Extracción (identificar productos), 3. Normalización (estandarizar nombres), 4. Unificación (eliminar duplicados), 5. Enriquecimiento (agregar datos), 6. Ficha 360° (resultado final).",
+              "duracion_minutos": 30
+            },
+            {
+              "titulo": "Formatos soportados",
+              "contenido": "SRM acepta: PDF, Excel, CSV, Word, imágenes, ZIP, URLs. El sistema detecta automáticamente el formato y aplica el extractor adecuado.",
+              "duracion_minutos": 20
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "rutas_aprendizaje": {
+    "mecanico": ["fundamentos-srm", "terminologia-tecnica", "fitment-compatibilidad", "diagnostico-asistido"],
+    "vendedor": ["fundamentos-srm", "terminologia-tecnica", "fitment-compatibilidad", "ventas-tecnicas"],
+    "jefe_inventarios": ["fundamentos-srm", "terminologia-tecnica", "fitment-compatibilidad", "gestion-inventarios-360"],
+    "importador": ["fundamentos-srm", "fitment-compatibilidad", "importacion-riesgo-tecnico"],
+    "administrador": ["fundamentos-srm", "srm-intelligent-processor"]
+  }
+}
