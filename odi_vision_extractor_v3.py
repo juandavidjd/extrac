@@ -110,8 +110,12 @@ except ImportError:
 # CONFIGURACIÓN GLOBAL
 # ============================================================================
 
-VERSION = "3.0"
+VERSION = "3.1"
 SCRIPT_NAME = "ODI Vision Extractor"
+
+# Debug mode - guarda respuestas raw de API
+DEBUG_SAVE_RAW = True
+DEBUG_MAX_PAGES = 30  # Guardar raw de las primeras N páginas
 
 # Directorios por defecto
 DEFAULT_OUTPUT_DIR = "/tmp/odi_output"
@@ -681,18 +685,18 @@ EXTRACTION_PROMPT = """Analiza esta página de catálogo de repuestos de motocic
 INSTRUCCIONES:
 1. Extrae TODOS los productos visibles en la página
 2. Para cada producto identifica:
-   - codigo: Código del producto (4-6 dígitos, ej: "50100", "03860")
-   - nombre: Nombre comercial completo
-   - descripcion: Especificaciones técnicas, materiales, compatibilidad
-   - precio: Solo el número, sin símbolos ni separadores de miles
+   - codigo: Código/referencia del producto (puede ser numérico como "50100", alfanumérico como "VT-1024", "BPS002", o texto como "REF-ABC123"). Si no hay código visible, usa "SIN_CODIGO".
+   - nombre: Nombre comercial completo del producto
+   - descripcion: Especificaciones técnicas, materiales, compatibilidad, aplicaciones
+   - precio: Solo el número, sin símbolos ni separadores de miles. Si no hay precio visible, usa 0.
    - categoria: Una de: MOTOR, FRENOS, ELECTRICO, SUSPENSION, TRANSMISION, CARROCERIA, ACCESORIOS, HERRAMIENTAS, LUJOS, OTROS
    - posicion_vertical: Número del 1 al 10 indicando posición (1=arriba, 10=abajo)
 
 REGLAS:
-- El código es OBLIGATORIO. Si no hay código visible, el producto se omite.
+- Si hay un producto visible pero no tiene código, IGUAL inclúyelo con codigo="SIN_CODIGO".
 - posicion_vertical es CRÍTICO para asociar imágenes. Indica dónde está el producto en la página.
-- Si la página no tiene productos de catálogo, devuelve lista vacía.
-- Ignora encabezados, logos, marcas de agua.
+- Si la página no tiene productos de catálogo (solo logos, encabezados, índice), devuelve lista vacía.
+- Extrae TODOS los productos que veas, aunque no tengan precio.
 
 RESPONDE ÚNICAMENTE JSON VÁLIDO:
 {"productos": [{"codigo": "50100", "nombre": "Kit pistón 150cc", "descripcion": "Kit completo pistón, anillos y pasador para motor 150cc 4T", "precio": 45000, "categoria": "MOTOR", "posicion_vertical": 2}]}
@@ -702,7 +706,7 @@ RESPONDE ÚNICAMENTE JSON VÁLIDO:
 class VisionExtractor:
     """Extrae datos de productos usando GPT-4o Vision."""
 
-    def __init__(self, api_key: Optional[str] = None):
+    def __init__(self, api_key: Optional[str] = None, prefix: str = "CAT", output_dir: str = DEFAULT_OUTPUT_DIR):
         self.api_key = api_key or os.getenv("OPENAI_API_KEY")
         if not self.api_key:
             log.log("OPENAI_API_KEY no configurada", "error")
@@ -711,12 +715,35 @@ class VisionExtractor:
         self.client = OpenAI(api_key=self.api_key)
         self.last_request_time = 0
         self.stats = ProcessingStats()
+        self.prefix = prefix
+        self.output_dir = output_dir
+        self.debug_file = os.path.join(output_dir, "debug_raw_api.jsonl") if DEBUG_SAVE_RAW else None
+        self.pages_debugged = 0
 
         # Event Emitter para Cortex Visual (Tony narra)
         if EMITTER_AVAILABLE:
             self.emitter = ODIEventEmitter(source="vision", actor="ODI_VISION_v3")
         else:
             self.emitter = None
+
+    def _save_debug(self, page_num: int, raw_response: str, parsed_count: int, final_count: int):
+        """Guarda respuesta raw para debugging."""
+        if not self.debug_file or self.pages_debugged >= DEBUG_MAX_PAGES:
+            return
+        try:
+            ensure_dir(os.path.dirname(self.debug_file))
+            debug_entry = {
+                "timestamp": datetime.now().isoformat(),
+                "page": page_num,
+                "raw_response": raw_response[:5000],  # Limitar tamaño
+                "parsed_products": parsed_count,
+                "final_products": final_count
+            }
+            with open(self.debug_file, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(debug_entry, ensure_ascii=False) + '\n')
+            self.pages_debugged += 1
+        except Exception as e:
+            log.log(f"Error guardando debug: {e}", "warning")
 
     def _throttle(self):
         """Aplica throttling entre requests."""
@@ -765,39 +792,59 @@ class VisionExtractor:
                 content = response.choices[0].message.content
                 data = json.loads(content)
                 productos_raw = data.get("productos", [])
+                parsed_count = len(productos_raw)
 
                 # Procesar productos
                 productos = []
+                synthetic_counter = 0
                 for p in productos_raw:
                     codigo = clean_text(p.get('codigo', ''))
 
-                    # Validar código
-                    if not codigo or codigo.lower() in ['', 'null', 'none', 'n/a']:
-                        continue
+                    # Generar código sintético si no hay código válido
+                    needs_synthetic = (
+                        not codigo or
+                        codigo.lower() in ['', 'null', 'none', 'n/a', 'sin_codigo', 'sin codigo']
+                    )
+
+                    if needs_synthetic:
+                        synthetic_counter += 1
+                        codigo = f"P{page_num:03d}-C{synthetic_counter:02d}"
+                        log.log(f"   Código sintético generado: {codigo}", "debug")
 
                     # Calcular posición normalizada
                     pos_vertical = int(p.get('posicion_vertical', 5))
                     pos_vertical = max(1, min(10, pos_vertical))
                     y_normalized = (pos_vertical - 1) / 9
 
+                    # Obtener precio - usar None para exportación si es 0
+                    precio_raw = p.get('precio', 0)
+                    precio = clean_price(precio_raw)
+
                     producto = ProductData(
                         codigo=codigo,
-                        nombre=clean_text(p.get('nombre', '')),
+                        nombre=clean_text(p.get('nombre', '')) or f"Producto página {page_num}",
                         descripcion=clean_text(p.get('descripcion', '')),
-                        precio=clean_price(p.get('precio', 0)),
+                        precio=precio,
                         categoria=normalize_category(p.get('categoria', '')),
                         pagina=page_num,
                         posicion_y=y_normalized
                     )
 
-                    if producto.is_valid():
+                    # Ahora aceptamos todos los productos con código (incluye sintéticos)
+                    if producto.codigo:
                         productos.append(producto)
+
+                # Guardar debug
+                self._save_debug(page_num, content, parsed_count, len(productos))
 
                 return productos
 
             except json.JSONDecodeError as e:
                 log.log(f"JSON inválido en intento {attempt + 1}", "warning")
                 self.stats.api_errors += 1
+                # Guardar respuesta inválida para debug
+                if hasattr(response, 'choices') and response.choices:
+                    self._save_debug(page_num, f"INVALID_JSON: {response.choices[0].message.content[:1000]}", 0, 0)
 
             except Exception as e:
                 self.stats.api_errors += 1
@@ -822,6 +869,8 @@ class VisionExtractor:
                     if attempt < MAX_RETRIES - 1:
                         time.sleep(INITIAL_RETRY_DELAY * (attempt + 1))
 
+        # Guardar error para debug
+        self._save_debug(page_num, "ALL_RETRIES_FAILED", 0, 0)
         return []
 
 
@@ -903,6 +952,10 @@ class Exporter:
         df = df.drop_duplicates(subset=['codigo'], keep='first')
         duplicates = original_count - len(df)
 
+        # Convertir precio 0 a None/NaN para evitar contaminación de datos
+        # precio=0 significa "sin precio" no "gratis"
+        df['precio'] = df['precio'].replace(0, np.nan)
+
         # Ordenar columnas
         columns_order = [
             'sku_odi', 'codigo', 'nombre', 'descripcion', 'precio',
@@ -913,11 +966,11 @@ class Exporter:
         # Ordenar por página y código
         df = df.sort_values(['pagina', 'codigo']).reset_index(drop=True)
 
-        # Guardar CSV
+        # Guardar CSV (precio vacío si no hay)
         csv_path = os.path.join(self.output_dir, f"{self.prefix}_catalogo.csv")
         df.to_csv(csv_path, sep=';', index=False, encoding='utf-8')
 
-        # Guardar JSON
+        # Guardar JSON (precio null si no hay)
         json_path = os.path.join(self.output_dir, f"{self.prefix}_catalogo.json")
         df.to_json(json_path, orient='records', force_ascii=False, indent=2)
 
@@ -948,7 +1001,7 @@ class CatalogProcessor:
         # Componentes
         self.converter = PDFConverter(self.dpi)
         self.detector = ProductRegionDetector()
-        self.extractor = VisionExtractor()
+        self.extractor = VisionExtractor(prefix=self.prefix, output_dir=self.output_dir)
         self.associator = ImageAssociator()
         self.exporter = Exporter(self.output_dir, self.prefix)
 
@@ -1136,6 +1189,8 @@ class CatalogProcessor:
     def _print_stats(self, csv_path: str, json_path: str):
         """Imprime estadísticas finales."""
         s = self.stats
+        # Usar stats del extractor para métricas de API
+        api_stats = self.extractor.stats
         productos_con_imagen = sum(1 for p in self.all_products if p.imagen)
         productos_con_precio = sum(1 for p in self.all_products if p.precio > 0)
 
@@ -1151,8 +1206,8 @@ class CatalogProcessor:
 {Colors.GREEN}✓ Con precio:{Colors.RESET}          {productos_con_precio}
 {Colors.CYAN}○ Crops detectados:{Colors.RESET}    {s.crops_detected}
 {Colors.CYAN}○ Crops asignados:{Colors.RESET}     {s.crops_assigned}
-{Colors.DIM}○ Llamadas API:{Colors.RESET}        {s.api_calls}
-{Colors.DIM}○ Errores API:{Colors.RESET}         {s.api_errors}
+{Colors.DIM}○ Llamadas API:{Colors.RESET}        {api_stats.api_calls}
+{Colors.DIM}○ Errores API:{Colors.RESET}         {api_stats.api_errors}
 {Colors.DIM}○ Tiempo total:{Colors.RESET}        {log.elapsed()}
 
 {Colors.BOLD}📁 ARCHIVOS GENERADOS:{Colors.RESET}
