@@ -360,58 +360,74 @@ DEFAULT_CACHE_DB = DEFAULT_CACHE_DIR / "embeddings_cache.db"
 
 
 class EmbeddingCache:
-    """Cache persistente de embeddings usando SQLite."""
+    """Cache persistente de embeddings usando SQLite con WAL mode."""
 
     def __init__(self, db_path: Optional[Path] = None):
         self.db_path = db_path or DEFAULT_CACHE_DB
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self._conn = None
         self._init_db()
+
+    def _get_conn(self) -> sqlite3.Connection:
+        """Get or create persistent connection."""
+        if self._conn is None:
+            self._conn = sqlite3.connect(self.db_path, check_same_thread=False)
+            # Enable WAL mode for better concurrent read/write performance
+            self._conn.execute("PRAGMA journal_mode=WAL")
+            self._conn.execute("PRAGMA synchronous=NORMAL")
+        return self._conn
 
     def _init_db(self):
         """Inicializa la base de datos."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
-                CREATE TABLE IF NOT EXISTS embeddings (
-                    text_hash TEXT PRIMARY KEY,
-                    model TEXT,
-                    dimensions INTEGER,
-                    embedding BLOB,
-                    created_at TEXT
-                )
-            """)
-            conn.execute("CREATE INDEX IF NOT EXISTS idx_model ON embeddings(model)")
-            conn.commit()
+        conn = self._get_conn()
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS embeddings (
+                text_hash TEXT PRIMARY KEY,
+                model TEXT,
+                dimensions INTEGER,
+                embedding TEXT,
+                created_at TEXT
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_model ON embeddings(model)")
+        conn.commit()
 
     def get(self, text_hash: str, model: str) -> Optional[List[float]]:
         """Obtiene embedding del cache."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute(
-                "SELECT embedding FROM embeddings WHERE text_hash = ? AND model = ?",
-                (text_hash, model)
-            )
-            row = cursor.fetchone()
-            if row:
-                # Deserialize from JSON blob
-                return json.loads(row[0])
-            return None
+        conn = self._get_conn()
+        cursor = conn.execute(
+            "SELECT embedding FROM embeddings WHERE text_hash = ? AND model = ?",
+            (text_hash, model)
+        )
+        row = cursor.fetchone()
+        if row:
+            # Deserialize from JSON TEXT
+            return json.loads(row[0])
+        return None
 
     def set(self, text_hash: str, model: str, dimensions: int, embedding: List[float]):
         """Guarda embedding en cache."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(
-                """INSERT OR REPLACE INTO embeddings
-                   (text_hash, model, dimensions, embedding, created_at)
-                   VALUES (?, ?, ?, ?, ?)""",
-                (text_hash, model, dimensions, json.dumps(embedding), datetime.now().isoformat())
-            )
-            conn.commit()
+        conn = self._get_conn()
+        conn.execute(
+            """INSERT OR REPLACE INTO embeddings
+               (text_hash, model, dimensions, embedding, created_at)
+               VALUES (?, ?, ?, ?, ?)""",
+            (text_hash, model, dimensions, json.dumps(embedding), datetime.now().isoformat())
+        )
+        conn.commit()
 
     def get_stats(self) -> Dict[str, int]:
         """Obtiene estadísticas del cache."""
-        with sqlite3.connect(self.db_path) as conn:
-            cursor = conn.execute("SELECT COUNT(*) FROM embeddings")
-            count = cursor.fetchone()[0]
-            return {"total_cached": count, "db_path": str(self.db_path)}
+        conn = self._get_conn()
+        cursor = conn.execute("SELECT COUNT(*) FROM embeddings")
+        count = cursor.fetchone()[0]
+        return {"total_cached": count, "db_path": str(self.db_path)}
+
+    def close(self):
+        """Cierra la conexión a la base de datos."""
+        if self._conn:
+            self._conn.close()
+            self._conn = None
 
 
 # =============================================================================
@@ -573,11 +589,11 @@ class EmbeddingGenerator:
             text = self._create_text_for_embedding(row)
             texts.append(text)
 
-        print(f"📊 Generando embeddings para {len(texts)} productos...")
-
-        # Reset counters
+        # Reset counters before processing
         self.cache_hits = 0
         self.cache_misses = 0
+
+        print(f"📊 Generando embeddings para {len(texts)} productos...")
 
         # Generar en batch (with cache optimization)
         raw_embeddings = self.generate_batch(texts)
