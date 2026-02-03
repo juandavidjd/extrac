@@ -1,0 +1,531 @@
+{
+  "meta": {
+    "version": "1.0",
+    "titulo": "Red ODI↔ODI - Protocolo de Comunicación Inter-Organismos",
+    "descripcion": "Modelo de cómo múltiples instancias ODI se comunican entre sí, qué comparten, qué no, y el rol de Tony/Ramona como capa de voz"
+  },
+
+  "concepto_fundamental": {
+    "definicion": "Cada industria/empresa puede tener su propia instancia ODI. Estas instancias forman una red micelial donde pueden comunicarse selectivamente.",
+    "analogia": "Como neuronas en un cerebro distribuido. Cada ODI es autónomo pero puede sincronizar con otros cuando es beneficioso.",
+    "principios": [
+      "Autonomía local: Cada ODI opera independientemente",
+      "Comunicación selectiva: Solo comparten lo que tiene valor mutuo",
+      "Privacidad por defecto: Los datos sensibles nunca salen",
+      "Voz unificada: Tony/Ramona narran todas las comunicaciones"
+    ]
+  },
+
+  "topologia_red": {
+    "descripcion": "Estructura jerárquica con comunicación lateral",
+    "diagrama": "ODI_ADSI (raíz) ← → ODI_SRM (industria) ← → ODI_KAIQI, ODI_JAPAN... (empresas)",
+    "niveles": [
+      {
+        "nivel": 0,
+        "nombre": "ODI_ADSI",
+        "tipo": "raiz",
+        "funcion": "Coordinador central del ecosistema",
+        "instancia_unica": true,
+        "conoce": ["todas las industrias", "métricas globales", "protocolos de red"]
+      },
+      {
+        "nivel": 1,
+        "nombre": "ODI_[INDUSTRIA]",
+        "ejemplos": ["ODI_SRM", "ODI_FERRETERIA"],
+        "tipo": "industria",
+        "funcion": "Coordinador de industria, catálogo maestro",
+        "conoce": ["todas las empresas de su industria", "catálogo unificado", "fitment maestro"]
+      },
+      {
+        "nivel": 2,
+        "nombre": "ODI_[EMPRESA]",
+        "ejemplos": ["ODI_KAIQI", "ODI_JAPAN", "ODI_ARMOTOS"],
+        "tipo": "empresa",
+        "funcion": "Operador de empresa, datos específicos",
+        "conoce": ["productos propios", "clientes propios", "precios propios"]
+      }
+    ],
+    "conexiones": {
+      "verticales": {
+        "descripcion": "Padre ↔ Hijo (siempre permitidas)",
+        "ejemplo": "ODI_SRM ↔ ODI_KAIQI"
+      },
+      "horizontales": {
+        "descripcion": "Hermanos (reguladas por protocolo)",
+        "ejemplo": "ODI_KAIQI ↔ ODI_JAPAN",
+        "requiere": "Consentimiento mutuo o interés compartido"
+      },
+      "cruzadas": {
+        "descripcion": "Entre industrias (raras, via ODI_ADSI)",
+        "ejemplo": "ODI_SRM ↔ ODI_FERRETERIA",
+        "requiere": "Aprobación de ODI_ADSI"
+      }
+    }
+  },
+
+  "capas_comunicacion": {
+    "descripcion": "Tres capas de comunicación con diferentes propósitos",
+    "capas": [
+      {
+        "capa": 1,
+        "nombre": "DATOS",
+        "protocolo": "REST/GraphQL interno",
+        "que_viaja": "Estructuras de datos, consultas, sincronizaciones",
+        "formato": "JSON",
+        "ejemplo": {
+          "tipo": "SYNC_CATALOG",
+          "origen": "ODI_KAIQI",
+          "destino": "ODI_SRM",
+          "payload": {
+            "productos_nuevos": 47,
+            "productos_actualizados": 12,
+            "hash_catalogo": "abc123"
+          }
+        }
+      },
+      {
+        "capa": 2,
+        "nombre": "EVENTOS",
+        "protocolo": "Event Bus (Redis Pub/Sub o similar)",
+        "que_viaja": "Notificaciones, alertas, cambios de estado",
+        "formato": "Event schema ODI",
+        "ejemplo": {
+          "tipo": "PRICE_ALERT",
+          "origen": "ODI_VIGIA",
+          "broadcast": true,
+          "payload": {
+            "producto": "Pastillas freno NKD",
+            "competidor": "MercadoLibre",
+            "precio_anterior": 45000,
+            "precio_nuevo": 38000,
+            "cambio_porcentaje": -15.5
+          }
+        }
+      },
+      {
+        "capa": 3,
+        "nombre": "VOZ",
+        "protocolo": "Mensaje narrativo (Tony/Ramona)",
+        "que_viaja": "Comunicaciones humanizadas, respuestas a usuarios",
+        "formato": "Texto + metadata de entonación",
+        "actores": {
+          "tony": "Narra eventos técnicos, datos, procesos",
+          "ramona": "Acompaña usuarios, responde consultas, humaniza"
+        }
+      }
+    ]
+  },
+
+  "protocolo_odi_a_odi": {
+    "nombre": "ODP (ODI Dialog Protocol)",
+    "version": "1.0",
+    "estructura_mensaje": {
+      "header": {
+        "id": "uuid",
+        "timestamp": "ISO8601",
+        "origen": "ODI_ID",
+        "destino": "ODI_ID o BROADCAST",
+        "tipo": "QUERY | SYNC | EVENT | VOICE | REQUEST",
+        "prioridad": "LOW | NORMAL | HIGH | URGENT",
+        "ttl": "segundos de vida del mensaje",
+        "requiere_respuesta": "boolean"
+      },
+      "auth": {
+        "token": "JWT firmado por origen",
+        "permisos_solicitados": ["READ_CATALOG", "SHARE_PRICE", "VOICE_RELAY"]
+      },
+      "payload": {
+        "contenido": "variable según tipo"
+      },
+      "voice_layer": {
+        "actor": "tony | ramona | null",
+        "narrativa": "Texto humanizado del mensaje",
+        "entonacion": "neutral | alerta | celebracion | tecnico"
+      }
+    },
+    "tipos_mensaje": [
+      {
+        "tipo": "QUERY",
+        "descripcion": "Consulta de datos a otro ODI",
+        "ejemplo": {
+          "pregunta": "¿Tienes stock de referencia X?",
+          "contexto": "Usuario de KAIQI busca producto que no tienen"
+        },
+        "respuesta_esperada": "RESPONSE con datos o NOT_FOUND"
+      },
+      {
+        "tipo": "SYNC",
+        "descripcion": "Sincronización de catálogos o datos",
+        "direccion": "Empresa → Industria (upload) o Industria → Empresa (download)",
+        "ejemplo": "ODI_KAIQI sube 47 productos nuevos a ODI_SRM"
+      },
+      {
+        "tipo": "EVENT",
+        "descripcion": "Notificación de algo que ocurrió",
+        "broadcast": true,
+        "ejemplo": "VIGIA detectó cambio de precio en competencia"
+      },
+      {
+        "tipo": "VOICE",
+        "descripcion": "Mensaje de voz para relay a usuario",
+        "requiere": "Consentimiento del usuario destino",
+        "ejemplo": "Distribuidor envía audio a almacén sobre disponibilidad"
+      },
+      {
+        "tipo": "REQUEST",
+        "descripcion": "Solicitud de acción a otro ODI",
+        "ejemplo": "ODI_SRM pide a ODI_KAIQI que procese un catálogo"
+      }
+    ]
+  },
+
+  "datos_compartidos_vs_privados": {
+    "descripcion": "Clasificación de qué información puede salir de cada ODI",
+    "clasificaciones": {
+      "PUBLICO": {
+        "descripcion": "Cualquier ODI puede acceder",
+        "ejemplos": [
+          "Catálogo de productos (nombres, descripciones)",
+          "Compatibilidades/Fitment",
+          "Fichas técnicas genéricas",
+          "Disponibilidad general (sí/no, no cantidad exacta)"
+        ]
+      },
+      "INDUSTRIA": {
+        "descripcion": "Solo ODIs de la misma industria",
+        "ejemplos": [
+          "Precios de referencia (rangos)",
+          "Tendencias de demanda agregadas",
+          "Alertas de Vigia",
+          "Estadísticas de categorías"
+        ]
+      },
+      "BILATERAL": {
+        "descripcion": "Solo entre dos ODIs con acuerdo",
+        "ejemplos": [
+          "Stock exacto",
+          "Precios reales",
+          "Información de clientes compartidos",
+          "Órdenes inter-empresa"
+        ]
+      },
+      "PRIVADO": {
+        "descripcion": "NUNCA sale del ODI de origen",
+        "ejemplos": [
+          "Costos reales",
+          "Márgenes",
+          "Lista completa de clientes",
+          "Estrategias de precio",
+          "Datos personales de usuarios",
+          "Tokens de API (Shopify, etc.)",
+          "Conversaciones privadas"
+        ]
+      }
+    },
+    "matriz_por_dato": {
+      "nombre_producto": "PUBLICO",
+      "descripcion_producto": "PUBLICO",
+      "sku_interno": "INDUSTRIA",
+      "precio_venta": "BILATERAL",
+      "precio_costo": "PRIVADO",
+      "stock_disponible": "BILATERAL",
+      "stock_exacto": "PRIVADO",
+      "cliente_email": "PRIVADO",
+      "cliente_historial": "PRIVADO",
+      "fitment": "PUBLICO",
+      "alerta_vigia": "INDUSTRIA",
+      "metricas_ventas": "PRIVADO",
+      "metricas_agregadas": "INDUSTRIA"
+    }
+  },
+
+  "voz_tony_ramona": {
+    "descripcion": "Tony y Ramona son la capa de voz que humaniza TODAS las comunicaciones ODI",
+    "roles": {
+      "tony_maestro": {
+        "personalidad": "Experto técnico, preciso, confiable",
+        "cuando_habla": [
+          "Resultados de procesamiento de catálogos",
+          "Datos técnicos de productos",
+          "Alertas de Vigia",
+          "Métricas y estadísticas",
+          "Explicaciones de fitment"
+        ],
+        "tono": "Profesional, directo, sin rodeos",
+        "ejemplo_narrativa": "Procesé 47 productos nuevos. 3 tienen compatibilidad cruzada con Honda CB150. El kit de arrastre tiene alerta de precio: competidor bajó 15%."
+      },
+      "ramona_anfitriona": {
+        "personalidad": "Cálida, empática, orientada al usuario",
+        "cuando_habla": [
+          "Bienvenidas a usuarios",
+          "Respuestas a consultas de clientes",
+          "Acompañamiento en procesos",
+          "Cierre de interacciones",
+          "Manejo de errores con empatía"
+        ],
+        "tono": "Amable, cercano, tranquilizador",
+        "ejemplo_narrativa": "¡Hola! Encontré 3 opciones de pastillas para tu NKD. La primera es la más vendida en tu zona. ¿Te cuento más sobre alguna?"
+      }
+    },
+    "regla_de_oro": "Tony narra el QUÉ (datos). Ramona narra el CÓMO (experiencia)."
+  },
+
+  "flujo_voz_usuario_a_usuario": {
+    "descripcion": "Cuando un usuario quiere comunicarse con otro via ODI",
+    "condiciones": [
+      "Usuario origen lo solicita explícitamente",
+      "Usuario destino ha dado consentimiento previo",
+      "Ambos pertenecen a ODIs conectados",
+      "El mensaje cumple políticas de uso"
+    ],
+    "flujo": [
+      {
+        "paso": 1,
+        "actor": "Usuario A (Almacén)",
+        "accion": "Dice a ODI_ALMACEN: 'Pregúntale al distribuidor si tiene stock del kit de arrastre FZ'"
+      },
+      {
+        "paso": 2,
+        "actor": "ODI_ALMACEN",
+        "accion": "Identifica: destino=ODI_DISTRIBUIDOR, tipo=VOICE_QUERY, producto=kit_arrastre_fz"
+      },
+      {
+        "paso": 3,
+        "actor": "ODI_ALMACEN",
+        "accion": "Empaqueta mensaje ODP con voice_layer de Ramona",
+        "mensaje_odp": {
+          "tipo": "VOICE",
+          "origen": "ODI_ALMACEN",
+          "destino": "ODI_DISTRIBUIDOR",
+          "payload": {
+            "intent": "STOCK_QUERY",
+            "producto": "kit_arrastre_fz",
+            "usuario_origen": "almacen_casa_china"
+          },
+          "voice_layer": {
+            "actor": "ramona",
+            "narrativa": "El almacén Casa China pregunta si tienes disponible el kit de arrastre para FZ.",
+            "entonacion": "consulta"
+          }
+        }
+      },
+      {
+        "paso": 4,
+        "actor": "ODI_DISTRIBUIDOR",
+        "accion": "Recibe mensaje, verifica permisos, consulta stock interno",
+        "resultado": "Stock: 12 unidades disponibles"
+      },
+      {
+        "paso": 5,
+        "actor": "ODI_DISTRIBUIDOR",
+        "accion": "Verifica si Usuario B acepta comunicaciones de Usuario A"
+      },
+      {
+        "paso": 6,
+        "actor": "ODI_DISTRIBUIDOR",
+        "accion": "Si hay consentimiento: notifica a Usuario B (opcional) y prepara respuesta"
+      },
+      {
+        "paso": 7,
+        "actor": "ODI_DISTRIBUIDOR → ODI_ALMACEN",
+        "accion": "Envía respuesta ODP",
+        "mensaje_odp": {
+          "tipo": "VOICE_RESPONSE",
+          "origen": "ODI_DISTRIBUIDOR",
+          "destino": "ODI_ALMACEN",
+          "payload": {
+            "respuesta": "disponible",
+            "cantidad": "disponible",
+            "nota": "Pueden pasar a recoger o pedir envío"
+          },
+          "voice_layer": {
+            "actor": "tony",
+            "narrativa": "Confirmado. El distribuidor tiene disponible el kit de arrastre FZ. Te lo pueden despachar o puedes pasar a recoger.",
+            "entonacion": "confirmacion"
+          }
+        }
+      },
+      {
+        "paso": 8,
+        "actor": "ODI_ALMACEN",
+        "accion": "Entrega respuesta a Usuario A via Ramona",
+        "respuesta_final": "¡Buenas noticias! El distribuidor tiene tu kit de arrastre. ¿Quieres que coordine el envío o prefieres pasar a recogerlo?"
+      }
+    ],
+    "sin_consentimiento": {
+      "descripcion": "Si Usuario B no acepta comunicaciones directas",
+      "alternativa": "ODI_DISTRIBUIDOR responde con datos genéricos sin identificar al usuario",
+      "ejemplo": "Hay stock disponible en distribuidores de tu zona. ¿Quieres que te muestre opciones?"
+    }
+  },
+
+  "eventos_broadcast": {
+    "descripcion": "Eventos que un ODI emite a toda la red (o subred)",
+    "tipos": [
+      {
+        "evento": "CATALOG_UPDATED",
+        "emisor": "ODI_EMPRESA",
+        "receptores": "ODI_INDUSTRIA",
+        "contenido": "Notificación de cambios en catálogo",
+        "voz": "Tony: 'KAIQI actualizó 47 productos. 3 nuevos kits de arrastre disponibles.'"
+      },
+      {
+        "evento": "PRICE_ALERT",
+        "emisor": "ODI_VIGIA",
+        "receptores": "Todos los ODI de la industria",
+        "contenido": "Alerta de cambio de precio en competencia",
+        "voz": "Tony: 'Alerta de mercado. Competidor X bajó pastillas de freno 15%. Precio actual: $38.000.'"
+      },
+      {
+        "evento": "STOCK_LOW",
+        "emisor": "ODI_EMPRESA",
+        "receptores": "ODI_INDUSTRIA + ODIs con acuerdo bilateral",
+        "contenido": "Notificación de stock bajo",
+        "voz": "Tony: 'Stock bajo en KAIQI: Kit arrastre FZ. Útlimas 5 unidades.'"
+      },
+      {
+        "evento": "NEW_PRODUCT",
+        "emisor": "ODI_INDUSTRIA",
+        "receptores": "Todos los ODI de la industria",
+        "contenido": "Nuevo producto en catálogo maestro",
+        "voz": "Ramona: '¡Novedad! Agregamos regulador rectificador universal al catálogo SRM. Ya disponible para búsquedas.'"
+      },
+      {
+        "evento": "CERTIFICATION_GRANTED",
+        "emisor": "ODI_INDUSTRIA",
+        "receptores": "ODI_ADSI",
+        "contenido": "Usuario obtuvo certificación",
+        "voz": "Ramona: '¡Felicidades! Juan del Taller La Moto Feliz ahora es SRM PRO certificado.'"
+      }
+    ]
+  },
+
+  "seguridad_y_privacidad": {
+    "principios": [
+      "Zero-trust entre ODIs: Cada mensaje se valida",
+      "Tokens JWT firmados por ODI origen",
+      "Permisos explícitos por tipo de dato",
+      "Audit log de toda comunicación inter-ODI",
+      "Datos PRIVADOS nunca viajan"
+    ],
+    "autenticacion": {
+      "metodo": "JWT firmado con clave privada del ODI",
+      "contenido_token": {
+        "iss": "ODI_KAIQI",
+        "sub": "comunicacion_inter_odi",
+        "aud": "ODI_SRM",
+        "iat": "timestamp",
+        "exp": "timestamp + TTL",
+        "permisos": ["READ_CATALOG", "QUERY_STOCK"]
+      }
+    },
+    "consentimiento_usuarios": {
+      "para_voz_directa": "Opt-in explícito",
+      "para_datos_compartidos": "Según acuerdo empresa-industria",
+      "revocable": "En cualquier momento"
+    },
+    "audit_log": {
+      "que_se_registra": [
+        "Timestamp",
+        "ODI origen",
+        "ODI destino",
+        "Tipo de mensaje",
+        "Datos compartidos (hash, no contenido)",
+        "Resultado"
+      ],
+      "retencion": "90 días",
+      "acceso": "Solo admin de nivel superior"
+    }
+  },
+
+  "implementacion_tecnica": {
+    "tecnologias_sugeridas": {
+      "event_bus": "Redis Pub/Sub o RabbitMQ",
+      "api_sync": "GraphQL Federation o REST con OpenAPI",
+      "voz": "ElevenLabs para TTS, Whisper para STT",
+      "mensajeria": "n8n como orquestador de flujos"
+    },
+    "canales_redis": {
+      "odi:broadcast:SRM": "Eventos para toda la industria SRM",
+      "odi:direct:KAIQI": "Mensajes directos a ODI_KAIQI",
+      "odi:voice:queue": "Cola de mensajes de voz pendientes"
+    },
+    "endpoints_por_odi": {
+      "/odi/receive": "POST - Recibir mensaje ODP",
+      "/odi/query": "POST - Consulta síncrona",
+      "/odi/status": "GET - Estado del ODI",
+      "/odi/permissions": "GET - Permisos otorgados/recibidos"
+    }
+  },
+
+  "ejemplo_completo_red": {
+    "escenario": "Almacén busca producto, no lo tiene, ODI encuentra en red",
+    "participantes": ["Usuario_Almacen", "ODI_ALMACEN", "ODI_SRM", "ODI_KAIQI", "ODI_JAPAN"],
+    "flujo": [
+      {
+        "paso": 1,
+        "de": "Usuario_Almacen",
+        "a": "ODI_ALMACEN",
+        "mensaje": "¿Tienes regulador rectificador para Pulsar 200?",
+        "canal": "WhatsApp"
+      },
+      {
+        "paso": 2,
+        "de": "ODI_ALMACEN",
+        "accion": "Busca en inventario local",
+        "resultado": "No encontrado"
+      },
+      {
+        "paso": 3,
+        "de": "ODI_ALMACEN",
+        "a": "ODI_SRM",
+        "mensaje_odp": {
+          "tipo": "QUERY",
+          "payload": {"producto": "regulador_rectificador", "aplicacion": "pulsar_200"}
+        }
+      },
+      {
+        "paso": 4,
+        "de": "ODI_SRM",
+        "accion": "Consulta catálogo maestro, encuentra producto, busca disponibilidad en ODIs hijos"
+      },
+      {
+        "paso": 5,
+        "de": "ODI_SRM",
+        "a": ["ODI_KAIQI", "ODI_JAPAN"],
+        "mensaje_odp": {
+          "tipo": "QUERY",
+          "payload": {"sku_maestro": "RR-PULSAR200-001", "query": "disponibilidad"}
+        }
+      },
+      {
+        "paso": 6,
+        "de": "ODI_KAIQI",
+        "a": "ODI_SRM",
+        "respuesta": {"disponible": true, "precio_rango": "80000-95000"}
+      },
+      {
+        "paso": 7,
+        "de": "ODI_JAPAN",
+        "a": "ODI_SRM",
+        "respuesta": {"disponible": false}
+      },
+      {
+        "paso": 8,
+        "de": "ODI_SRM",
+        "a": "ODI_ALMACEN",
+        "respuesta": {
+          "encontrado": true,
+          "proveedores": [{"nombre": "KAIQI", "disponible": true, "precio_rango": "80000-95000"}]
+        }
+      },
+      {
+        "paso": 9,
+        "de": "ODI_ALMACEN",
+        "a": "Usuario_Almacen",
+        "voz_ramona": "¡Lo encontré! El regulador rectificador para Pulsar 200 está disponible con KAIQI. El precio está entre $80.000 y $95.000. ¿Quieres que te conecte con ellos para hacer el pedido?",
+        "canal": "WhatsApp"
+      }
+    ]
+  }
+}

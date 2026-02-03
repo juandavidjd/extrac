@@ -1,0 +1,345 @@
+{
+  "meta": {
+    "version": "1.0",
+    "titulo": "Integración Systeme.io + n8n + ODI",
+    "descripcion": "Arquitectura de orquestación donde Systeme.io maneja usuarios/academia/CRM y n8n conecta con los pipelines ODI"
+  },
+
+  "arquitectura_general": {
+    "diagrama": "SYSTEME.IO (Frontend usuarios) → n8n (Orquestador) → ODI Pipelines (Procesamiento)",
+    "capas": [
+      {
+        "capa": 1,
+        "nombre": "Systeme.io",
+        "funcion": "Gestión de usuarios, academia, CRM, campañas",
+        "responsabilidades": [
+          "Autenticación de usuarios (Login/Registro)",
+          "Gestión de cursos Academia SRM",
+          "CRM y segmentación de contactos",
+          "Campañas de email marketing",
+          "Funnels de venta",
+          "Landing pages",
+          "Membresías y accesos"
+        ],
+        "no_requiere_desarrollo_custom": true
+      },
+      {
+        "capa": 2,
+        "nombre": "n8n",
+        "funcion": "Orquestación de workflows y conexión entre sistemas",
+        "responsabilidades": [
+          "Conectar Systeme.io con ODI",
+          "Procesar webhooks de Systeme.io",
+          "Disparar pipelines ODI según eventos",
+          "Sincronizar datos entre sistemas",
+          "Automatizar flujos de negocio"
+        ],
+        "ubicacion_servidor": "odi-server:5678"
+      },
+      {
+        "capa": 3,
+        "nombre": "ODI Pipelines",
+        "funcion": "Procesamiento de datos industriales",
+        "responsabilidades": [
+          "Vision Extractor (PDF → Productos)",
+          "SRM Processor (Normalización → Shopify)",
+          "Vigia (Monitoreo competencia)",
+          "Event Emitter (Telemetría)",
+          "Fitment M6.2 (Compatibilidades)"
+        ],
+        "ubicacion_servidor": "/opt/odi/"
+      }
+    ]
+  },
+
+  "systeme_io": {
+    "descripcion": "Plataforma todo-en-uno para marketing digital y gestión de usuarios",
+    "url_dashboard": "https://systeme.io/dashboard",
+    "modulos_usados": {
+      "contacts": {
+        "funcion": "CRM - Base de datos de usuarios/leads",
+        "campos_clave": ["email", "nombre", "tags", "industria", "empresa", "rol"],
+        "tags_ecosistema": {
+          "por_industria": ["SRM", "FERRETERIA", "ELECTRONICA"],
+          "por_rol": ["fabricante", "importador", "distribuidor", "almacen", "taller"],
+          "por_empresa": ["KAIQI", "JAPAN", "ARMOTOS", "BARA"],
+          "por_estado": ["lead", "prospecto", "cliente", "certificado_pro"]
+        }
+      },
+      "courses": {
+        "funcion": "Academia - Cursos y formación",
+        "estructura": {
+          "academia_adsi": {
+            "cursos_generales": ["Introducción ODI", "Metodología ADSI"]
+          },
+          "academia_srm": {
+            "niveles": 5,
+            "cursos": [
+              "Fundamentos SRM",
+              "Terminología Técnica",
+              "Fitment y Compatibilidad",
+              "Ventas Técnicas",
+              "Diagnóstico Asistido",
+              "Gestión Inventarios 360",
+              "Importación Riesgo Controlado",
+              "SRM Intelligent Processor"
+            ],
+            "rutas_por_rol": ["talleres", "almacenes", "distribuidores", "importadores", "fabricantes"],
+            "certificacion": "SRM PRO"
+          }
+        }
+      },
+      "campaigns": {
+        "funcion": "Email marketing y automatizaciones",
+        "tipos": [
+          "Bienvenida nuevos usuarios",
+          "Recordatorio cursos incompletos",
+          "Promociones por industria",
+          "Alertas de Vigia (competencia)",
+          "Newsletters técnicos"
+        ]
+      },
+      "funnels": {
+        "funcion": "Embudos de conversión",
+        "ejemplos": [
+          "Registro nuevo taller",
+          "Solicitud demo SRM Intelligent",
+          "Certificación SRM PRO"
+        ]
+      },
+      "memberships": {
+        "funcion": "Acceso a contenido por nivel",
+        "niveles": [
+          {"nombre": "Gratuito", "acceso": "Cursos básicos, catálogo público"},
+          {"nombre": "Pro", "acceso": "Todos los cursos, fichas completas"},
+          {"nombre": "Enterprise", "acceso": "Todo + API + Soporte prioritario"}
+        ]
+      }
+    }
+  },
+
+  "n8n_workflows": {
+    "descripcion": "Workflows que conectan Systeme.io con ODI",
+    "ubicacion": "http://odi-server:5678",
+    "workflows_principales": [
+      {
+        "id": "wf_nuevo_usuario",
+        "nombre": "Nuevo Usuario → ODI",
+        "trigger": "Webhook Systeme.io (nuevo contacto)",
+        "pasos": [
+          "Recibir datos de nuevo contacto",
+          "Detectar industria por tags",
+          "Crear sesión ODI si viene de conversación",
+          "Enviar bienvenida personalizada",
+          "Asignar a ruta de academia según rol"
+        ],
+        "eventos_emitidos": ["USER_REGISTERED", "ONBOARDING_STARTED"]
+      },
+      {
+        "id": "wf_curso_completado",
+        "nombre": "Curso Completado → Certificación",
+        "trigger": "Webhook Systeme.io (curso completado)",
+        "pasos": [
+          "Verificar si completó todos los niveles",
+          "Si es candidato PRO: enviar examen final",
+          "Si aprueba: generar certificado",
+          "Actualizar tag en CRM",
+          "Notificar por email"
+        ],
+        "eventos_emitidos": ["COURSE_COMPLETED", "CERTIFICATION_GRANTED"]
+      },
+      {
+        "id": "wf_catalogo_procesado",
+        "nombre": "Catálogo Procesado → Notificar Usuario",
+        "trigger": "Event Emitter ODI (srm_complete)",
+        "pasos": [
+          "Recibir evento de pipeline completado",
+          "Buscar usuario en Systeme.io por empresa",
+          "Enviar email con resumen de productos",
+          "Actualizar métricas en CRM"
+        ]
+      },
+      {
+        "id": "wf_vigia_alerta",
+        "nombre": "Alerta Vigia → Campaña Email",
+        "trigger": "Event Emitter ODI (VIGIA_PRICE_CHANGE)",
+        "pasos": [
+          "Recibir alerta de cambio de precio",
+          "Identificar usuarios afectados (por producto/industria)",
+          "Crear campaña de email en Systeme.io",
+          "Enviar alerta personalizada"
+        ]
+      },
+      {
+        "id": "wf_odi_conversation",
+        "nombre": "Conversación ODI → CRM",
+        "trigger": "WhatsApp/Web message",
+        "pasos": [
+          "Recibir mensaje de usuario",
+          "Procesar con ODI (intent, contexto)",
+          "Si nuevo usuario: crear en Systeme.io con tags",
+          "Si existente: actualizar historial",
+          "Responder vía canal original"
+        ]
+      },
+      {
+        "id": "wf_shopify_venta",
+        "nombre": "Venta Shopify → CRM",
+        "trigger": "Webhook Shopify (order created)",
+        "pasos": [
+          "Recibir orden de Shopify",
+          "Identificar empresa (por tienda)",
+          "Buscar/crear cliente en Systeme.io",
+          "Agregar tag 'comprador'",
+          "Enviar confirmación personalizada"
+        ]
+      }
+    ]
+  },
+
+  "webhooks_systeme": {
+    "descripcion": "Endpoints que n8n expone para recibir eventos de Systeme.io",
+    "endpoints": {
+      "nuevo_contacto": {
+        "url": "https://n8n.odi-server.com/webhook/systeme/contact-created",
+        "payload_ejemplo": {
+          "event": "contact.created",
+          "data": {
+            "email": "mecanico@taller.com",
+            "first_name": "Juan",
+            "tags": ["SRM", "taller"]
+          }
+        }
+      },
+      "tag_agregado": {
+        "url": "https://n8n.odi-server.com/webhook/systeme/tag-added",
+        "payload_ejemplo": {
+          "event": "contact.tag_added",
+          "data": {
+            "email": "mecanico@taller.com",
+            "tag": "certificado_pro"
+          }
+        }
+      },
+      "curso_completado": {
+        "url": "https://n8n.odi-server.com/webhook/systeme/course-completed",
+        "payload_ejemplo": {
+          "event": "course.completed",
+          "data": {
+            "email": "mecanico@taller.com",
+            "course_id": "fundamentos-srm",
+            "completion_date": "2025-01-31"
+          }
+        }
+      }
+    }
+  },
+
+  "api_systeme_io": {
+    "descripcion": "API de Systeme.io usada por n8n",
+    "base_url": "https://api.systeme.io/api",
+    "autenticacion": "API Key en header X-API-Key",
+    "endpoints_usados": [
+      {
+        "endpoint": "POST /contacts",
+        "uso": "Crear nuevo contacto desde ODI",
+        "payload": {
+          "email": "string",
+          "fields": [
+            {"slug": "first_name", "value": "string"},
+            {"slug": "industria", "value": "SRM"},
+            {"slug": "rol", "value": "taller"}
+          ],
+          "tags": [{"name": "SRM"}, {"name": "taller"}]
+        }
+      },
+      {
+        "endpoint": "PUT /contacts/{id}",
+        "uso": "Actualizar contacto (agregar tags, actualizar campos)"
+      },
+      {
+        "endpoint": "GET /contacts",
+        "uso": "Buscar contacto por email"
+      },
+      {
+        "endpoint": "POST /contacts/{id}/tags",
+        "uso": "Agregar tag a contacto"
+      }
+    ]
+  },
+
+  "flujo_completo_nuevo_usuario": {
+    "descripcion": "Ejemplo end-to-end de un nuevo usuario que entra via ODI",
+    "pasos": [
+      {
+        "paso": 1,
+        "actor": "Usuario",
+        "accion": "Envía mensaje a WhatsApp: 'Hola, tengo un taller de motos'"
+      },
+      {
+        "paso": 2,
+        "actor": "n8n",
+        "accion": "Recibe mensaje, lo envía a ODI para procesamiento"
+      },
+      {
+        "paso": 3,
+        "actor": "ODI",
+        "accion": "Detecta: industria=SRM, tipo=taller. Pide más info: nombre, email"
+      },
+      {
+        "paso": 4,
+        "actor": "Usuario",
+        "accion": "Responde: 'Taller La Moto Feliz, juan@taller.com'"
+      },
+      {
+        "paso": 5,
+        "actor": "n8n",
+        "accion": "Crea contacto en Systeme.io con tags [SRM, taller, lead]"
+      },
+      {
+        "paso": 6,
+        "actor": "Systeme.io",
+        "accion": "Dispara automatización de bienvenida, envía email con acceso a Academia"
+      },
+      {
+        "paso": 7,
+        "actor": "Usuario",
+        "accion": "Hace login en somosrepuestosmotos.com/academia con email"
+      },
+      {
+        "paso": 8,
+        "actor": "Systeme.io",
+        "accion": "Muestra cursos de 'Ruta Talleres', progreso se guarda automáticamente"
+      },
+      {
+        "paso": 9,
+        "actor": "n8n",
+        "accion": "Al completar curso, recibe webhook, actualiza tag a 'nivel_1_completado'"
+      }
+    ]
+  },
+
+  "configuracion_requerida": {
+    "systeme_io": {
+      "api_key": "Obtener de Systeme.io → Settings → API",
+      "webhooks": "Configurar en Systeme.io → Automations → Webhooks",
+      "custom_fields": [
+        {"slug": "industria", "tipo": "text"},
+        {"slug": "empresa", "tipo": "text"},
+        {"slug": "rol", "tipo": "text"},
+        {"slug": "ubicacion", "tipo": "text"},
+        {"slug": "odi_session_id", "tipo": "text"}
+      ]
+    },
+    "n8n": {
+      "credenciales_systeme": "HTTP Header Auth con X-API-Key",
+      "webhook_url_base": "https://n8n.odi-server.com/webhook/",
+      "workflows_importar": "Ver directorio /opt/odi/n8n/"
+    },
+    "env_variables": {
+      "SYSTEME_API_KEY": "sk_...",
+      "SYSTEME_WEBHOOK_SECRET": "...",
+      "N8N_WEBHOOK_URL": "https://n8n.odi-server.com"
+    }
+  }
+}
