@@ -90,7 +90,7 @@ SCRIPTS=(
     "caso_001_test.py"
 )
 
-# Buscar origen de scripts
+# Buscar origen de scripts (archivos subidos con WinSCP)
 if [ -d "$EXTRAC_SOURCE" ]; then
     SOURCE_DIR="$EXTRAC_SOURCE"
 elif [ -d "/home/user/extrac" ]; then
@@ -98,14 +98,9 @@ elif [ -d "/home/user/extrac" ]; then
 elif [ -d "$(pwd)" ] && [ -f "$(pwd)/odi_vision_extractor_v3.py" ]; then
     SOURCE_DIR="$(pwd)"
 else
-    echo -e "${YELLOW}   Scripts no encontrados localmente. Descargando desde repo...${NC}"
-    # Clone from git if needed
-    SOURCE_DIR="/tmp/extrac_deploy"
-    rm -rf "$SOURCE_DIR"
-    git clone --depth 1 https://github.com/juandavidjd/extrac.git "$SOURCE_DIR" 2>/dev/null || {
-        echo -e "${RED}   No se pudo clonar repositorio${NC}"
-        SOURCE_DIR=""
-    }
+    echo -e "${RED}   Scripts no encontrados.${NC}"
+    echo -e "${YELLOW}   Sube los archivos con WinSCP a /home/user/extrac${NC}"
+    SOURCE_DIR=""
 fi
 
 if [ -n "$SOURCE_DIR" ] && [ -d "$SOURCE_DIR" ]; then

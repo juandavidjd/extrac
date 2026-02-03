@@ -26,11 +26,11 @@
 set -e
 
 # Configuration
-REPO_DIR="/tmp/extrac"
+# Scripts se suben manualmente con WinSCP a /home/user/extrac
+SOURCE_DIR="/home/user/extrac"
 SCRIPTS_DIR="/opt/odi/extractors"
 DATA_DIR="/mnt/volume_sfo3_01/profesion/10 empresas ecosistema ODI/Data"
 OUTPUT_DIR="/opt/odi/vision_output"
-BRANCH="claude/load-repository-branches-Vokmq"
 
 # Colors
 RED='\033[0;31m'
@@ -64,38 +64,31 @@ print_banner() {
     echo ""
 }
 
-# Deploy scripts to server
+# Deploy scripts to server (usa archivos locales subidos con WinSCP)
 deploy_scripts() {
     log_info "Deploying ODI scripts to server..."
+    log_info "Usando archivos locales de: $SOURCE_DIR"
 
-    # Update repository
-    if [ -d "$REPO_DIR" ]; then
-        log_info "Updating repository..."
-        cd "$REPO_DIR"
-        git fetch origin "$BRANCH" || log_warning "Could not fetch from origin"
-        git checkout "$BRANCH" || log_warning "Could not checkout branch"
-        git pull origin "$BRANCH" || log_warning "Could not pull from origin"
-    else
-        log_info "Cloning repository..."
-        git clone -b "$BRANCH" https://github.com/your-repo/extrac.git "$REPO_DIR" || {
-            log_error "Failed to clone repository"
-            return 1
-        }
+    # Verificar que exista el directorio fuente
+    if [ ! -d "$SOURCE_DIR" ]; then
+        log_error "Directorio fuente no encontrado: $SOURCE_DIR"
+        log_error "Sube los archivos con WinSCP a $SOURCE_DIR"
+        return 1
     fi
 
     # Create scripts directory
     mkdir -p "$SCRIPTS_DIR"
 
-    # Copy scripts
+    # Copy scripts desde directorio local
     log_info "Copying scripts to $SCRIPTS_DIR..."
-    cp "$REPO_DIR"/odi_vision_extractor_v3.py "$SCRIPTS_DIR/" 2>/dev/null || true
-    cp "$REPO_DIR"/odi_price_list_processor.py "$SCRIPTS_DIR/" 2>/dev/null || true
-    cp "$REPO_DIR"/odi_catalog_enricher.py "$SCRIPTS_DIR/" 2>/dev/null || true
-    cp "$REPO_DIR"/odi_pipeline_orchestrator.py "$SCRIPTS_DIR/" 2>/dev/null || true
-    cp "$REPO_DIR"/odi_semantic_normalizer.py "$SCRIPTS_DIR/" 2>/dev/null || true
-    cp "$REPO_DIR"/odi_event_emitter.py "$SCRIPTS_DIR/" 2>/dev/null || true
+    cp "$SOURCE_DIR"/odi_vision_extractor_v3.py "$SCRIPTS_DIR/" 2>/dev/null || true
+    cp "$SOURCE_DIR"/odi_price_list_processor.py "$SCRIPTS_DIR/" 2>/dev/null || true
+    cp "$SOURCE_DIR"/odi_catalog_enricher.py "$SCRIPTS_DIR/" 2>/dev/null || true
+    cp "$SOURCE_DIR"/odi_pipeline_orchestrator.py "$SCRIPTS_DIR/" 2>/dev/null || true
+    cp "$SOURCE_DIR"/odi_semantic_normalizer.py "$SCRIPTS_DIR/" 2>/dev/null || true
+    cp "$SOURCE_DIR"/odi_event_emitter.py "$SCRIPTS_DIR/" 2>/dev/null || true
 
-    # Fix line endings
+    # Fix line endings (por si se suben desde Windows)
     log_info "Fixing line endings..."
     sed -i 's/\r$//' "$SCRIPTS_DIR"/*.py 2>/dev/null || true
 
