@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ODI Semantic Normalizer v1.1
+ODI Semantic Normalizer v1.2
 ============================
 Capa de normalización semántica para el sistema ODI.
 
@@ -12,13 +12,19 @@ Responsabilidades:
 - Herencia de imágenes + precios
 - Parsing de fitment (marca/modelo/cilindraje/año)
 
+v1.2 Changes:
+- NEW: VariantPreClassifier - detecta variantes (talla/litros/color) ANTES de duplicados
+- Productos que solo difieren en atributos de variante → family_id (NO duplicate_group)
+- Lógica comercial: cascos por talla y aceites por litros son familias, no duplicados
+- Mejora significativa en precisión de catálogos
+
 v1.1 Changes:
 - Added persistent SQLite cache for embeddings (~/.odi/cache/embeddings_cache.db)
 - Machine-friendly ODI_STATS output line for robust parsing
 - sklearn AgglomerativeClustering compatibility (metric/affinity)
 
 Autor: ODI Team
-Versión: 1.1
+Versión: 1.2
 """
 
 import os
@@ -77,6 +83,43 @@ VARIANT_CODE_PATTERNS = [
     r'^(.+?)[-_]([SMLX]{1,2})$',        # CASCO-M, CASCO-L → CASCO
     r'^(.+?)(\d{3})(\d{2})$',           # 50100, 50101 → 501
 ]
+
+# =============================================================================
+# PATRONES DE ATRIBUTOS DE VARIANTE (v1.2)
+# =============================================================================
+
+# Tallas estándar (para cascos, ropa, etc.)
+SIZE_PATTERNS = [
+    r'\b(XXS|XS|S|M|L|XL|XXL|XXXL|2XL|3XL)\b',           # Tallas estándar
+    r'\bTALLA\s*(XXS|XS|S|M|L|XL|XXL|XXXL|\d+)\b',       # TALLA M, TALLA 60
+    r'\bSIZE\s*(XXS|XS|S|M|L|XL|XXL|XXXL|\d+)\b',        # SIZE L
+    r'\b(\d{2})\s*(CM|cm)?\b',                            # 58, 60, 62 (tallas numéricas cascos)
+]
+
+# Volumen/Litros (para aceites, lubricantes)
+VOLUME_PATTERNS = [
+    r'\b(\d+(?:[.,]\d+)?)\s*(L|LT|LTS|LITRO|LITROS)\b',  # 1L, 4L, 1 LITRO
+    r'\b(\d+)\s*(ML|ml|CC|cc)\b',                         # 500ML, 750ml
+    r'\b(\d+(?:[.,]\d+)?)\s*GALON(?:ES)?\b',             # 1 GALON
+    r'\bX\s*(\d+)\s*(L|LT|LITRO)\b',                     # X 4L, X 1 LITRO
+]
+
+# Colores (para cascos, accesorios)
+COLOR_PATTERNS = [
+    r'\b(NEGRO|BLANCO|ROJO|AZUL|AMARILLO|VERDE|NARANJA|GRIS|PLATEADO|DORADO|ROSA|MORADO|CAFE|MARRON|TITANIO|MATE|BRILLANTE|CARBON)\b',
+    r'\b(BLACK|WHITE|RED|BLUE|YELLOW|GREEN|ORANGE|GRAY|GREY|SILVER|GOLD|PINK|PURPLE)\b',
+]
+
+# Categorías que típicamente tienen variantes
+VARIANT_CATEGORIES = {
+    'CASCOS': ['size', 'color'],      # Cascos varían por talla y color
+    'ACEITES': ['volume'],            # Aceites varían por litros
+    'LUBRICANTES': ['volume'],        # Lubricantes varían por litros
+    'ROPA': ['size', 'color'],        # Ropa varía por talla y color
+    'GUANTES': ['size', 'color'],     # Guantes varían por talla y color
+    'CHAQUETAS': ['size', 'color'],   # Chaquetas varían por talla y color
+    'BOTAS': ['size'],                # Botas varían por talla
+}
 
 # Marcas de motos conocidas
 MOTORCYCLE_BRANDS = {
@@ -348,6 +391,264 @@ class FitmentParser:
                 results[sku] = fitment
 
         return results
+
+
+# =============================================================================
+# VARIANT PRE-CLASSIFIER (v1.2)
+# =============================================================================
+
+@dataclass
+class VariantAttribute:
+    """Atributo de variante extraído de un producto."""
+    type: str           # 'size', 'volume', 'color'
+    value: str          # 'M', '4L', 'NEGRO'
+    raw_match: str      # El texto original que coincidió
+
+
+@dataclass
+class PreClassifiedFamily:
+    """Familia pre-clasificada (variantes detectadas antes de duplicados)."""
+    family_id: str
+    base_name: str              # Nombre sin atributo de variante
+    variant_type: str           # 'size', 'volume', 'color'
+    members: List[Dict[str, Any]]  # Lista de miembros con sus atributos
+    skus_to_exclude: Set[str]   # SKUs a excluir del detector de duplicados
+
+
+class VariantPreClassifier:
+    """
+    Pre-clasificador de variantes (v1.2).
+
+    Detecta productos que son variantes legítimas (no duplicados) ANTES
+    del detector de duplicados. Esto mejora la precisión comercial:
+
+    - Cascos talla S, M, L, XL → Familia (no duplicados)
+    - Aceites 1L, 4L → Familia (no duplicados)
+    - Productos color NEGRO, BLANCO → Familia (no duplicados)
+
+    Lógica:
+    1. Extrae atributos de variante de nombre/descripción
+    2. Agrupa productos con mismo "nombre base" (sin el atributo)
+    3. Si solo difieren en el atributo → familia legítima
+    4. Marca SKUs para excluirlos del detector de duplicados
+    """
+
+    def __init__(self):
+        # Compilar patrones
+        self.size_patterns = [re.compile(p, re.IGNORECASE) for p in SIZE_PATTERNS]
+        self.volume_patterns = [re.compile(p, re.IGNORECASE) for p in VOLUME_PATTERNS]
+        self.color_patterns = [re.compile(p, re.IGNORECASE) for p in COLOR_PATTERNS]
+
+    def extract_variant_attribute(self, text: str) -> Optional[VariantAttribute]:
+        """Extrae atributo de variante de un texto."""
+        if not text:
+            return None
+
+        text_upper = text.upper()
+
+        # 1. Buscar talla
+        for pattern in self.size_patterns:
+            match = pattern.search(text_upper)
+            if match:
+                value = match.group(1) if match.groups() else match.group(0)
+                return VariantAttribute(
+                    type='size',
+                    value=value.strip(),
+                    raw_match=match.group(0)
+                )
+
+        # 2. Buscar volumen/litros
+        for pattern in self.volume_patterns:
+            match = pattern.search(text_upper)
+            if match:
+                value = match.group(0)
+                return VariantAttribute(
+                    type='volume',
+                    value=value.strip(),
+                    raw_match=match.group(0)
+                )
+
+        # 3. Buscar color
+        for pattern in self.color_patterns:
+            match = pattern.search(text_upper)
+            if match:
+                value = match.group(1) if match.groups() else match.group(0)
+                return VariantAttribute(
+                    type='color',
+                    value=value.strip(),
+                    raw_match=match.group(0)
+                )
+
+        return None
+
+    def get_base_name(self, nombre: str, variant_attr: VariantAttribute) -> str:
+        """Obtiene el nombre base sin el atributo de variante."""
+        if not nombre or not variant_attr:
+            return nombre or ""
+
+        # Remover el atributo del nombre
+        base = re.sub(
+            re.escape(variant_attr.raw_match),
+            '',
+            nombre,
+            flags=re.IGNORECASE
+        )
+
+        # Limpiar espacios extra y separadores sobrantes
+        base = re.sub(r'\s+', ' ', base)
+        base = re.sub(r'[-_]+$', '', base)
+        base = re.sub(r'^[-_]+', '', base)
+        base = base.strip()
+
+        return base
+
+    def is_variant_category(self, categoria: str, variant_type: str) -> bool:
+        """Verifica si la categoría típicamente tiene este tipo de variante."""
+        if not categoria:
+            return True  # Si no hay categoría, permitir la clasificación
+
+        categoria_upper = categoria.upper()
+
+        for cat, variant_types in VARIANT_CATEGORIES.items():
+            if cat in categoria_upper:
+                return variant_type in variant_types
+
+        # Si no está en la lista, ser permisivo
+        return True
+
+    def preclassify(self, df: pd.DataFrame) -> Tuple[List[PreClassifiedFamily], Set[str]]:
+        """
+        Pre-clasifica variantes del DataFrame.
+
+        Returns:
+            Tuple de (familias_preclasificadas, skus_a_excluir_de_duplicados)
+        """
+        # Paso 1: Extraer atributos de cada producto
+        products_with_variants = []
+
+        for idx, row in df.iterrows():
+            sku = row.get('sku_odi', str(idx))
+            nombre = str(row.get('nombre', ''))
+            categoria = str(row.get('categoria', ''))
+
+            variant_attr = self.extract_variant_attribute(nombre)
+
+            if variant_attr:
+                # Verificar si la categoría es compatible
+                if self.is_variant_category(categoria, variant_attr.type):
+                    base_name = self.get_base_name(nombre, variant_attr)
+
+                    products_with_variants.append({
+                        'sku_odi': sku,
+                        'nombre': nombre,
+                        'categoria': categoria,
+                        'base_name': base_name,
+                        'variant_attr': variant_attr,
+                        'precio': row.get('precio'),
+                        'imagen': row.get('imagen', ''),
+                        'codigo': row.get('codigo', '')
+                    })
+
+        if not products_with_variants:
+            return [], set()
+
+        # Paso 2: Agrupar por (base_name + categoria + variant_type)
+        groups = defaultdict(list)
+
+        for product in products_with_variants:
+            # Clave de agrupación: nombre base + categoría + tipo de variante
+            key = (
+                normalize_text(product['base_name']),
+                product['categoria'].upper() if product['categoria'] else '',
+                product['variant_attr'].type
+            )
+            groups[key].append(product)
+
+        # Paso 3: Crear familias donde hay múltiples variantes
+        families = []
+        all_excluded_skus = set()
+
+        for (base_name, categoria, variant_type), members in groups.items():
+            if len(members) < 2:
+                continue  # No es familia si solo hay un producto
+
+            # Verificar que realmente son variantes diferentes
+            variant_values = set(m['variant_attr'].value for m in members)
+            if len(variant_values) < 2:
+                continue  # Todos tienen el mismo valor de variante, son duplicados reales
+
+            # Es una familia legítima de variantes
+            family_id = f"VFAM-{len(families)+1:04d}"
+
+            # Seleccionar padre (el más completo)
+            parent = max(members, key=lambda m: len(m['nombre']))
+
+            family = PreClassifiedFamily(
+                family_id=family_id,
+                base_name=base_name,
+                variant_type=variant_type,
+                members=[{
+                    'sku_odi': m['sku_odi'],
+                    'nombre': m['nombre'],
+                    'variant_value': m['variant_attr'].value,
+                    'codigo': m['codigo'],
+                    'precio': m['precio'],
+                    'is_parent': m['sku_odi'] == parent['sku_odi']
+                } for m in members],
+                skus_to_exclude={m['sku_odi'] for m in members}
+            )
+
+            families.append(family)
+            all_excluded_skus.update(family.skus_to_exclude)
+
+        return families, all_excluded_skus
+
+    def convert_to_product_families(
+        self,
+        preclassified: List[PreClassifiedFamily],
+        df: pd.DataFrame
+    ) -> List[ProductFamily]:
+        """Convierte familias pre-clasificadas a ProductFamily estándar."""
+        product_families = []
+
+        for prefam in preclassified:
+            # Encontrar el padre
+            parent_member = next((m for m in prefam.members if m.get('is_parent')), prefam.members[0])
+
+            # Crear variantes en formato estándar
+            variants = []
+            for member in prefam.members:
+                sku = member['sku_odi']
+                row_match = df[df['sku_odi'] == sku]
+
+                if len(row_match) > 0:
+                    row = row_match.iloc[0]
+                    variants.append({
+                        'sku_odi': sku,
+                        'codigo': member.get('codigo', ''),
+                        'nombre': member.get('nombre', ''),
+                        'descripcion': str(row.get('descripcion', '')),
+                        'precio': member.get('precio'),
+                        'imagen': str(row.get('imagen', '')),
+                        'variant_value': member.get('variant_value', '')
+                    })
+
+            family = ProductFamily(
+                family_id=prefam.family_id,
+                parent_sku=parent_member['sku_odi'],
+                parent_nombre=parent_member['nombre'],
+                parent_codigo_base=parent_member.get('codigo', ''),
+                variants=variants,
+                shared_attributes={
+                    'base_name': prefam.base_name,
+                    'variant_type': prefam.variant_type
+                },
+                variant_attribute=prefam.variant_type,
+                total_variants=len(variants)
+            )
+            product_families.append(family)
+
+        return product_families
 
 
 # =============================================================================
@@ -1059,6 +1360,7 @@ class SemanticNormalizer:
 
         # Componentes
         self.fitment_parser = FitmentParser()
+        self.variant_preclassifier = VariantPreClassifier()  # v1.2: Pre-clasificador de variantes
         self.duplicate_detector = DuplicateDetector(threshold=duplicate_threshold)
         self.variant_detector = VariantDetector(similarity_threshold=variant_threshold)
         self.inheritance_manager = InheritanceManager()
@@ -1091,7 +1393,7 @@ class SemanticNormalizer:
         start_time = datetime.now()
 
         print(f"\n{'='*60}")
-        print(f"🧠 ODI SEMANTIC NORMALIZER v1.1")
+        print(f"🧠 ODI SEMANTIC NORMALIZER v1.2")
         print(f"{'='*60}")
         print(f"📂 Input: {input_file}")
 
@@ -1099,7 +1401,18 @@ class SemanticNormalizer:
         df = self._load_catalog(input_file)
         print(f"📊 Productos cargados: {len(df)}")
 
-        # 2. Generar embeddings
+        # 2. PRE-CLASIFICAR VARIANTES (v1.2) - ANTES de duplicados
+        print("\n🏷️  Pre-clasificando variantes (talla/litros/color)...")
+        preclassified_families, excluded_skus = self.variant_preclassifier.preclassify(df)
+        print(f"   ✅ {len(preclassified_families)} familias de variantes detectadas")
+        print(f"   📌 {len(excluded_skus)} SKUs excluidos del detector de duplicados")
+
+        # Convertir a formato ProductFamily estándar
+        preclassified_as_families = self.variant_preclassifier.convert_to_product_families(
+            preclassified_families, df
+        )
+
+        # 3. Generar embeddings (solo para SKUs no pre-clasificados si hay muchos)
         embeddings = []
         embeddings_generated = 0
 
@@ -1109,12 +1422,22 @@ class SemanticNormalizer:
             embeddings_generated = len(embeddings)
             print(f"✅ {embeddings_generated} embeddings generados")
 
-        # 3. Detectar duplicados
+        # 4. Detectar duplicados (EXCLUYENDO variantes pre-clasificadas)
         print("\n🔍 Detectando duplicados...")
+
         if embeddings:
-            duplicate_groups = self.duplicate_detector.detect_with_embeddings(embeddings)
+            # Filtrar embeddings para excluir SKUs pre-clasificados
+            filtered_embeddings = [
+                e for e in embeddings if e.sku_odi not in excluded_skus
+            ]
+            print(f"   📊 Analizando {len(filtered_embeddings)} productos (excluidas {len(excluded_skus)} variantes)")
+
+            if filtered_embeddings:
+                duplicate_groups = self.duplicate_detector.detect_with_embeddings(filtered_embeddings)
+            else:
+                duplicate_groups = []
         else:
-            # Crear embeddings simples para detección de texto
+            # Crear embeddings simples para detección de texto (excluyendo pre-clasificados)
             simple_embeddings = [
                 ProductEmbedding(
                     sku_odi=row.get('sku_odi', str(idx)),
@@ -1124,13 +1447,14 @@ class SemanticNormalizer:
                     text_combined=f"{row.get('nombre', '')} {row.get('descripcion', '')}"
                 )
                 for idx, row in df.iterrows()
+                if row.get('sku_odi', str(idx)) not in excluded_skus
             ]
             duplicate_groups = self.duplicate_detector.detect_simple(simple_embeddings)
 
         print(f"✅ {len(duplicate_groups)} grupos de duplicados encontrados")
 
-        # 4. Detectar familias/variantes
-        print("\n👨‍👩‍👧‍👦 Detectando familias de productos...")
+        # 5. Detectar familias/variantes adicionales (por código y embedding)
+        print("\n👨‍👩‍👧‍👦 Detectando familias adicionales...")
         families_by_code = self.variant_detector.detect_by_code_pattern(df)
         print(f"   📌 Por patrón de código: {len(families_by_code)}")
 
@@ -1139,7 +1463,9 @@ class SemanticNormalizer:
             families_by_embedding = self.variant_detector.detect_by_embedding(embeddings, df)
             print(f"   📌 Por similitud semántica: {len(families_by_embedding)}")
 
-        all_families = families_by_code + families_by_embedding
+        # Combinar TODAS las familias (pre-clasificadas primero, tienen prioridad)
+        all_families = preclassified_as_families + families_by_code + families_by_embedding
+        print(f"   📌 Total familias: {len(all_families)} ({len(preclassified_as_families)} pre-clasificadas)")
 
         # 5. Parsing de fitment
         print("\n🏍️  Extrayendo datos de fitment...")
@@ -1284,10 +1610,19 @@ class SemanticNormalizer:
                     'parent_sku': f.parent_sku,
                     'parent_nombre': f.parent_nombre,
                     'variant_count': f.total_variants,
-                    'variant_type': f.variant_attribute
+                    'variant_type': f.variant_attribute,
+                    'is_preclassified': f.family_id.startswith('VFAM-')  # v1.2
                 }
                 for f in families
             ],
+            'preclassified_families': {
+                'count': len([f for f in families if f.family_id.startswith('VFAM-')]),
+                'by_type': {
+                    'size': len([f for f in families if f.family_id.startswith('VFAM-') and f.variant_attribute == 'size']),
+                    'volume': len([f for f in families if f.family_id.startswith('VFAM-') and f.variant_attribute == 'volume']),
+                    'color': len([f for f in families if f.family_id.startswith('VFAM-') and f.variant_attribute == 'color'])
+                }
+            },
             'fitment_summary': {
                 'total_with_fitment': len(fitment),
                 'by_brand': self._count_by_field(fitment, 'marca'),
@@ -1312,19 +1647,25 @@ class SemanticNormalizer:
 
     def _print_summary(self, result: NormalizationResult):
         """Imprime resumen de normalización."""
+        # Contar familias pre-clasificadas (VFAM-*)
+        preclassified_count = len([f for f in result.product_families if f.family_id.startswith('VFAM-')])
+        other_families = result.families_created - preclassified_count
+
         print(f"\n{'='*60}")
-        print(f"📈 RESUMEN DE NORMALIZACIÓN")
+        print(f"📈 RESUMEN DE NORMALIZACIÓN v1.2")
         print(f"{'='*60}")
         print(f"   Total productos:        {result.total_products}")
         print(f"   Embeddings generados:   {result.embeddings_generated}")
         print(f"   Duplicados detectados:  {result.duplicates_found}")
         print(f"   Grupos de duplicados:   {len(result.duplicate_groups)}")
-        print(f"   Familias creadas:       {result.families_created}")
+        print(f"   Familias totales:       {result.families_created}")
+        print(f"      ├─ Pre-clasificadas: {preclassified_count} (talla/litros/color)")
+        print(f"      └─ Por código/embed: {other_families}")
         print(f"   Productos con fitment:  {result.products_with_fitment}")
         print(f"   Tiempo de proceso:      {result.processing_time_seconds:.2f}s")
         print(f"{'='*60}")
         # Machine-friendly line for parsing by orchestrator
-        print(f"ODI_STATS duplicates={result.duplicates_found} families={result.families_created} fitment={result.products_with_fitment} embeddings={result.embeddings_generated}")
+        print(f"ODI_STATS duplicates={result.duplicates_found} families={result.families_created} preclassified={preclassified_count} fitment={result.products_with_fitment} embeddings={result.embeddings_generated}")
         print()
 
 
