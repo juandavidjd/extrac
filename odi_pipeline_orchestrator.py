@@ -68,7 +68,7 @@ from enum import Enum
 # CONFIGURATION
 # ==============================================================================
 
-VERSION = "1.1"
+VERSION = "1.2"
 SCRIPT_NAME = "ODI Pipeline Orchestrator"
 
 # Default data directory
@@ -423,7 +423,7 @@ class CompanyScanner:
             if company.price_lists:
                 print(f"    💰 Price Lists ({len(company.price_lists)}):")
                 for pl in company.price_lists:
-                    print(f"       - {pl.name} ({cat.size_mb}MB) [{pl.file_type.value}]")
+                    print(f"       - {pl.name} ({pl.size_mb}MB) [{pl.file_type.value}]")
 
             if company.data_files:
                 print(f"    📊 Data Files ({len(company.data_files)}):")
@@ -743,7 +743,8 @@ class PipelineExecutor:
             log.log("Semantic normalizer not found", "warning")
             return False, 0, 0
 
-        output_file = catalog_path.with_stem(catalog_path.stem + "_normalized")
+        # Force .csv extension for output
+        output_file = catalog_path.with_name(catalog_path.stem + "_normalized.csv")
 
         cmd = [
             "python3", str(self.semantic_normalizer),
@@ -762,17 +763,24 @@ class PipelineExecutor:
             )
 
             if result.returncode == 0:
-                # Extract stats from output
+                # Extract stats from output using machine-friendly ODI_STATS line
                 duplicates = 0
                 families = 0
 
-                dup_match = re.search(r'Duplicados detectados:\s*(\d+)', result.stdout)
-                if dup_match:
-                    duplicates = int(dup_match.group(1))
+                # Try machine-friendly format first
+                stats_match = re.search(r'ODI_STATS duplicates=(\d+) families=(\d+)', result.stdout)
+                if stats_match:
+                    duplicates = int(stats_match.group(1))
+                    families = int(stats_match.group(2))
+                else:
+                    # Fallback to legacy format
+                    dup_match = re.search(r'Duplicados detectados:\s*(\d+)', result.stdout)
+                    if dup_match:
+                        duplicates = int(dup_match.group(1))
 
-                fam_match = re.search(r'Familias creadas:\s*(\d+)', result.stdout)
-                if fam_match:
-                    families = int(fam_match.group(1))
+                    fam_match = re.search(r'Familias creadas:\s*(\d+)', result.stdout)
+                    if fam_match:
+                        families = int(fam_match.group(1))
 
                 log.log(f"Normalization completed: {duplicates} duplicates, {families} families", "success")
                 return True, duplicates, families
