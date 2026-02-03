@@ -1,0 +1,587 @@
+{
+  "timestamp": "2026-02-03T19:47:01.440050",
+  "total_products": 459,
+  "duplicates": [
+    {
+      "group_id": "DUP-0001",
+      "canonical": "YOK-00002",
+      "members": [
+        "YOK-00002",
+        "YOK-00106",
+        "YOK-00124",
+        "YOK-00125",
+        "YOK-00157",
+        "YOK-00187",
+        "YOK-00211",
+        "YOK-00307"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7666666666666666
+    },
+    {
+      "group_id": "DUP-0002",
+      "canonical": "YOK-00007",
+      "members": [
+        "YOK-00007",
+        "YOK-00018",
+        "YOK-00022",
+        "YOK-00038",
+        "YOK-00090",
+        "YOK-00115",
+        "YOK-00232",
+        "YOK-00323"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7714285714285714
+    },
+    {
+      "group_id": "DUP-0003",
+      "canonical": "YOK-00010",
+      "members": [
+        "YOK-00010",
+        "YOK-00091",
+        "YOK-00247"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0004",
+      "canonical": "YOK-00011",
+      "members": [
+        "YOK-00011",
+        "YOK-00192",
+        "YOK-00256",
+        "YOK-00335",
+        "YOK-00344",
+        "YOK-00356"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0005",
+      "canonical": "YOK-00012",
+      "members": [
+        "YOK-00012",
+        "YOK-00061",
+        "YOK-00095",
+        "YOK-00109",
+        "YOK-00116",
+        "YOK-00135",
+        "YOK-00210",
+        "YOK-00224"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7666666666666666
+    },
+    {
+      "group_id": "DUP-0006",
+      "canonical": "YOK-00015",
+      "members": [
+        "YOK-00015",
+        "YOK-00051",
+        "YOK-00144",
+        "YOK-00267",
+        "YOK-00321",
+        "YOK-00382",
+        "YOK-00405"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0007",
+      "canonical": "YOK-00017",
+      "members": [
+        "YOK-00017",
+        "YOK-00025",
+        "YOK-00235",
+        "YOK-00294",
+        "YOK-00316",
+        "YOK-00365",
+        "YOK-00434"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0008",
+      "canonical": "YOK-00021",
+      "members": [
+        "YOK-00021",
+        "YOK-00133",
+        "YOK-00195",
+        "YOK-00208",
+        "YOK-00345"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0009",
+      "canonical": "YOK-00023",
+      "members": [
+        "YOK-00023",
+        "YOK-00272",
+        "YOK-00363"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7142857142857143
+    },
+    {
+      "group_id": "DUP-0010",
+      "canonical": "YOK-00028",
+      "members": [
+        "YOK-00028",
+        "YOK-00030",
+        "YOK-00152",
+        "YOK-00306"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7142857142857143
+    },
+    {
+      "group_id": "DUP-0011",
+      "canonical": "YOK-00029",
+      "members": [
+        "YOK-00029",
+        "YOK-00053",
+        "YOK-00089",
+        "YOK-00286",
+        "YOK-00333",
+        "YOK-00426"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0012",
+      "canonical": "YOK-00035",
+      "members": [
+        "YOK-00035",
+        "YOK-00054",
+        "YOK-00177",
+        "YOK-00303",
+        "YOK-00319",
+        "YOK-00381",
+        "YOK-00415",
+        "YOK-00442"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7666666666666666
+    },
+    {
+      "group_id": "DUP-0013",
+      "canonical": "YOK-00037",
+      "members": [
+        "YOK-00037",
+        "YOK-00060",
+        "YOK-00101",
+        "YOK-00111",
+        "YOK-00132",
+        "YOK-00138",
+        "YOK-00178",
+        "YOK-00423"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7714285714285714
+    },
+    {
+      "group_id": "DUP-0014",
+      "canonical": "YOK-00048",
+      "members": [
+        "YOK-00048",
+        "YOK-00096",
+        "YOK-00150",
+        "YOK-00327",
+        "YOK-00340",
+        "YOK-00361",
+        "YOK-00401"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0015",
+      "canonical": "YOK-00056",
+      "members": [
+        "YOK-00056",
+        "YOK-00127",
+        "YOK-00413"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7142857142857143
+    },
+    {
+      "group_id": "DUP-0016",
+      "canonical": "YOK-00058",
+      "members": [
+        "YOK-00058",
+        "YOK-00198",
+        "YOK-00234",
+        "YOK-00298",
+        "YOK-00348",
+        "YOK-00362"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0017",
+      "canonical": "YOK-00059",
+      "members": [
+        "YOK-00059",
+        "YOK-00079",
+        "YOK-00218",
+        "YOK-00305",
+        "YOK-00400",
+        "YOK-00428"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0018",
+      "canonical": "YOK-00063",
+      "members": [
+        "YOK-00063",
+        "YOK-00074",
+        "YOK-00175",
+        "YOK-00188",
+        "YOK-00216",
+        "YOK-00251"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7622222222222221
+    },
+    {
+      "group_id": "DUP-0019",
+      "canonical": "YOK-00075",
+      "members": [
+        "YOK-00075",
+        "YOK-00153",
+        "YOK-00158",
+        "YOK-00173",
+        "YOK-00273",
+        "YOK-00369"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0020",
+      "canonical": "YOK-00077",
+      "members": [
+        "YOK-00077",
+        "YOK-00213",
+        "YOK-00226",
+        "YOK-00412"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0021",
+      "canonical": "YOK-00078",
+      "members": [
+        "YOK-00078",
+        "YOK-00233",
+        "YOK-00359",
+        "YOK-00388",
+        "YOK-00399"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0022",
+      "canonical": "YOK-00082",
+      "members": [
+        "YOK-00082",
+        "YOK-00126",
+        "YOK-00131",
+        "YOK-00269",
+        "YOK-00296",
+        "YOK-00367"
+      ],
+      "recommendation": "review",
+      "confidence": 0.78
+    },
+    {
+      "group_id": "DUP-0023",
+      "canonical": "YOK-00092",
+      "members": [
+        "YOK-00092",
+        "YOK-00242",
+        "YOK-00343",
+        "YOK-00407",
+        "YOK-00429",
+        "YOK-00446"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7799999999999999
+    },
+    {
+      "group_id": "DUP-0024",
+      "canonical": "YOK-00094",
+      "members": [
+        "YOK-00094",
+        "YOK-00285",
+        "YOK-00312"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0025",
+      "canonical": "YOK-00097",
+      "members": [
+        "YOK-00097",
+        "YOK-00163",
+        "YOK-00164",
+        "YOK-00199",
+        "YOK-00201",
+        "YOK-00342",
+        "YOK-00380",
+        "YOK-00459"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7666666666666666
+    },
+    {
+      "group_id": "DUP-0026",
+      "canonical": "YOK-00098",
+      "members": [
+        "YOK-00098",
+        "YOK-00237",
+        "YOK-00433"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0027",
+      "canonical": "YOK-00100",
+      "members": [
+        "YOK-00100",
+        "YOK-00165",
+        "YOK-00174",
+        "YOK-00276"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0028",
+      "canonical": "YOK-00110",
+      "members": [
+        "YOK-00110",
+        "YOK-00449"
+      ],
+      "recommendation": "review",
+      "confidence": 1.0
+    },
+    {
+      "group_id": "DUP-0029",
+      "canonical": "YOK-00112",
+      "members": [
+        "YOK-00112",
+        "YOK-00243",
+        "YOK-00325",
+        "YOK-00419"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0030",
+      "canonical": "YOK-00130",
+      "members": [
+        "YOK-00130",
+        "YOK-00142",
+        "YOK-00169",
+        "YOK-00205",
+        "YOK-00278",
+        "YOK-00420",
+        "YOK-00453"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0031",
+      "canonical": "YOK-00140",
+      "members": [
+        "YOK-00140",
+        "YOK-00141",
+        "YOK-00200",
+        "YOK-00311"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0032",
+      "canonical": "YOK-00167",
+      "members": [
+        "YOK-00167",
+        "YOK-00281",
+        "YOK-00452"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0033",
+      "canonical": "YOK-00168",
+      "members": [
+        "YOK-00168",
+        "YOK-00398"
+      ],
+      "recommendation": "review",
+      "confidence": 0.8
+    },
+    {
+      "group_id": "DUP-0034",
+      "canonical": "YOK-00170",
+      "members": [
+        "YOK-00170",
+        "YOK-00375"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0035",
+      "canonical": "YOK-00171",
+      "members": [
+        "YOK-00171",
+        "YOK-00300",
+        "YOK-00334",
+        "YOK-00385",
+        "YOK-00403",
+        "YOK-00440"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7799999999999999
+    },
+    {
+      "group_id": "DUP-0036",
+      "canonical": "YOK-00183",
+      "members": [
+        "YOK-00183",
+        "YOK-00215",
+        "YOK-00274",
+        "YOK-00454"
+      ],
+      "recommendation": "review",
+      "confidence": 0.8000000000000002
+    },
+    {
+      "group_id": "DUP-0037",
+      "canonical": "YOK-00191",
+      "members": [
+        "YOK-00191",
+        "YOK-00252",
+        "YOK-00371"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0038",
+      "canonical": "YOK-00219",
+      "members": [
+        "YOK-00219",
+        "YOK-00244",
+        "YOK-00317",
+        "YOK-00338",
+        "YOK-00373",
+        "YOK-00457"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    },
+    {
+      "group_id": "DUP-0039",
+      "canonical": "YOK-00238",
+      "members": [
+        "YOK-00238",
+        "YOK-00313",
+        "YOK-00441"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7142857142857143
+    },
+    {
+      "group_id": "DUP-0040",
+      "canonical": "YOK-00250",
+      "members": [
+        "YOK-00250",
+        "YOK-00357",
+        "YOK-00374",
+        "YOK-00422"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7142857142857143
+    },
+    {
+      "group_id": "DUP-0041",
+      "canonical": "YOK-00262",
+      "members": [
+        "YOK-00262",
+        "YOK-00279",
+        "YOK-00292",
+        "YOK-00332",
+        "YOK-00341"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0042",
+      "canonical": "YOK-00270",
+      "members": [
+        "YOK-00270",
+        "YOK-00293",
+        "YOK-00310",
+        "YOK-00354",
+        "YOK-00431"
+      ],
+      "recommendation": "review",
+      "confidence": 0.75
+    },
+    {
+      "group_id": "DUP-0043",
+      "canonical": "YOK-00308",
+      "members": [
+        "YOK-00308",
+        "YOK-00352",
+        "YOK-00355",
+        "YOK-00389"
+      ],
+      "recommendation": "review",
+      "confidence": 0.7777777777777778
+    }
+  ],
+  "families": [],
+  "fitment_summary": {
+    "total_with_fitment": 79,
+    "by_brand": {
+      "PULSAR": 5,
+      "HONDA": 3,
+      "AKT": 2
+    },
+    "by_cc": {
+      "90cc": 28,
+      "100cc": 11,
+      "110cc": 10,
+      "70cc": 10,
+      "125cc": 5,
+      "200cc": 3,
+      "180cc": 2,
+      "150cc": 1
+    }
+  }
+}
