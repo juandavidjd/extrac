@@ -105,12 +105,21 @@ except ImportError:
     EMITTER_AVAILABLE = False
     ODIEventEmitter = None
 
+# Catalog Enricher para enriquecer con precios
+try:
+    from odi_catalog_enricher import CatalogEnricher, auto_enrich_after_extraction
+    ENRICHER_AVAILABLE = True
+except ImportError:
+    ENRICHER_AVAILABLE = False
+    CatalogEnricher = None
+    auto_enrich_after_extraction = None
+
 
 # ============================================================================
 # CONFIGURACIÓN GLOBAL
 # ============================================================================
 
-VERSION = "3.1"
+VERSION = "3.2"
 SCRIPT_NAME = "ODI Vision Extractor"
 
 # Debug mode - guarda respuestas raw de API
@@ -1288,6 +1297,8 @@ def print_help():
     --dpi DPI            Resolución de imagen (default: {DEFAULT_DPI})
     --no-crops           No guardar imágenes recortadas
     --no-checkpoint      Deshabilitar sistema de checkpoint
+    --data-dir DIR       Directorio con archivos de precios para enriquecer
+    --enrich             Enriquecer automaticamente buscando precios
     --help, -h           Mostrar esta ayuda
 
 {Colors.CYAN}EJEMPLOS:{Colors.RESET}
@@ -1338,6 +1349,8 @@ def main():
         'dpi': DEFAULT_DPI,
         'use_checkpoint': True,
         'save_crops': True,
+        'data_dir': None,
+        'enrich': False,
     }
 
     # Parsear opciones
@@ -1359,6 +1372,13 @@ def main():
             i += 1
         elif arg == '--no-checkpoint':
             config['use_checkpoint'] = False
+            i += 1
+        elif arg == '--data-dir' and i + 1 < len(sys.argv):
+            config['data_dir'] = sys.argv[i + 1]
+            config['enrich'] = True
+            i += 2
+        elif arg == '--enrich':
+            config['enrich'] = True
             i += 1
         else:
             i += 1
@@ -1388,6 +1408,33 @@ def main():
     try:
         processor = CatalogProcessor(config)
         processor.process()
+
+        # Enriquecer con precios si se solicitó
+        if config.get('enrich') and ENRICHER_AVAILABLE:
+            log.log("\n" + "="*60, "info")
+            log.log("ENRIQUECIENDO CATÁLOGO CON PRECIOS", "info")
+            log.log("="*60, "info")
+
+            csv_path = os.path.join(
+                config['output_dir'],
+                f"{config['prefix']}_catalogo.csv"
+            )
+
+            if os.path.exists(csv_path):
+                enriched_path = auto_enrich_after_extraction(
+                    csv_path,
+                    config.get('data_dir')
+                )
+                if enriched_path:
+                    log.log(f"Catálogo enriquecido: {enriched_path}", "success")
+                else:
+                    log.log("No se pudo enriquecer el catálogo", "warning")
+            else:
+                log.log(f"CSV no encontrado para enriquecer: {csv_path}", "warning")
+
+        elif config.get('enrich') and not ENRICHER_AVAILABLE:
+            log.log("Enriquecedor no disponible. Instalar: from odi_catalog_enricher import *", "warning")
+
     except KeyboardInterrupt:
         log.log("\nProceso interrumpido por usuario", "warning")
         sys.exit(130)
