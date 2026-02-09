@@ -1,4 +1,4 @@
-# ODI — Organismo Digital Industrial v17.2
+# ODI — Organismo Digital Industrial v17.3
 
 ## Proyecto
 
@@ -63,12 +63,12 @@
 
 | Nombre | Estado |
 |--------|--------|
-| hello_world | ✅ ACTIVO |
-| odi_saludo | ◐ EN REVISIÓN |
-| odi_order_confirm_v2 | ◐ EN REVISIÓN |
-| odi_order_status | ◐ EN REVISIÓN |
-| odi_shipping_update | ◐ EN REVISIÓN |
-| odi_contract_approval | ◐ EN REVISIÓN |
+| hello_world | ✅ APROBADO |
+| odi_saludo | ✅ APROBADO |
+| odi_order_confirm_v2 | ✅ APROBADO |
+| odi_order_status | ✅ APROBADO |
+| odi_shipping_update | ✅ APROBADO |
+| odi_contract_approval | ✅ APROBADO |
 
 ### Actores WhatsApp
 
@@ -142,6 +142,8 @@
 
 ## Arquitectura de Decisión (Principios Fundacionales)
 
+- **Manifiesto ODI:** `MANIFIESTO_ODI.md` — Ley suprema del organismo
+- **Artículo 0:** "ODI existe solo si puede auditar su propia ley"
 - **"ODI decide sin hablar, habla solo cuando ya decidió"**
 - **"La trazabilidad no depende de la voz"**
 - **Triple Solidez:** Validación en 3 capas antes de ejecutar
@@ -149,6 +151,7 @@
 - **Constitución:** MEO-ODI (Marco Ético), RA-ODI (Reglas Arquitectura), OMA (Ontología Mínima)
 - La voz es accesoria, la auditoría es soberana
 - Si la voz falla, la operación continúa
+- **Componentes Excluidos del Núcleo:** Midjourney, Perplexity (no auditables)
 
 ## Flujos n8n Activos
 
@@ -172,9 +175,9 @@
 
 ## Prioridades (Febrero 2026)
 
-1. **CRÍTICA:** Aprobar 5 plantillas WhatsApp en Meta
-2. **ALTA:** Activar productos Shopify draft → active
-3. **ALTA:** Ejecutar Caso 001 (primera venta real)
+1. ~~**CRÍTICA:** Aprobar 5 plantillas WhatsApp en Meta~~ ✅ COMPLETADO
+2. **CRÍTICA:** Ejecutar Caso 001 (primera venta real)
+3. **ALTA:** Activar productos Shopify draft → active
 4. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
 5. **BAJA:** Configurar Groq como tercer failover IA
 
