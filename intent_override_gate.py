@@ -1,10 +1,13 @@
 """
 INTENT OVERRIDE GATE — Implementación Ejecutable
 =================================================
-Versión: 1.4 (Domain Lock)
+Versión: 1.4.1 (Domain Lock + Safety Exit)
 Fecha: 10 Febrero 2026
 Propósito: Corregir el bug "Para tu ECO" - ODI atrapado en loop de industria
 
+v1.4.1: Safety Exit - Triggers para salir de modo emergencia
+        - EXIT_SAFETY triggers: "sal de modo emergencia", "estoy bien", etc.
+        - P1 puede romper SAFETY lock si es explícito
 v1.4: Domain Lock - Persistencia de estado entre mensajes
       - SessionState con bloqueo de dominio
       - BIOS/Radar handler para P0 emergencias
@@ -439,6 +442,16 @@ P2_TRIGGERS = {
     "para ya": "STOP",
     "detente": "STOP",
     "deja de": "STOP",
+    # Salida de emergencia (v1.4.1)
+    "sal de modo emergencia": "EXIT_SAFETY",
+    "salir de emergencia": "EXIT_SAFETY",
+    "salir de modo emergencia": "EXIT_SAFETY",
+    "ya estoy bien": "EXIT_SAFETY",
+    "estoy bien": "EXIT_SAFETY",
+    "falsa alarma": "EXIT_SAFETY",
+    "no es emergencia": "EXIT_SAFETY",
+    "cancelar emergencia": "EXIT_SAFETY",
+    "todo bien": "EXIT_SAFETY",
 }
 
 # P3: META - Reset total de identidad
@@ -849,6 +862,28 @@ def process_message(message: str, context: Dict) -> Dict:
 
         # Verificar si hay un trigger de desbloqueo
         p2_match = check_triggers(message, P2_TRIGGERS)
+
+        # EXIT_SAFETY: Salir de modo emergencia explícitamente
+        if p2_match and p2_match[1] == "EXIT_SAFETY":
+            session_state.unlock_domain("user_exit_safety")
+            _session_manager.save(session_state)
+            logger.info(f"[SAFETY_EXIT] User explicitly exited SAFETY mode")
+
+            return {
+                "override": True,
+                "response": "Entendido, saliendo de modo emergencia. Me alegra que estés bien. ¿En qué puedo ayudarte ahora?",
+                "new_context": context,
+                "event": {
+                    "event_type": "safety_exit",
+                    "trigger": p2_match[0],
+                    "session_id": session_id,
+                },
+                "continue_normal_flow": False,
+                "domain_locked": False,
+                "can_route_to_srm": True,
+            }
+
+        # SWITCH: Cambiar de tema genérico
         if p2_match and p2_match[1] == "SWITCH":
             # Usuario quiere cambiar de tema - desbloquear
             session_state.unlock_domain("user_requested_switch")
@@ -868,6 +903,16 @@ def process_message(message: str, context: Dict) -> Dict:
                 "domain_locked": False,
                 "can_route_to_srm": True,
             }
+
+        # P1 override puede romper SAFETY si es explícito (emprender, turismo, etc.)
+        if session_state.active_domain == DomainState.SAFETY:
+            p1_match = check_triggers(message, P1_TRIGGERS)
+            if p1_match:
+                # Usuario quiere cambiar de dominio - permitir salir de SAFETY
+                session_state.unlock_domain(f"p1_override:{p1_match[0]}")
+                _session_manager.save(session_state)
+                logger.info(f"[SAFETY_OVERRIDE] P1 trigger '{p1_match[0]}' broke SAFETY lock")
+                # Continuar procesando el mensaje normalmente (no return aquí)
 
         # Procesar según dominio bloqueado
         if session_state.active_domain == DomainState.SAFETY:
@@ -1261,6 +1306,65 @@ def run_domain_lock_tests():
         print("   ❌ No desbloqueó con 'cambiar de tema'")
         failed += 1
         print("   TEST 10: ❌ FAIL\n")
+
+    # =========================================================================
+    # TEST 11: Salida explícita de SAFETY (v1.4.1)
+    # =========================================================================
+    print("Test 11: Salida explícita de SAFETY")
+    session_id = "test_safety_exit"
+    clear_session(session_id)
+
+    # Turno 1: Activar emergencia
+    context = {"session_id": session_id, "user_id": "test"}
+    process_message("Urgencia", context)
+
+    # Turno 2: Salir de modo emergencia explícitamente
+    result2 = process_message("ya estoy bien", context)
+
+    if not result2.get("domain_locked", True) and result2.get("can_route_to_srm"):
+        print("   ✅ Salida de SAFETY funcionó con 'ya estoy bien'")
+
+        # Turno 3: Ahora SÍ debería poder ir a SRM
+        result3 = process_message("necesito un casco", context)
+
+        if result3.get("can_route_to_srm"):
+            print("   ✅ Puede ir a SRM después de salir de emergencia")
+            passed += 1
+            print("   TEST 11: ✅ PASS\n")
+        else:
+            print("   ❌ No puede ir a SRM después de salir")
+            failed += 1
+            print("   TEST 11: ❌ FAIL\n")
+    else:
+        print("   ❌ No salió de SAFETY con 'ya estoy bien'")
+        failed += 1
+        print("   TEST 11: ❌ FAIL\n")
+
+    # =========================================================================
+    # TEST 12: P1 rompe SAFETY lock (v1.4.1)
+    # =========================================================================
+    print("Test 12: P1 rompe SAFETY lock")
+    session_id = "test_p1_breaks_safety"
+    clear_session(session_id)
+
+    # Turno 1: Activar emergencia
+    context = {"session_id": session_id, "user_id": "test"}
+    process_message("Urgencia", context)
+
+    # Turno 2: Trigger P1 "quiero emprender" debe romper SAFETY
+    result2 = process_message("Quiero emprender un negocio", context)
+
+    # Debe haber cambiado a EMPRENDIMIENTO
+    if result2["override"] and "emprendimiento" in result2.get("response", "").lower():
+        print("   ✅ P1 'emprender' rompió SAFETY lock")
+        print(f"   Respuesta: \"{result2['response'][:60]}...\"")
+        passed += 1
+        print("   TEST 12: ✅ PASS\n")
+    else:
+        print("   ❌ P1 no rompió SAFETY lock")
+        print(f"   Respuesta: \"{result2.get('response', '')[:60]}...\"")
+        failed += 1
+        print("   TEST 12: ❌ FAIL\n")
 
     print("="*70)
     print(f"RESULTADOS DOMAIN LOCK: {passed} passed, {failed} failed")
