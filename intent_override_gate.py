@@ -382,17 +382,57 @@ P1_TRIGGERS = {
     "turismo odontologico": "TURISMO_SALUD",
     "turismo médico": "TURISMO_SALUD",
     "turismo medico": "TURISMO_SALUD",
+    "turismo dental": "TURISMO_SALUD",
+    "viaje dental": "TURISMO_SALUD",
 
-    # Salud
+    # Salud General
     "salud": "SALUD",
     "médico": "SALUD",
     "medico": "SALUD",
     "clínica": "SALUD",
     "clinica": "SALUD",
-    "odontología": "SALUD",
-    "odontologia": "SALUD",
-    "dentista": "SALUD",
-    "tratamiento": "SALUD",
+
+    # Dental / Odontología (TURISMO_SALUD - Matzu)
+    "odontología": "TURISMO_SALUD",
+    "odontologia": "TURISMO_SALUD",
+    "dentista": "TURISMO_SALUD",
+    "implante": "TURISMO_SALUD",
+    "implantes": "TURISMO_SALUD",
+    "implantes dentales": "TURISMO_SALUD",
+    "diseño de sonrisa": "TURISMO_SALUD",
+    "carillas": "TURISMO_SALUD",
+    "blanqueamiento": "TURISMO_SALUD",
+    "blanqueamiento dental": "TURISMO_SALUD",
+    "ortodoncia": "TURISMO_SALUD",
+    "brackets": "TURISMO_SALUD",
+    "invisalign": "TURISMO_SALUD",
+    "corona dental": "TURISMO_SALUD",
+    "endodoncia": "TURISMO_SALUD",
+    "extracción dental": "TURISMO_SALUD",
+    "prótesis dental": "TURISMO_SALUD",
+    "matzu": "TURISMO_SALUD",
+    "matzu dental": "TURISMO_SALUD",
+
+    # Bruxismo (COVER'S)
+    "bruxismo": "TURISMO_SALUD",
+    "rechinar dientes": "TURISMO_SALUD",
+    "guarda oclusal": "TURISMO_SALUD",
+    "placa de bruxismo": "TURISMO_SALUD",
+    "protector dental": "TURISMO_SALUD",
+    "covers": "TURISMO_SALUD",
+
+    # Capilar (Cabezas Sanas)
+    "cabeza sana": "SALUD",
+    "cabezas sanas": "SALUD",
+    "caída del cabello": "SALUD",
+    "alopecia": "SALUD",
+    "tricología": "SALUD",
+    "tricologia": "SALUD",
+    "tricólogo": "SALUD",
+    "tricologo": "SALUD",
+    "tratamiento capilar": "SALUD",
+    "injerto capilar": "SALUD",
+    "trasplante de cabello": "SALUD",
 
     # Belleza
     "belleza": "BELLEZA",
@@ -500,8 +540,12 @@ CANONICAL_RESPONSES = {
         "¿Buscas planear un viaje o crear un negocio de turismo?"
     ),
     "TURISMO_SALUD": (
-        "Entendido. Turismo + Salud es una combinación interesante.\n"
-        "¿Buscas tratamiento dental + viaje, o quieres emprender en este sector?"
+        "Entendido. Cambio a modo Turismo Dental.\n\n"
+        "Trabajo con clínicas especializadas en Medellín, Colombia.\n"
+        "Para darte la mejor información, cuéntame:\n\n"
+        "1. ¿Qué procedimiento te interesa? (implantes, diseño de sonrisa, blanqueamiento, etc.)\n"
+        "2. ¿Cuándo planeas viajar?\n"
+        "3. ¿Ya tienes un presupuesto en mente?"
     ),
     "SALUD": (
         "Entendido. Cambio a modo Salud.\n"
@@ -815,6 +859,82 @@ def _handle_locked_emprendimiento_message(message: str, session_state: SessionSt
     }
 
 
+def _handle_locked_turismo_salud_message(message: str, session_state: SessionState) -> Dict:
+    """
+    Procesa mensajes cuando el dominio está bloqueado en TURISMO_SALUD.
+    Maneja consultas de turismo odontológico (Matzu, COVER'S).
+    NUNCA rutea a SRM.
+    """
+    normalized = normalize_text(message)
+
+    # Detectar procedimiento específico mencionado
+    procedures = {
+        "implante": {"name": "Implantes Dentales", "range": "$2.5M - $4M COP por unidad"},
+        "implantes": {"name": "Implantes Dentales", "range": "$2.5M - $4M COP por unidad"},
+        "diseño de sonrisa": {"name": "Diseño de Sonrisa", "range": "$3M - $15M COP"},
+        "sonrisa": {"name": "Diseño de Sonrisa", "range": "$3M - $15M COP"},
+        "carillas": {"name": "Carillas", "range": "$800K - $1.5M COP por unidad"},
+        "blanqueamiento": {"name": "Blanqueamiento Dental", "range": "$400K - $800K COP"},
+        "ortodoncia": {"name": "Ortodoncia", "range": "$3M - $6M COP"},
+        "brackets": {"name": "Ortodoncia con Brackets", "range": "$3M - $6M COP"},
+        "invisalign": {"name": "Invisalign", "range": "$8M - $15M COP"},
+        "corona": {"name": "Corona Cerámica", "range": "$800K - $1.2M COP"},
+        "endodoncia": {"name": "Endodoncia", "range": "$300K - $600K COP"},
+        "bruxismo": {"name": "Tratamiento de Bruxismo", "range": "$150K - $600K COP"},
+        "guarda": {"name": "Guarda Oclusal", "range": "$150K - $600K COP"},
+    }
+
+    detected_procedure = None
+    for keyword, procedure in procedures.items():
+        if keyword in normalized:
+            detected_procedure = procedure
+            break
+
+    if detected_procedure:
+        return {
+            "override": True,
+            "response": (
+                f"Perfecto, te interesa: {detected_procedure['name']}.\n\n"
+                f"Rango de inversión: {detected_procedure['range']}\n\n"
+                "Para preparar tu plan de tratamiento, necesito:\n"
+                "1. ¿Cuándo planeas viajar a Medellín?\n"
+                "2. ¿Cuántos días puedes quedarte?\n"
+                "3. ¿Necesitas ayuda con hospedaje?"
+            ),
+            "domain_locked": True,
+            "detected_procedure": detected_procedure["name"],
+        }
+
+    # Detectar fechas o viaje
+    travel_keywords = ["viajar", "viaje", "vuelo", "abril", "mayo", "junio", "julio", "agosto",
+                       "septiembre", "octubre", "noviembre", "diciembre", "enero", "febrero", "marzo"]
+    for keyword in travel_keywords:
+        if keyword in normalized:
+            return {
+                "override": True,
+                "response": (
+                    "Entendido. Para coordinar tu viaje dental:\n\n"
+                    "1. ¿Qué procedimiento necesitas? (implantes, blanqueamiento, carillas, etc.)\n"
+                    "2. ¿Ya tienes radiografías o estudios previos?\n"
+                    "3. ¿Vienes solo o acompañado?"
+                ),
+                "domain_locked": True,
+            }
+
+    # Respuesta genérica para turismo salud
+    return {
+        "override": True,
+        "response": (
+            "Seguimos en modo Turismo Dental.\n\n"
+            "Trabajo con:\n"
+            "- Matzu Dental Aesthetics (Medellín) - Implantes, diseño de sonrisa\n"
+            "- COVER'S Lab - Especialistas en bruxismo\n\n"
+            "¿Qué procedimiento te interesa?"
+        ),
+        "domain_locked": True,
+    }
+
+
 # ============================================================================
 # FUNCIÓN PRINCIPAL PARA n8n / CORTEX (v1.4 - Domain Lock)
 # ============================================================================
@@ -941,9 +1061,22 @@ def process_message(message: str, context: Dict) -> Dict:
             _session_manager.save(session_state)
             return result
 
+        if session_state.active_domain == DomainState.TURISMO_SALUD:
+            result = _handle_locked_turismo_salud_message(message, session_state)
+            result["new_context"] = context
+            result["event"] = {
+                "event_type": "turismo_salud_continuation",
+                "session_id": session_id,
+                "locked_domain": "TURISMO_SALUD",
+            }
+            result["continue_normal_flow"] = False
+            result["can_route_to_srm"] = False  # NUNCA mientras esté bloqueado
+            _session_manager.save(session_state)
+            return result
+
         # Otros dominios bloqueados: mantener contexto
         if session_state.active_domain in (
-            DomainState.TURISMO, DomainState.TURISMO_SALUD, DomainState.SALUD,
+            DomainState.TURISMO, DomainState.SALUD,
             DomainState.BELLEZA, DomainState.LEGAL, DomainState.EDUCACION, DomainState.TRABAJO
         ):
             domain_name = session_state.active_domain.value
