@@ -1,4 +1,4 @@
-# ODI — Organismo Digital Industrial v17.3
+# ODI — Organismo Digital Industrial v17.4
 
 ## Proyecto
 
@@ -38,12 +38,27 @@
 
 ## Dominios y DNS
 
-| Dominio | Uso | DNS |
-|---------|-----|-----|
-| larocamotorepuestos.com | Negocio principal | IONOS |
-| odi.larocamotorepuestos.com | Webhook WhatsApp + n8n | A → 64.23.170.118 (TTL 5min) |
-| ecosistema-adsi.com | Plataforma ADSI | IONOS |
-| somosrepuestosmotos.com | Marca SRM | IONOS |
+**Proveedor DNS:** IONOS (1&1)
+**Inventario completo:** `IONOS_DOMAINS_INVENTORY.md`
+
+### Dominios Principales
+
+| Dominio | Uso | TLDs Adicionales |
+|---------|-----|------------------|
+| larocamotorepuestos.com | Negocio principal | .online, .info, .tienda |
+| somosrepuestosmotos.com | Marca SRM | — |
+| ecosistema-adsi.com | Plataforma ADSI | .tienda, .online, .info |
+| liveodi.com | Interfaz ODI / VIVIR | .info, .online, .tienda |
+| somosindustriasodi.com | Marca multi-industria | .info, .store, .online |
+| cabezasanas.com | Vertical salud | .tienda, .online, .info |
+| mis-cubiertas.com | Vertical cubiertas | — |
+| matzudentalaesthetics.com | Turismo dental | — |
+
+### DNS Crítico
+
+| Subdominio | Destino | Uso |
+|------------|---------|-----|
+| odi.larocamotorepuestos.com | A → 64.23.170.118 | Webhook WhatsApp + n8n |
 
 - **SSL:** Let's Encrypt, auto-renovación hasta mayo 2026
 - **Reverse Proxy:** Nginx en servidor
@@ -173,13 +188,33 @@
 | Vaisand | Tienda Shopify configurada | Listo para piloto |
 | Industrias Leo | Tienda Shopify configurada | Listo para piloto |
 
+## Intent Override Gate (Febrero 2026)
+
+**Estado:** ✅ INTEGRADO en `/opt/odi/core/odi_core.py`
+**Tests:** 7/7 PASSED
+**Documentación:** `intent_override_gate.py`, `INTENT_OVERRIDE_GATE.md`
+
+### Niveles de Prioridad
+
+| Nivel | Tipo | Ejemplo | Acción |
+|-------|------|---------|--------|
+| P0 | CRÍTICO/Seguridad | "urgencia", "policía" | Safety flow inmediato |
+| P1 | Cambio industria | "emprender", "turismo" | Domain switch |
+| P2 | Ajuste contexto | "no entiendo", "para ya" | Context adjust |
+| P3 | Meta/Identidad | "quién eres", "eres más que eso" | Full reset |
+
+### Bug Corregido
+
+- **"Para tu ECO"**: ODI ya no responde con repuestos de motos a mensajes de turismo, emprendimiento o urgencias
+
 ## Prioridades (Febrero 2026)
 
 1. ~~**CRÍTICA:** Aprobar 5 plantillas WhatsApp en Meta~~ ✅ COMPLETADO
-2. **CRÍTICA:** Ejecutar Caso 001 (primera venta real)
-3. **ALTA:** Activar productos Shopify draft → active
-4. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
-5. **BAJA:** Configurar Groq como tercer failover IA
+2. ~~**CRÍTICA:** Intent Override Gate~~ ✅ DEPLOYED
+3. **CRÍTICA:** Ejecutar Caso 001 (primera venta real)
+4. **ALTA:** Activar productos Shopify draft → active
+5. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
+6. **BAJA:** Configurar Groq como tercer failover IA
 
 ## Convenciones de Código
 
