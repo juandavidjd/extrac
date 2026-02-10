@@ -1,0 +1,101 @@
+{
+  "name": "ODI_v6_CORTEX_INTENT_OVERRIDE_SHADOW",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "shadow-test",
+        "responseMode": "onReceived",
+        "responseData": "allEntries",
+        "options": {}
+      },
+      "id": "webhook-shadow",
+      "name": "Shadow Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// ============================================================================\n// INTENT OVERRIDE GATE — SHADOW MODE\n// ============================================================================\n// Este nodo SOLO observa y registra. NO responde al usuario.\n// ============================================================================\n\n// Obtener mensaje del usuario (soporta ambos formatos)\nlet message = '';\nlet from = '';\n\n// Formato WhatsApp real\nif ($input.first().json.entry) {\n  message = $input.first().json.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.text?.body || '';\n  from = $input.first().json.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from || '';\n} \n// Formato de prueba directo\nelse if ($input.first().json.text) {\n  message = $input.first().json.text || '';\n  from = $input.first().json.from || 'test-user';\n}\n\n// Contexto actual\nconst currentDomain = $input.first().json.current_domain || 'MOTOS';\n\n// ============================================================================\n// TRIGGERS (Prioridad: P0 > P3 > P1 > P2)\n// ============================================================================\n\nconst P0_TRIGGERS = {\n  'urgencia': 'SAFETY', 'urgente': 'SAFETY', 'emergencia': 'SAFETY',\n  'policia': 'SAFETY', 'policía': 'SAFETY', 'ambulancia': 'SAFETY',\n  'auxilio': 'SAFETY', 'socorro': 'SAFETY', 'me robaron': 'SAFETY',\n  'me siguen': 'SAFETY', 'peligro': 'SAFETY', 'amenaza': 'SAFETY',\n  'me van a': 'SAFETY', 'estoy en peligro': 'SAFETY',\n  'dolor fuerte': 'HEALTH_EMERGENCY', 'accidente': 'SAFETY'\n};\n\nconst P3_TRIGGERS = {\n  'tu eres mas que eso': 'IDENTITY_RESET', 'tú eres más que eso': 'IDENTITY_RESET',\n  'eres mas que eso': 'IDENTITY_RESET', 'eres más que eso': 'IDENTITY_RESET',\n  'deja de ser experto': 'IDENTITY_RESET', 'no solo sabes de': 'IDENTITY_RESET',\n  'solo sabes de': 'IDENTITY_CHALLENGE', 'no haces nada': 'IDENTITY_CHALLENGE',\n  'no sabes nada': 'IDENTITY_CHALLENGE', 'quien eres': 'IDENTITY_QUERY',\n  'quién eres': 'IDENTITY_QUERY'\n};\n\nconst P1_TRIGGERS = {\n  'emprender': 'EMPRENDIMIENTO', 'emprendimiento': 'EMPRENDIMIENTO',\n  'negocio': 'EMPRENDIMIENTO', 'idea de negocio': 'EMPRENDIMIENTO',\n  'quiero emprender': 'EMPRENDIMIENTO', 'tengo una idea': 'EMPRENDIMIENTO',\n  'turismo': 'TURISMO', 'viaje': 'TURISMO', 'hotel': 'TURISMO',\n  'turismo odontologico': 'TURISMO_SALUD', 'turismo odontológico': 'TURISMO_SALUD',\n  'turismo medico': 'TURISMO_SALUD', 'turismo médico': 'TURISMO_SALUD',\n  'salud': 'SALUD', 'medico': 'SALUD', 'médico': 'SALUD',\n  'clinica': 'SALUD', 'clínica': 'SALUD', 'odontologia': 'SALUD',\n  'odontología': 'SALUD', 'belleza': 'BELLEZA', 'estetica': 'BELLEZA',\n  'estética': 'BELLEZA', 'abogado': 'LEGAL', 'legal': 'LEGAL',\n  'educacion': 'EDUCACION', 'educación': 'EDUCACION', 'curso': 'EDUCACION',\n  'trabajo': 'TRABAJO', 'empleo': 'TRABAJO', 'empresa': 'TRABAJO'\n};\n\nconst P2_TRIGGERS = {\n  'no entiendo': 'HELP', 'como funciona': 'HELP', 'cómo funciona': 'HELP',\n  'odi ayudame': 'HELP', 'odi ayúdame': 'HELP', 'ayudame odi': 'HELP',\n  'cambia de tema': 'SWITCH', 'otro tema': 'SWITCH', 'basta ya': 'STOP',\n  'para ya': 'STOP', 'detente': 'STOP'\n};\n\n// ============================================================================\n// FUNCIONES\n// ============================================================================\n\nfunction normalizeText(text) {\n  return text.toLowerCase().trim().replace(/[^\\w\\sáéíóúñü]/g, '');\n}\n\nfunction checkTriggers(text, triggers) {\n  const normalized = normalizeText(text);\n  const sortedTriggers = Object.keys(triggers).sort((a, b) => b.length - a.length);\n  \n  for (const trigger of sortedTriggers) {\n    if (normalized.includes(trigger)) {\n      return { trigger, category: triggers[trigger] };\n    }\n  }\n  return null;\n}\n\n// ============================================================================\n// ANÁLISIS\n// ============================================================================\n\nlet override = false;\nlet overrideLevel = 'NONE';\nlet triggerWord = '';\nlet category = '';\nlet newDomain = currentDomain;\nlet priority = null;\n\n// P0: Seguridad (máxima prioridad)\nlet match = checkTriggers(message, P0_TRIGGERS);\nif (match) {\n  override = true;\n  overrideLevel = 'P0_CRITICAL';\n  triggerWord = match.trigger;\n  category = match.category;\n  newDomain = 'SAFETY';\n  priority = 0;\n}\n\n// P3: Meta-identidad\nif (!override) {\n  match = checkTriggers(message, P3_TRIGGERS);\n  if (match) {\n    override = true;\n    overrideLevel = 'P3_META';\n    triggerWord = match.trigger;\n    category = match.category;\n    newDomain = 'UNIVERSAL';\n    priority = 3;\n  }\n}\n\n// P1: Cambio de industria\nif (!override) {\n  match = checkTriggers(message, P1_TRIGGERS);\n  if (match && match.category !== currentDomain) {\n    override = true;\n    overrideLevel = 'P1_HIGH';\n    triggerWord = match.trigger;\n    category = match.category;\n    newDomain = match.category;\n    priority = 1;\n  }\n}\n\n// P2: Ajuste de contexto\nif (!override) {\n  match = checkTriggers(message, P2_TRIGGERS);\n  if (match) {\n    override = true;\n    overrideLevel = 'P2_MEDIUM';\n    triggerWord = match.trigger;\n    category = match.category;\n    priority = 2;\n  }\n}\n\n// ============================================================================\n// OUTPUT (SHADOW - Solo registro, no respuesta)\n// ============================================================================\n\nreturn [{\n  json: {\n    shadow_mode: true,\n    timestamp: new Date().toISOString(),\n    \n    // Input\n    input_message: message,\n    from: from,\n    from_domain: currentDomain,\n    \n    // Override detection\n    override_detected: override,\n    override_level: overrideLevel,\n    priority: priority,\n    trigger_word: triggerWord,\n    category: category,\n    new_domain: newDomain,\n    \n    // Metadata\n    node: 'Intent_Override_Shadow',\n    version: '1.0',\n    \n    // NDJSON event\n    event: JSON.stringify({\n      ts: new Date().toISOString(),\n      type: 'intent_override_shadow',\n      override: override,\n      level: overrideLevel,\n      trigger: triggerWord,\n      category: category,\n      from_domain: currentDomain,\n      to_domain: override ? newDomain : null,\n      input: message.substring(0, 100)\n    })\n  }\n}];"
+      },
+      "id": "intent-override-shadow",
+      "name": "Intent Override Shadow",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [480, 300]
+    },
+    {
+      "parameters": {
+        "command": "echo '{{ $json.event }}' >> /opt/odi/logs/shadow_events.ndjson"
+      },
+      "id": "log-ndjson",
+      "name": "Log NDJSON",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [710, 300]
+    },
+    {
+      "parameters": {},
+      "id": "no-op-end",
+      "name": "No Response (Shadow)",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [940, 300]
+    }
+  ],
+  "connections": {
+    "Shadow Webhook": {
+      "main": [
+        [
+          {
+            "node": "Intent Override Shadow",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intent Override Shadow": {
+      "main": [
+        [
+          {
+            "node": "Log NDJSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log NDJSON": {
+      "main": [
+        [
+          {
+            "node": "No Response (Shadow)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "name": "shadow",
+      "createdAt": "2026-02-10T00:00:00.000Z",
+      "updatedAt": "2026-02-10T00:00:00.000Z"
+    },
+    {
+      "name": "intent-override",
+      "createdAt": "2026-02-10T00:00:00.000Z",
+      "updatedAt": "2026-02-10T00:00:00.000Z"
+    }
+  ],
+  "triggerCount": 0,
+  "updatedAt": "2026-02-10T00:00:00.000Z",
+  "versionId": "shadow-v1"
+}
