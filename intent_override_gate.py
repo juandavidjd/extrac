@@ -1,9 +1,13 @@
 """
 INTENT OVERRIDE GATE — Implementación Ejecutable
 =================================================
-Versión: 1.0
+Versión: 1.2
 Fecha: 10 Febrero 2026
 Propósito: Corregir el bug "Para tu ECO" - ODI atrapado en loop de industria
+
+v1.2: Agregados sinónimos de emprendimiento
+v1.1: Integración en producción, tests 10/10
+v1.0: Implementación inicial
 
 Este módulo DEBE ejecutarse ANTES de cualquier respuesta de ODI.
 Si detecta un override, cambia el contexto inmediatamente.
@@ -83,7 +87,7 @@ P0_TRIGGERS = {
 
 # P1: ALTO - Cambio de industria/modo (override industria actual)
 P1_TRIGGERS = {
-    # Emprendimiento
+    # Emprendimiento (sinónimos completos)
     "emprender": "EMPRENDIMIENTO",
     "emprendimiento": "EMPRENDIMIENTO",
     "negocio": "EMPRENDIMIENTO",
@@ -93,6 +97,16 @@ P1_TRIGGERS = {
     "iniciar un negocio": "EMPRENDIMIENTO",
     "crear empresa": "EMPRENDIMIENTO",
     "mi propio negocio": "EMPRENDIMIENTO",
+    "lanzar mi propio negocio": "EMPRENDIMIENTO",
+    "iniciar un proyecto empresarial": "EMPRENDIMIENTO",
+    "materializar una idea": "EMPRENDIMIENTO",
+    "independizarme laboralmente": "EMPRENDIMIENTO",
+    "crear mi propia empresa": "EMPRENDIMIENTO",
+    "convertirme en mi propio jefe": "EMPRENDIMIENTO",
+    "ser mi propio jefe": "EMPRENDIMIENTO",
+    "montar un negocio": "EMPRENDIMIENTO",
+    "abrir un negocio": "EMPRENDIMIENTO",
+    "proyecto empresarial": "EMPRENDIMIENTO",
 
     # Turismo
     "turismo": "TURISMO",
