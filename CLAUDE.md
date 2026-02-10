@@ -191,7 +191,8 @@
 ## Intent Override Gate (Febrero 2026)
 
 **Estado:** ✅ INTEGRADO en `/opt/odi/core/odi_core.py`
-**Tests:** 7/7 PASSED
+**Versión:** 1.2
+**Tests:** 10/10 PASSED
 **Documentación:** `intent_override_gate.py`, `INTENT_OVERRIDE_GATE.md`
 
 ### Niveles de Prioridad
@@ -207,14 +208,32 @@
 
 - **"Para tu ECO"**: ODI ya no responde con repuestos de motos a mensajes de turismo, emprendimiento o urgencias
 
+## CASO 001 — Primera Venta Real (10 Feb 2026)
+
+**Estado:** ✅ COMPLETADO
+**Pedido:** #ODI-260210034547
+**Producto:** 3 x LLANTA 110-70-13 TL V665 SEMIPISTERA YB
+**Total:** $123,000 COP
+**Canal:** WhatsApp (+57 322 5462101)
+
+### Flujo Validado
+
+1. Usuario solicita "llanta para ECO 100"
+2. ODI presenta 5 opciones con precios
+3. Usuario selecciona opción 3
+4. Usuario confirma cantidad (3 unidades)
+5. ODI calcula total y solicita confirmación
+6. Pedido generado automáticamente
+
 ## Prioridades (Febrero 2026)
 
 1. ~~**CRÍTICA:** Aprobar 5 plantillas WhatsApp en Meta~~ ✅ COMPLETADO
 2. ~~**CRÍTICA:** Intent Override Gate~~ ✅ DEPLOYED
-3. **CRÍTICA:** Ejecutar Caso 001 (primera venta real)
-4. **ALTA:** Activar productos Shopify draft → active
-5. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
-6. **BAJA:** Configurar Groq como tercer failover IA
+3. ~~**CRÍTICA:** Ejecutar Caso 001 (primera venta real)~~ ✅ COMPLETADO
+4. **ALTA:** Activar Turismo Odontológico (segundo vertical)
+5. **MEDIA:** Activar productos Shopify draft → active
+6. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
+7. **BAJA:** Configurar Groq como tercer failover IA
 
 ## Convenciones de Código
 
