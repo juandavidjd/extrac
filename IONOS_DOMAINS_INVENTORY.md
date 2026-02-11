@@ -1,11 +1,36 @@
 # IONOS Domains Inventory — ODI Ecosystem
 
-**Fecha de actualización:** 10 Febrero 2026
+**Fecha de actualización:** 11 Febrero 2026
 **Proveedor:** IONOS (1&1)
+**Total Dominios:** 27
 
 ---
 
 ## Contratos Activos
+
+### 0. CATRMU — Canal Transversal Multitemático (NUEVO)
+**Contrato:** 110580464
+
+| Dominio | Renovación |
+|---------|------------|
+| catrmu.com | 02/11/2027 |
+| catrmu.tienda | 02/11/2027 |
+| catrmu.online | 02/11/2027 |
+| catrmu.info | 02/11/2027 |
+
+**Servicios:**
+- Correo IONOS Básico 25 (hasta 02/09/2027)
+
+**Uso:** Canal Transversal Universal — Contenedor de todas las industrias ODI
+
+**DNS Configurado:**
+- `catrmu.com` → A record → 64.23.170.118
+- `www.catrmu.com` → A record → 64.23.170.118
+- `odi.catrmu.com` → A record → 64.23.170.118
+
+**Email:** info@catrmu.com
+
+---
 
 ### 1. Matzu Dental Aesthetics
 **Contrato:** 109066610
@@ -166,14 +191,15 @@
 
 | Vertical | Dominio Principal | TLDs Adicionales |
 |----------|------------------|------------------|
+| **CATRMU** | catrmu.com | .tienda, .online, .info |
 | **Motos/SRM** | somosrepuestosmotos.com | — |
 | **La Roca** | larocamotorepuestos.com | .online, .info, .tienda |
 | **ADSi** | ecosistema-adsi.com | .tienda, .online, .info |
 | **ODI** | liveodi.com | .info, .online, .tienda |
 | **Industrias** | somosindustriasodi.com | .info, .store, .online |
-| **Salud** | cabezasanas.com | .tienda, .online, .info |
-| **Cubiertas** | mis-cubiertas.com | — |
-| **Dental** | matzudentalaesthetics.com | — |
+| **Salud/Capilar** | cabezasanas.com | .tienda, .online, .info |
+| **Salud/Bruxismo** | mis-cubiertas.com | — |
+| **Salud/Dental** | matzudentalaesthetics.com | — |
 
 ---
 
