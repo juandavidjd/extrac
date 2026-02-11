@@ -278,13 +278,36 @@ TRANSPORTE   SALUD    BELLEZA   DEFAULT
 
 ---
 
+## Dominios Registrados (IONOS)
+
+| Dominio | Vigencia | Uso |
+|---------|----------|-----|
+| catrmu.com | 02/2026 - 02/2027 | **Principal** |
+| catrmu.tienda | 02/2026 - 02/2027 | Redirect → .com |
+| catrmu.online | 02/2026 - 02/2027 | Redirect → .com |
+| catrmu.info | 02/2026 - 02/2027 | Redirect → .com |
+
+**Email:** info@catrmu.com
+
 ## DNS Requerido (IONOS)
 
-| Dominio | Tipo | Destino | Estado |
-|---------|------|---------|--------|
-| catrmu.com | A | 64.23.170.118 | PENDIENTE |
-| catrmu.com | CNAME www | catrmu.com | PENDIENTE |
-| *.catrmu.com | A | 64.23.170.118 | PENDIENTE (wildcard) |
+### catrmu.com (Principal)
+
+| Tipo | Host | Valor | TTL |
+|------|------|-------|-----|
+| A | @ | 64.23.170.118 | 3600 |
+| A | www | 64.23.170.118 | 3600 |
+| A | odi | 64.23.170.118 | 3600 |
+| MX | @ | mx00.ionos.es (pri 10) | 3600 |
+| MX | @ | mx01.ionos.es (pri 10) | 3600 |
+
+### Dominios Secundarios (Redirect 301)
+
+| Dominio | Destino |
+|---------|---------|
+| catrmu.tienda | https://catrmu.com |
+| catrmu.online | https://catrmu.com |
+| catrmu.info | https://catrmu.com |
 
 ---
 
