@@ -1,0 +1,195 @@
+{
+  "ecosystem": {
+    "name": "CATRMU-ADSI-ODI-SRM",
+    "version": "1.0",
+    "created": "2026-02-11",
+    "description": "Canal Transversal Multitemático - Ecosistema Unificado"
+  },
+  "layers": {
+    "catrmu": {
+      "name": "Canal Transversal Multitemático",
+      "domain": "catrmu.com",
+      "tlds": ["catrmu.tienda", "catrmu.online", "catrmu.info"],
+      "email": "info@catrmu.com",
+      "function": "Universal gateway and routing",
+      "color": "#EC4899"
+    },
+    "adsi": {
+      "name": "Arquitectura, Diseño, Sistemas e Implementación",
+      "domain": "ecosistema-adsi.com",
+      "tlds": ["ecosistema-adsi.tienda", "ecosistema-adsi.online", "ecosistema-adsi.info"],
+      "function": "Framework and methodology",
+      "color": "#8B5CF6"
+    },
+    "odi": {
+      "name": "Organismo Digital Industrial",
+      "domains": ["liveodi.com", "somosindustriasodi.com"],
+      "function": "Cognitive engine and processing",
+      "version": "v17.4",
+      "color": "#06B6D4"
+    }
+  },
+  "industries": {
+    "transporte": {
+      "name": "Transporte",
+      "branch": "Motos",
+      "skin": "SRM",
+      "domains": ["somosrepuestosmotos.com", "larocamotorepuestos.com"],
+      "webhook": "odi.larocamotorepuestos.com",
+      "catalog": {
+        "type": "products",
+        "collection": "srm_catalog",
+        "count": 13575
+      },
+      "shopify_stores": 10,
+      "color": "#06B6D4",
+      "status": "active"
+    },
+    "salud": {
+      "name": "Salud",
+      "branches": {
+        "dental": {
+          "name": "Matzu Dental Aesthetics",
+          "skin": "MATZU",
+          "domain": "matzudentalaesthetics.com",
+          "catalog": {
+            "type": "procedures",
+            "collection": "matzu_procedures",
+            "count": 15
+          },
+          "data_path": "/mnt/volume_sfo3_01/matzu/",
+          "color": "#14B8A6",
+          "status": "active"
+        },
+        "bruxismo": {
+          "name": "COVER'S Lab",
+          "skin": "COVERS",
+          "domain": "mis-cubiertas.com",
+          "catalog": {
+            "type": "products",
+            "collection": "covers_products",
+            "count": 8
+          },
+          "data_path": "/mnt/volume_sfo3_01/COVER'S/",
+          "color": "#8B5CF6",
+          "status": "active"
+        },
+        "capilar": {
+          "name": "Cabezas Sanas",
+          "skin": "CABEZAS",
+          "domain": "cabezasanas.com",
+          "tlds": ["cabezasanas.tienda", "cabezasanas.online", "cabezasanas.info"],
+          "catalog": {
+            "type": "treatments",
+            "collection": "cabezas_treatments",
+            "count": 12
+          },
+          "data_path": "/mnt/volume_sfo3_01/Cabezas Sanas/",
+          "color": "#F59E0B",
+          "status": "active"
+        }
+      }
+    },
+    "entretenimiento": {
+      "name": "Entretenimiento",
+      "branch": "Turismo",
+      "skin": null,
+      "domains": [],
+      "color": "#EC4899",
+      "status": "pending"
+    }
+  },
+  "infrastructure": {
+    "server": {
+      "ip": "64.23.170.118",
+      "os": "Ubuntu 24 LTS",
+      "provider": "DigitalOcean",
+      "cost_monthly_usd": 24
+    },
+    "containers": {
+      "odi-n8n": {"port": 5678, "image": "n8nio/n8n:latest"},
+      "odi-voice": {"port": 7777, "image": "odi-odi_voice"},
+      "odi-m62-fitment": {"port": 8802, "image": "odi-odi_m62_fitment"},
+      "odi-postgres": {"port": 5432, "image": "postgres:15"},
+      "odi-redis": {"port": 6379, "image": "redis:alpine"},
+      "odi-prometheus": {"port": 9090, "image": "prom/prometheus"},
+      "odi-grafana": {"port": 3000, "image": "grafana/grafana"}
+    },
+    "databases": {
+      "postgres": "Transactional data + n8n state",
+      "redis": "Cache, pub/sub events",
+      "chromadb": "Semantic embeddings"
+    }
+  },
+  "core_components": {
+    "intent_override_gate": {
+      "version": "1.5",
+      "file": "intent_override_gate.py",
+      "tests": "12/12 PASS"
+    },
+    "industry_skins": {
+      "version": "1.0",
+      "file": "industry_skins.py",
+      "skins": ["SRM", "MATZU", "COVERS", "CABEZAS", "CATRMU"],
+      "tests": "11/11 PASS"
+    },
+    "radar_orchestrator": {
+      "version": "3.0",
+      "disciplines": 9,
+      "file": "radar_orchestrator.py"
+    },
+    "domain_handlers": {
+      "version": "3.1",
+      "file": "domain_handlers.py"
+    }
+  },
+  "ai_services": {
+    "llm_chain": [
+      {"provider": "Google", "model": "Gemini 2.5 Flash", "latency_ms": 1700},
+      {"provider": "OpenAI", "model": "GPT-4o-mini", "latency_ms": 800},
+      {"provider": "Groq", "model": "Llama 3.3 70B", "latency_ms": 333},
+      {"provider": "Internal", "model": "Lobotomy", "latency_ms": 0}
+    ],
+    "voice": {
+      "provider": "ElevenLabs",
+      "voices": {
+        "tony_maestro": {"id": "qpjUiwx7YUVAavnmh2sF", "role": "technical"},
+        "ramona_anfitriona": {"id": null, "role": "hospitality", "status": "pending"}
+      }
+    },
+    "embeddings": {
+      "provider": "OpenAI",
+      "storage": "ChromaDB"
+    }
+  },
+  "whatsapp": {
+    "number": "+573225462101",
+    "waba_id": "1213578830922636",
+    "phone_number_id": "969496722915650",
+    "webhook": "https://odi.larocamotorepuestos.com/webhook/odi-ingest",
+    "templates": [
+      "hello_world",
+      "odi_saludo",
+      "odi_order_confirm_v2",
+      "odi_order_status",
+      "odi_shipping_update",
+      "odi_contract_approval"
+    ]
+  },
+  "repositories": {
+    "documentation": "juandavidjd/odi",
+    "production": "juandavidjd/odi-vende",
+    "development": "juandavidjd/extrac",
+    "extraction": "juandavidjd/extracii",
+    "catalogs": "juandavidjd/PDF",
+    "frontend": "juandavidjd/cycle-nexus-pro"
+  },
+  "metrics": {
+    "total_products": 13575,
+    "shopify_stores": 10,
+    "active_leads": 5,
+    "radar_disciplines": 9,
+    "subsystems_active": 5,
+    "domains_total": 27
+  }
+}
