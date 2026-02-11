@@ -1,0 +1,20 @@
+# CATRMU Landing - Systemd Service
+# Ubicar en: /etc/systemd/system/catrmu-landing.service
+
+[Unit]
+Description=CATRMU Landing Page (Next.js)
+After=network.target
+
+[Service]
+Type=simple
+User=odi
+Group=odi
+WorkingDirectory=/opt/odi/landing-odi
+Environment=NODE_ENV=production
+Environment=PORT=3001
+ExecStart=/usr/bin/npm run start
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
