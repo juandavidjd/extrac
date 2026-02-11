@@ -1,4 +1,4 @@
-# ODI — Organismo Digital Industrial v17.4
+# ODI — Organismo Digital Industrial v17.5
 
 ## Proyecto
 
@@ -59,6 +59,20 @@
 | Subdominio | Destino | Uso |
 |------------|---------|-----|
 | odi.larocamotorepuestos.com | A → 64.23.170.118 | Webhook WhatsApp + n8n |
+| catrmu.liveodi.com | A → 64.23.170.118 | Landing CATRMU |
+| kaiqi.liveodi.com | A → 64.23.170.118 | Tienda Kaiqi |
+
+### CATRMU Live (11 Feb 2026)
+
+| Campo | Valor |
+|-------|-------|
+| URL | https://catrmu.liveodi.com |
+| Paleta | Azul (#1e3a5f) → Negro (#0a0a0a) gradiente |
+| Tipografía | Exo 2 Medium |
+| Secciones | Origen, Gobernanza, Ingeniería |
+| Deploy Path | /var/www/catrmu/ |
+| Nginx Config | /etc/nginx/sites-available/catrmu |
+| Commit | d80f415 (odi-vende repo) |
 
 - **SSL:** Let's Encrypt, auto-renovación hasta mayo 2026
 - **Reverse Proxy:** Nginx en servidor
