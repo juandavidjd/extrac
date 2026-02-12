@@ -80,6 +80,13 @@
 
 **Uso:** Plataforma ADSI (Arquitectura, Diseño, Sistemas e Implementación)
 
+**DNS Configurado:**
+- `ecosistema-adsi.com` → A record → 64.23.170.118
+- `www.ecosistema-adsi.com` → A record → 64.23.170.118
+- `odi.ecosistema-adsi.com` → A record → 64.23.170.118
+
+**Landing:** https://ecosistema-adsi.com
+
 ---
 
 ### 4. La Roca Motorepuestos
@@ -217,5 +224,14 @@
 
 - **Todos los dominios están en IONOS**
 - **DNS para ODI production:** `odi.larocamotorepuestos.com` → 64.23.170.118
+- **DNS CATRMU:** `catrmu.com` → 64.23.170.118
+- **DNS ADSI:** `ecosistema-adsi.com` → 64.23.170.118
 - **SSL:** Let's Encrypt (auto-renovación)
 - **Reverse Proxy:** Nginx en servidor DigitalOcean
+
+## Deploy Scripts
+
+| Dominio | Script |
+|---------|--------|
+| catrmu.com | `deploy/deploy-catrmu.sh` |
+| ecosistema-adsi.com | `deploy/deploy-ecosistema-adsi.sh` |
