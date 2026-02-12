@@ -735,7 +735,7 @@ class VisionExtractor:
             debug_entry = {
                 "timestamp": datetime.now().isoformat(),
                 "page": page_num,
-                "raw_response": raw_response[:5000],  # Limitar tamaño
+                "raw_response": raw_response[:5000],
                 "parsed_products": parsed_count,
                 "final_products": final_count
             }

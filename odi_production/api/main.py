@@ -525,7 +525,7 @@ async def receive_systeme_lead(lead: SystemeLead):
     }
     leads_db[event_id] = lead_data
 
-    print(f"📥 [{timestamp}] NUEVO LEAD SYSTEME: {lead.email} via {lead.funnel}")
+    print(f"[{timestamp}] NUEVO LEAD SYSTEME: {lead.email} via {lead.funnel}")
 
     # Notificar a n8n para iniciar contacto WhatsApp (Tony/Ramona)
     try:
@@ -540,7 +540,7 @@ async def receive_systeme_lead(lead: SystemeLead):
                 }
             )
     except Exception as e:
-        print(f"⚠️ n8n no disponible: {e}")
+        print(f"n8n no disponible: {e}")
 
     return {
         "status": "success",
