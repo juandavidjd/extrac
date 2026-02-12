@@ -126,6 +126,7 @@ SCRIPT_NAME = "ODI Vision Extractor"
 DEBUG_SAVE_RAW = True
 DEBUG_MAX_PAGES = 30  # Guardar raw de las primeras N páginas
 
+
 # Directorios por defecto
 DEFAULT_OUTPUT_DIR = "/tmp/odi_output"
 DEFAULT_TEMP_DIR = "/tmp/odi_temp"
@@ -846,6 +847,7 @@ class VisionExtractor:
                 # Guardar debug
                 self._save_debug(page_num, content, parsed_count, len(productos))
 
+
                 return productos
 
             except json.JSONDecodeError as e:
@@ -964,6 +966,7 @@ class Exporter:
         # Convertir precio 0 a None/NaN para evitar contaminación de datos
         # precio=0 significa "sin precio" no "gratis"
         df['precio'] = df['precio'].replace(0, np.nan)
+
 
         # Ordenar columnas
         columns_order = [
