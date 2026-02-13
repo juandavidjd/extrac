@@ -1,5 +1,11 @@
 # ODI — Organismo Digital Industrial v17.5
 
+## Paradigma
+
+**Industria 5.0 aplicada** — Human-centric, Resiliente, Sostenible, Colaborativa.
+ODI no es software. Es infraestructura industrial compartida para pymes colombianas.
+Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
+
 ## Proyecto
 
 **Empresa:** LA ROCA MOTOREPUESTOS (NIT: 10.776.560-1) — Pereira, Colombia
@@ -239,15 +245,54 @@
 5. ODI calcula total y solicita confirmación
 6. Pedido generado automáticamente
 
+## PAEM — Protocolo de Activación Económica Multindustria
+
+**Estado:** v2.0 implementado, v2.2.1 spec lista (pendiente implementar)
+**Spec completa:** `docs/PAEM_API_v2_2_1_SPEC.md`
+
+### Módulo Turismo (IMPLEMENTADO — core/industries/turismo/)
+
+| Componente | Archivo | Función |
+|------------|---------|---------|
+| UDM-T | udm_t.py | Objeto canónico universal inter-industria |
+| Router 3-tier | industry_router.py | Redis → Postgres → JSON → demo |
+| Engine | tourism_engine.py | Orquestador viabilidad → plan |
+| Entertainment | entertainment_adapter.py | Terapia de entorno (recovery_level) |
+| Hospitality | hospitality_adapter.py | Hospedaje recovery-friendly |
+| Lead Scoring | lead_scoring.py | ALTA/MEDIA/BAJA + reasons |
+| DB Client | db/client.py | Pool Postgres + Redis (graceful) |
+| Sync Job | db/sync_job.py | Postgres → Redis (cron) |
+| API Routes | api_routes.py | /tourism/* endpoints |
+
+### Health Census (IMPLEMENTADO — Postgres)
+
+Migraciones en `data/turismo/migrations/`:
+- `V001_health_census.sql` — Schema completo (7 tablas + vista + función)
+- `V002_seed_demo_data.sql` — 3 nodos, 9 certs, 6 entretenimiento, 4 hospedaje
+
+### PAEM v2.2.1 (SPEC — pendiente implementar)
+
+- HOLD automático de slots clínicos (15 min TTL)
+- POST /paem/confirm con confirmación atómica
+- Rate limiting por IP via Redis
+- Event sourcing (odi_events)
+- Puerto 8807 (odi-paem-api)
+
+### Industria 5.0/6.0/7.0
+
+Documentación completa: `docs/ODI_INDUSTRIA_5_0_7_0.md`
+
 ## Prioridades (Febrero 2026)
 
 1. ~~**CRÍTICA:** Aprobar 5 plantillas WhatsApp en Meta~~ ✅ COMPLETADO
 2. ~~**CRÍTICA:** Intent Override Gate~~ ✅ DEPLOYED
 3. ~~**CRÍTICA:** Ejecutar Caso 001 (primera venta real)~~ ✅ COMPLETADO
-4. **ALTA:** Activar Turismo Odontológico (segundo vertical)
-5. **MEDIA:** Activar productos Shopify draft → active
-6. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
-7. **BAJA:** Configurar Groq como tercer failover IA
+4. ~~**ALTA:** Activar Turismo Odontológico (segundo vertical)~~ ✅ PAEM v2.0 IMPLEMENTADO
+5. **ALTA:** Ejecutar SQL Health Census en servidor + activar API turismo
+6. **ALTA:** Implementar PAEM v2.2.1 (HOLD + confirm + rate limit)
+7. **MEDIA:** Activar productos Shopify draft → active
+8. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
+9. **BAJA:** Configurar Groq como tercer failover IA
 
 ## Convenciones de Código
 
