@@ -1,0 +1,61 @@
+{
+  "network_id": "odi_health_network_v1",
+  "updated_at": "2026-02-13T12:00:00Z",
+  "notes": "Red de nodos de salud certificados por ODI. Si un nodo se satura, el router busca alternativas aquí.",
+  "nodes": [
+    {
+      "node_id": "matzu_001",
+      "name": "Matzu Dental Aesthetics",
+      "city": "Pereira",
+      "country": "CO",
+      "certified": true,
+      "saturated": false,
+      "procedures": ["carillas_porcelana", "diseno_sonrisa", "implantes_dentales", "blanqueamiento", "ortodoncia_express"],
+      "avg_response_minutes": 90,
+      "mode": "demo",
+      "doctors": [
+        {
+          "doctor_id": "dra_paola_001",
+          "name": "Dra. Paola",
+          "specialty": "prostodoncia_estetica"
+        }
+      ]
+    },
+    {
+      "node_id": "dental_pereira_002",
+      "name": "Clínica Dental Pereira Centro",
+      "city": "Pereira",
+      "country": "CO",
+      "certified": true,
+      "saturated": false,
+      "procedures": ["blanqueamiento", "ortodoncia_express", "implantes_dentales"],
+      "avg_response_minutes": 120,
+      "mode": "demo",
+      "doctors": [
+        {
+          "doctor_id": "dr_carlos_002",
+          "name": "Dr. Carlos Mejía",
+          "specialty": "implantologia"
+        }
+      ]
+    },
+    {
+      "node_id": "cabeza_sana_003",
+      "name": "Cabeza Sana — Salud Integral",
+      "city": "Pereira",
+      "country": "CO",
+      "certified": true,
+      "saturated": false,
+      "procedures": ["blanqueamiento", "diseno_sonrisa"],
+      "avg_response_minutes": 150,
+      "mode": "demo",
+      "doctors": [
+        {
+          "doctor_id": "dra_laura_003",
+          "name": "Dra. Laura Restrepo",
+          "specialty": "estetica_dental"
+        }
+      ]
+    }
+  ]
+}

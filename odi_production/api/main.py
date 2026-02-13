@@ -22,6 +22,15 @@ import hashlib
 import secrets
 import jwt
 import os
+import sys
+
+# Añadir path del core para importar módulos inter-industria
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+try:
+    from core.industries.turismo.api_routes import router as tourism_router
+    _TOURISM_AVAILABLE = True
+except ImportError:
+    _TOURISM_AVAILABLE = False
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
@@ -43,6 +52,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Montar módulo Industria Turismo si está disponible
+if _TOURISM_AVAILABLE:
+    app.include_router(tourism_router)
 
 # Configuración interna
 CORTEX_URL = os.getenv("CORTEX_URL", "http://127.0.0.1:8803")

@@ -1,0 +1,46 @@
+{
+  "network_id": "odi_hospitality_network_v1",
+  "updated_at": "2026-02-13T12:00:00Z",
+  "notes": "Aliados de hospedaje en Pereira. Recovery-friendly indica apto para pacientes post-procedimiento.",
+  "partners": [
+    {
+      "partner_id": "movich_001",
+      "name": "Hotel Movich Pereira",
+      "type": "hotel",
+      "city": "Pereira",
+      "location": "Centro",
+      "distance_to_matzu_km": 1.2,
+      "recovery_friendly": true,
+      "price_range_usd": {"min": 70, "max": 100},
+      "contact": "TODO",
+      "amenities": ["wifi", "room_service", "parking", "breakfast"],
+      "agreement_status": "pending"
+    },
+    {
+      "partner_id": "sonesta_002",
+      "name": "Sonesta Hotel Pereira",
+      "type": "hotel",
+      "city": "Pereira",
+      "location": "Pinares",
+      "distance_to_matzu_km": 2.5,
+      "recovery_friendly": true,
+      "price_range_usd": {"min": 95, "max": 130},
+      "contact": "TODO",
+      "amenities": ["wifi", "spa", "pool", "gym", "breakfast", "airport_shuttle"],
+      "agreement_status": "pending"
+    },
+    {
+      "partner_id": "finca_003",
+      "name": "Finca Cafetera El Descanso",
+      "type": "airbnb",
+      "city": "Cerritos, Pereira",
+      "location": "Rural",
+      "distance_to_matzu_km": 12.0,
+      "recovery_friendly": true,
+      "price_range_usd": {"min": 50, "max": 80},
+      "contact": "TODO",
+      "amenities": ["wifi", "nature", "private_chef_available", "pool"],
+      "agreement_status": "pending"
+    }
+  ]
+}

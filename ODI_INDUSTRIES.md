@@ -27,9 +27,17 @@ ODI (Organismo Digital Industrial)
 │       ├── cabezasanas.com (.tienda, .online, .info)
 │       └── Especialistas dermatólogos tricólogos
 │
-└── INDUSTRIA ENTRETENIMIENTO
-    └── Rama: TURISMO (en construcción)
-        └── liveodi.com (.info, .online, .tienda)
+├── INDUSTRIA TURISMO ← PAEM v1.0 (13 Feb 2026)
+│   ├── Tourism Engine (orquestador viabilidad)
+│   ├── Providers: Vuelos, Hospedaje, Eventos (pluggable)
+│   ├── SLA Clínico Dinámico (industry_router)
+│   ├── Lead Scoring Inter-Industria
+│   └── liveodi.com (.info, .online, .tienda)
+│
+└── INDUSTRIA ENTRETENIMIENTO ← Integrada como adapter
+    ├── Filtro por recovery_level del paciente
+    ├── Experiencias Eje Cafetero (gastronomía, cultural, wellness)
+    └── Terapia de Entorno (entretenimiento ≠ ocio)
 ```
 
 ---
@@ -214,8 +222,112 @@ Usuario: "Quiero turismo odontológico"
     └─────────────┘
 ```
 
+### Flujo PAEM v1.0 (Automatizado, 13 Feb 2026)
+
+```
+Lead: "Viajo en 20 días a Pereira para implantes"
+         │
+         ▼
+    ┌──────────────────────┐
+    │ Industry Router      │ → Detecta Salud+Turismo+Hospedaje
+    └──────────────────────┘
+         │
+         ▼
+    ┌──────────────────────┐
+    │ SLA Clínico Dinámico │ → Matzu saturado? → Red alternativa
+    └──────────────────────┘
+         │
+         ▼
+    ┌──────────────────────┐
+    │ Tourism Engine       │ → Vuelos + Hospedaje + Entretenimiento
+    └──────────────────────┘
+         │
+         ▼
+    ┌──────────────────────┐
+    │ Lead Scoring         │ → ALTA/MEDIA/BAJA + reasons
+    └──────────────────────┘
+         │
+         ▼
+    ┌──────────────────────────────────────┐
+    │ OrchestrationPlan con next_actions   │
+    │ → Presentar opciones al paciente     │
+    │ → Coordinar transporte               │
+    │ → Persistir transacción UDM-T        │
+    └──────────────────────────────────────┘
+```
+
+---
+
+## Módulo Industria Turismo — PAEM v1.0 (13 Feb 2026)
+
+**Protocolo de Activación Económica Multindustria.**
+Convierte intención clínica en itinerario económico completo.
+Es inter-industria: Salud → Turismo → Hospitalidad → Entretenimiento → Educación.
+
+### Arquitectura
+
+```
+core/industries/turismo/
+├── udm_t.py                  # UDM-T: modelo canónico universal
+├── industry_router.py        # SLA clínico dinámico + routing inter-industria
+├── tourism_engine.py         # Orquestador viabilidad → plan
+├── entertainment_adapter.py  # Terapia de entorno (filtro por recovery_level)
+├── hospitality_adapter.py    # Hospedaje recovery-friendly
+├── lead_scoring.py           # Scoring inter-industria compuesto
+├── api_routes.py             # Endpoints /tourism/*
+└── providers/
+    ├── base.py               # Interfaces: FlightProvider, LodgingProvider, EventsProvider
+    ├── flights_demo.py       # Demo: rutas hacia PEI (Matecaña)
+    ├── lodging_demo.py       # Demo: hoteles/Airbnb en Pereira
+    ├── events_demo.py        # Demo: experiencias Eje Cafetero
+    └── registry.py           # Selección por ENV (ODI_FLIGHTS_PROVIDER, etc.)
+```
+
+### Endpoints (Puerto 8800)
+
+| Método | Ruta | Función |
+|--------|------|---------|
+| POST | /tourism/plan | Crear plan turístico completo |
+| POST | /tourism/assign | Asignar doctor/nodo por SLA |
+| POST | /tourism/score | Calcular lead scoring inter-industria |
+| GET | /tourism/capacity/{node_id} | Consultar SLA clínica |
+| GET | /tourism/health | Health check módulo turismo |
+
+### Modos
+
+- **INTEL MODE** (default): Sin API keys, sugerencias y estimaciones demo.
+- **ACTION MODE**: Con keys de provider, prebooking / reservas reales.
+
+### Variables de Entorno
+
+```
+ODI_FLIGHTS_PROVIDER=demo    # demo | (futuro: amadeus, skyscanner)
+ODI_LODGING_PROVIDER=demo    # demo | (futuro: booking, airbnb_api)
+ODI_EVENTS_PROVIDER=demo     # demo | (futuro: viator, local_api)
+```
+
+### Lead Scoring
+
+```
+Score = 0.20·semantic + 0.15·sentiment + 0.25·urgency
+      + 0.25·logistics - 0.15·latency_penalty
+```
+Salida: ALTA / MEDIA / BAJA + reasons (nunca número exacto al humano).
+
+### Red de Nodos
+
+```
+data/turismo/
+├── sla/matzu_001.json                  # SLA clínico de Matzu
+├── network/health_nodes.json           # Red de doctores/clínicas
+├── network/hospitality_partners.json   # Aliados hospedaje
+├── network/education_certifiers.json   # Certificadores educativos
+└── transactions/                       # Transacciones UDM-T persistidas
+```
+
 ---
 
 ## Changelog
 
+- **v1.1 (13 Feb 2026):** Módulo Industria Turismo PAEM v1.0 — SLA dinámico, lead scoring, providers pluggable, modo demo E2E
 - **v1.0 (10 Feb 2026):** Estructura inicial de industrias
