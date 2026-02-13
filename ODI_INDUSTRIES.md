@@ -258,23 +258,27 @@ Lead: "Viajo en 20 días a Pereira para implantes"
 
 ---
 
-## Módulo Industria Turismo — PAEM v1.0 (13 Feb 2026)
+## Módulo Industria Turismo — PAEM v2.0 (13 Feb 2026)
 
-**Protocolo de Activación Económica Multindustria.**
+**Protocolo de Activación Económica Multindustria — Industria 5.0**
 Convierte intención clínica en itinerario económico completo.
 Es inter-industria: Salud → Turismo → Hospitalidad → Entretenimiento → Educación.
+Paradigma: Postgres manda, Redis acelera, JSON es fallback. El humano es co-piloto.
 
 ### Arquitectura
 
 ```
 core/industries/turismo/
 ├── udm_t.py                  # UDM-T: modelo canónico universal
-├── industry_router.py        # SLA clínico dinámico + routing inter-industria
+├── industry_router.py        # SLA 3-tier: Redis → Postgres → JSON
 ├── tourism_engine.py         # Orquestador viabilidad → plan
 ├── entertainment_adapter.py  # Terapia de entorno (filtro por recovery_level)
 ├── hospitality_adapter.py    # Hospedaje recovery-friendly
 ├── lead_scoring.py           # Scoring inter-industria compuesto
 ├── api_routes.py             # Endpoints /tourism/*
+├── db/
+│   ├── client.py             # Conexión Postgres + Redis (graceful fallback)
+│   └── sync_job.py           # Sync Postgres → Redis (cron / manual)
 └── providers/
     ├── base.py               # Interfaces: FlightProvider, LodgingProvider, EventsProvider
     ├── flights_demo.py       # Demo: rutas hacia PEI (Matecaña)
@@ -290,8 +294,10 @@ core/industries/turismo/
 | POST | /tourism/plan | Crear plan turístico completo |
 | POST | /tourism/assign | Asignar doctor/nodo por SLA |
 | POST | /tourism/score | Calcular lead scoring inter-industria |
+| POST | /tourism/sync | Disparar sync Postgres → Redis manual |
 | GET | /tourism/capacity/{node_id} | Consultar SLA clínica |
-| GET | /tourism/health | Health check módulo turismo |
+| GET | /tourism/datasources | Estado de fuentes (Redis/PG/JSON) |
+| GET | /tourism/health | Health check + modo actual |
 
 ### Modos
 
@@ -301,9 +307,22 @@ core/industries/turismo/
 ### Variables de Entorno
 
 ```
+# Providers
 ODI_FLIGHTS_PROVIDER=demo    # demo | (futuro: amadeus, skyscanner)
 ODI_LODGING_PROVIDER=demo    # demo | (futuro: booking, airbnb_api)
 ODI_EVENTS_PROVIDER=demo     # demo | (futuro: viator, local_api)
+
+# Postgres (verdad base)
+ODI_PG_HOST=127.0.0.1
+ODI_PG_PORT=5432
+ODI_PG_USER=odi
+ODI_PG_PASS=odi
+ODI_PG_DB=odi
+
+# Redis (cache)
+ODI_REDIS_HOST=127.0.0.1
+ODI_REDIS_PORT=6379
+ODI_REDIS_NODE_TTL=300       # TTL cache de nodos en segundos
 ```
 
 ### Lead Scoring
@@ -322,12 +341,56 @@ data/turismo/
 ├── network/health_nodes.json           # Red de doctores/clínicas
 ├── network/hospitality_partners.json   # Aliados hospedaje
 ├── network/education_certifiers.json   # Certificadores educativos
-└── transactions/                       # Transacciones UDM-T persistidas
+├── transactions/                       # Transacciones UDM-T persistidas
+└── migrations/
+    ├── V001_health_census.sql          # Schema Postgres completo
+    └── V002_seed_demo_data.sql         # Datos demo (3 nodos, 9 certs, 6 entretenimiento, 4 hospedaje)
 ```
+
+### Jerarquía de Verdad (3 Niveles)
+
+```
+┌─────────────────────┐
+│ 1. REDIS            │ ← Cache, TTL 300s, velocidad
+│    health:node:*    │
+├─────────────────────┤
+│ 2. POSTGRES         │ ← Verdad base, auditable
+│    odi_health_nodes │
+│    v_odi_health..   │
+│    fn_odi_failover  │
+├─────────────────────┤
+│ 3. JSON LOCAL       │ ← Fallback demo, siempre disponible
+│    data/turismo/*   │
+└─────────────────────┘
+```
+
+### Redis Key Conventions
+
+```
+health:node:<node_id>:status      → AVAILABLE|HIGH_LOAD|SATURATED  (TTL 300s)
+health:node:<node_id>:saturation  → float 0.0-1.0                  (TTL 300s)
+health:node:<node_id>:sla_minutes → int                            (TTL 300s)
+health:node:<node_id>:data        → full JSON snapshot             (TTL 300s)
+health:node:<node_id>:last_sync   → epoch                          (TTL 600s)
+```
+
+### Tablas Postgres (Health Census v1)
+
+| Tabla | Función |
+|-------|---------|
+| `odi_health_nodes` | Nodos clínicos (capacidad, SLA, certificación) |
+| `odi_health_certifications` | Certificaciones por procedimiento |
+| `odi_health_capacity_log` | Log semanal auditable |
+| `odi_entertainment_partners` | Partners entretenimiento |
+| `odi_hospitality_partners` | Partners hospedaje |
+| `odi_certification_weights` | Pesos para scoring |
+| `v_odi_health_node_load` | Vista: estado de carga calculado |
+| `fn_odi_failover_candidates()` | Función: candidatos failover |
 
 ---
 
 ## Changelog
 
+- **v2.0 (13 Feb 2026):** Health Census Postgres + Redis sync + Router 3-tier + migraciones SQL + seed data
 - **v1.1 (13 Feb 2026):** Módulo Industria Turismo PAEM v1.0 — SLA dinámico, lead scoring, providers pluggable, modo demo E2E
 - **v1.0 (10 Feb 2026):** Estructura inicial de industrias
