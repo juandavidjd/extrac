@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 
 from core.industries.turismo.industry_router import (
     build_clinical_plan,
+    data_source_status,
     get_clinic_capacity,
     select_doctor_by_sla,
 )
@@ -238,13 +239,39 @@ async def clinic_capacity(node_id: str):
     return get_clinic_capacity(node_id)
 
 
+@router.get("/datasources")
+async def datasource_status():
+    """Diagnóstico de fuentes de datos: Redis, Postgres, JSON."""
+    return data_source_status()
+
+
+@router.post("/sync")
+async def trigger_sync():
+    """
+    Disparar sincronización Postgres → Redis manualmente.
+    En producción esto corre como cron cada 5 minutos.
+    """
+    try:
+        from core.industries.turismo.db.sync_job import full_sync
+        result = full_sync()
+        return result
+    except ImportError:
+        return {"error": "sync_job not available", "hint": "Check db module installation"}
+    except Exception as e:
+        logger.exception("Sync error")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/health")
 async def tourism_health():
-    """Health check del módulo turismo."""
+    """Health check del módulo turismo con estado de fuentes."""
+    sources = data_source_status()
+    mode = "live" if sources.get("postgres") else ("cached" if sources.get("redis") else "demo")
     return {
         "status": "healthy",
         "service": "odi-turismo",
-        "version": "1.0.0",
-        "mode": "demo",
+        "version": "2.0.0",
+        "mode": mode,
+        "datasources": sources,
         "timestamp": datetime.utcnow().isoformat(),
     }
