@@ -1,0 +1,26 @@
+{
+  "network_id": "odi_education_network_v1",
+  "updated_at": "2026-02-13T12:00:00Z",
+  "notes": "Nodos educativos que certifican doctores y ofrecen diplomados turísticos.",
+  "certifiers": [
+    {
+      "certifier_id": "univ_pereira_001",
+      "name": "Universidad Tecnológica de Pereira — Odontología",
+      "city": "Pereira",
+      "type": "university",
+      "certifications": ["prostodoncia", "implantologia", "estetica_dental"],
+      "diplomados_available": [
+        {
+          "id": "dip_turismo_dental_001",
+          "name": "Diplomado Internacional en Turismo Dental",
+          "duration_weeks": 4,
+          "price_usd": 1200,
+          "next_cohort": "2026-04-01",
+          "status": "planned"
+        }
+      ],
+      "contact": "TODO",
+      "agreement_status": "pending"
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "node_id": "matzu_001",
+  "mode": "demo",
+  "clinic_name": "Matzu Dental Aesthetics",
+  "city": "Pereira",
+  "country": "CO",
+  "capacity_total": 8,
+  "capacity_used": 3,
+  "capacity_available": 5,
+  "avg_response_minutes": 90,
+  "saturated": false,
+  "next_available_date": "2026-02-17",
+  "doctors": [
+    {
+      "doctor_id": "dra_paola_001",
+      "name": "Dra. Paola",
+      "specialty": "prostodoncia_estetica",
+      "procedures": ["carillas_porcelana", "diseno_sonrisa", "implantes_dentales", "blanqueamiento"],
+      "available": true,
+      "max_patients_day": 4,
+      "current_patients_day": 2
+    }
+  ],
+  "operating_hours": {
+    "monday_friday": "08:00-18:00",
+    "saturday": "08:00-13:00",
+    "sunday": "closed"
+  },
+  "updated_at": "2026-02-13T12:00:00Z"
+}
