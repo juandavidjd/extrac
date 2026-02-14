@@ -1,8 +1,8 @@
-#!/bin/bash
+#\!/bin/bash
 # ============================================================
 # ODI V006 — Financial Reconciliation Engine (Daily Audit)
 # ============================================================
-# Ejecutar en: root@64.23.170.118  (o localmente con Postgres accesible)
+# Ejecutar en: root@64.23.170.118
 #
 # Uso:
 #   bash scripts/run_reconciliation.sh
@@ -14,23 +14,27 @@
 set -euo pipefail
 
 LOG_FILE="/tmp/reconciliation_v006.log"
-CONTAINER="odi-paem-api"
-SCRIPT_CMD="python3 -m odi.services.reconciliation_service"
+ODI_DIR="/opt/odi"
 
 echo "═══════════════════════════════════════════════════"
 echo " ODI V006 — Financial Reconciliation Engine"
-echo " $(date '+%Y-%m-%d %H:%M:%S %Z')"
+echo " $(date -u +"%Y-%m-%d %H:%M:%S UTC")"
 echo "═══════════════════════════════════════════════════"
 
-# Detect environment: Docker container available or local
-if docker ps --format '{{.Names}}' 2>/dev/null | grep -q "^${CONTAINER}$"; then
-    echo "[INFO] Ejecutando dentro del contenedor ${CONTAINER}..."
-    docker exec "${CONTAINER}" ${SCRIPT_CMD} 2>&1 | tee "${LOG_FILE}"
-else
-    echo "[INFO] Contenedor no detectado. Ejecutando localmente..."
-    cd "$(dirname "$0")/.."
-    ${SCRIPT_CMD} 2>&1 | tee "${LOG_FILE}"
-fi
+cd "${ODI_DIR}"
+
+# Configurar entorno para PostgreSQL en Docker
+export PYTHONPATH="${ODI_DIR}"
+export ODI_PG_HOST="${ODI_PG_HOST:-172.18.0.4}"
+export ODI_PG_PORT="${ODI_PG_PORT:-5432}"
+export ODI_PG_USER="${ODI_PG_USER:-odi}"
+export ODI_PG_PASS="${ODI_PG_PASS:-odi}"
+export ODI_PG_DB="${ODI_PG_DB:-odi}"
+
+echo "[INFO] PostgreSQL: ${ODI_PG_HOST}:${ODI_PG_PORT}/${ODI_PG_DB}"
+echo ""
+
+python3 -m odi.services.reconciliation_service 2>&1 | tee "${LOG_FILE}"
 
 EXIT_CODE=${PIPESTATUS[0]}
 
