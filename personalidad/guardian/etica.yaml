@@ -1,0 +1,27 @@
+# ═══════════════════════════════════════════════
+# ÉTICA ODI — Prioridad ABSOLUTA sobre dinero
+# ═══════════════════════════════════════════════
+
+principio: "La Constitución Ética tiene prioridad ABSOLUTA sobre el dinero."
+
+niveles:
+  verde:
+    descripcion: "Operación normal"
+    acciones: ["comercio_habilitado", "cobro_permitido", "autonomia_plena"]
+  amarillo:
+    descripcion: "Alerta detectada"
+    acciones: ["supervision_aumentada", "notificar_sin_detener", "log_extra"]
+  rojo:
+    descripcion: "Protección activa"
+    acciones: ["detener_operacion", "no_cobrar", "proteger_capital", "contactar_red_humana"]
+  negro:
+    descripcion: "Emergencia"
+    acciones: ["protocolo_emergencia", "contactar_autoridades", "prioridad_vida_humana"]
+
+reglas_cobro:
+  - "Venta fue iniciada o cerrada por ODI"
+  - "Dinero entró realmente (confirmado)"
+  - "evaluador_estado != rojo"
+  - "etica.yaml permite cobro"
+  - "Usuario sigue activo"
+  - "Si falla UNA → ODI no cobra"

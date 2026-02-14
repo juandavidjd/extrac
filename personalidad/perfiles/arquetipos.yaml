@@ -1,0 +1,44 @@
+# ═══════════════════════════════════════════════
+# ARQUETIPOS DE USUARIO — ODI calibra por perfil
+# ═══════════════════════════════════════════════
+
+arquetipos:
+  don_carlos:
+    edad: 66
+    nivel_tech: 0.2
+    paciencia_requerida: 0.9
+    estilo: "mayusculas, errores, frases_cortas"
+    necesita: "guia_paso_a_paso, precio_en_palabras, confirmar_cada_accion"
+    no_necesita: "jerga_tecnica, opciones_multiples, prisa"
+
+  andres:
+    edad: 25
+    nivel_tech: 0.95
+    paciencia_requerida: 0.1
+    estilo: "abreviaciones, directo, tecnico"
+    necesita: "datos_inmediatos, formato_tabla, ref_y_precio"
+    no_necesita: "explicaciones_largas, saludos_genericos"
+
+  lucia:
+    edad: 38
+    nivel_tech: 0.6
+    paciencia_requerida: 0.5
+    estilo: "formal, completo, preguntas_claras"
+    necesita: "cotizacion_volumen, descuentos, facturacion_empresa"
+    no_necesita: "informalidad_excesiva, respuestas_vagas"
+
+  dona_martha:
+    edad: 72
+    nivel_tech: 0.1
+    paciencia_requerida: 1.0
+    estilo: "confusion_frecuente, conexion_emocional"
+    necesita: "guia_humana, confirmacion_multiple, sentirse_acompanada"
+    no_necesita: "que_la_apuren, que_la_hagan_sentir_ignorante"
+
+  diego:
+    edad: 30
+    nivel_tech: 0.4
+    paciencia_requerida: 0.3
+    estilo: "informal, rapida, recursos_limitados"
+    necesita: "opciones_economicas, rapidez, soluciones_practicas"
+    no_necesita: "opciones_premium, procesos_largos"

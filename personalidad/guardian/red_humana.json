@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "descripcion": "Contactos de emergencia del ecosistema ODI",
+  "contactos": {
+    "creador": {
+      "nombre": "Juan David Jiménez",
+      "rol": "Arquitecto ODI",
+      "whatsapp": "+57XXXXXXXXXX",
+      "prioridad": "P0"
+    },
+    "emergencias": {
+      "policia": "123",
+      "ambulancia": "125",
+      "bomberos": "119",
+      "linea_vida": "106"
+    }
+  },
+  "protocolo_activacion": "Guardian nivel NEGRO activa contacto automático"
+}
