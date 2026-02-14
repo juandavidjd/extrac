@@ -202,14 +202,27 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 | ODI_v16_9_3_LINUX_CERTIFIED | Flujo certificado Linux |
 | ODI_Etapa_3_Autonomía_por_SKU | Autonomía decisional por producto |
 
-## Clientes Piloto
+## Clientes / Proveedores — 14 activos en ChromaDB (14 Feb 2026)
 
-| Cliente | Catálogo | Estado |
-|---------|----------|--------|
-| Bara Importaciones | 698 productos + 2,553 KB chunks en ChromaDB | ✅ ACTIVA en producción (14 Feb 2026) |
-| Yokomar | 1,000 productos normalizados, embeddings generados | Listo para piloto |
-| Vaisand | Tienda Shopify configurada | Listo para piloto |
-| Industrias Leo | Tienda Shopify configurada | Listo para piloto |
+| # | Cliente | Docs ChromaDB | Shopify | Estado |
+|---|---------|:------------:|---------|--------|
+| 1 | Bara Importaciones | 698 | ✅ Active (698) | ✅ PRODUCCIÓN |
+| 2 | Yokomar | 1,000 | ✅ Active (1,000) | ✅ PRODUCCIÓN |
+| 3 | Kaiqi | 138 | ✅ Active (138) | ✅ PRODUCCIÓN |
+| 4 | DFG | 7,445 | ✅ Active (7,441) | ✅ PRODUCCIÓN |
+| 5 | Duna | 1,200 | ✅ Active (1,200) | ✅ PRODUCCIÓN |
+| 6 | Imbra | 1,131 | ✅ Active (1,131) | ✅ PRODUCCIÓN |
+| 7 | Japan | 734 | ✅ Active (734) | ✅ PRODUCCIÓN |
+| 8 | Leo | 120 | ✅ Active (120) | ✅ PRODUCCIÓN |
+| 9 | Store | 66 | ✅ Active (66) | ✅ PRODUCCIÓN |
+| 10 | Vaisand | 50 | ✅ Active (50) | ✅ PRODUCCIÓN |
+| 11 | Armotos | 1,953 | — | ChromaDB only |
+| 12 | CBI | 227 | — | ChromaDB only |
+| 13 | MCLMOTOS | 349 | — | ChromaDB only (0 imágenes) |
+| 14 | OH Importaciones | 1,414 | — | ChromaDB only |
+| 15 | Vitton | 67 | — | ChromaDB only |
+| — | KB Chunks (manuales) | 2,553 | — | Base knowledge |
+| | **TOTAL** | **19,145** | **12,578** | |
 
 ## Intent Override Gate (Febrero 2026)
 
