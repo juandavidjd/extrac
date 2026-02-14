@@ -355,7 +355,7 @@ POST http://localhost:3000/odi/vision/event
 
 ```bash
 # DeepL API
-DEEPL_API_KEY=6076c331-11ca-4934-a1fa-b6ca05d56686
+DEEPL_API_KEY=  # moved to .env
 
 # Fitment Service
 FITMENT_URL=http://odi-m62-fitment:8802

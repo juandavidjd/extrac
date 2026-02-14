@@ -33,6 +33,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
+# Security: Rate limiting
+import sys
+sys.path.insert(0, "/opt/odi/core")
+from odi_rate_limiter import RateLimitMiddleware
+
 load_dotenv("/opt/odi/.env")
 
 from langchain_openai import OpenAIEmbeddings, ChatOpenAI
@@ -341,6 +346,14 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Rate limiting: 30 req/min, burst 10/5s
+app.add_middleware(
+    RateLimitMiddleware,
+    requests_per_minute=30,
+    burst_limit=10,
+    exclude_paths=["/health", "/docs", "/openapi.json", "/stats", "/lobes"],
 )
 
 # Inicializar cortex

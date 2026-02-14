@@ -9,10 +9,10 @@ Paradigma: Industria 5.0 — Atomicidad, idempotencia, trazabilidad.
 Funciones:
   - generate_integrity_signature(): SHA256 para checkout widget
   - generate_checkout_payload():    Payload completo para iniciar pago
-  - validate_webhook_signature():   HMAC para eventos entrantes
+  - validate_webhook_signature():   Validación con replay protection
   - process_webhook():              Transición atómica DB
 
-Versión: 1.0.0 — 13 Feb 2026
+Versión: 1.1.0 — 14 Feb 2026 (hardened: replay protection, event validation, idempotency)
 """
 
 import hashlib
@@ -20,6 +20,7 @@ import hmac
 import json
 import logging
 import os
+import time
 from decimal import Decimal
 from typing import Any, Dict, Optional, Tuple
 
@@ -34,6 +35,12 @@ WOMPI_PUBLIC_KEY = os.getenv("WOMPI_PUBLIC_KEY", "")
 WOMPI_INTEGRITY_SECRET = os.getenv("WOMPI_INTEGRITY_SECRET", "")
 WOMPI_EVENTS_SECRET = os.getenv("WOMPI_EVENTS_KEY", "")
 REDIRECT_URL = os.getenv("WOMPI_REDIRECT_URL", "https://api.adsi.com.co/payment-success")
+
+# Replay protection: reject webhooks older than this (seconds)
+WEBHOOK_TIMESTAMP_TOLERANCE = int(os.getenv("WOMPI_TIMESTAMP_TOLERANCE", "300"))
+
+# Valid Wompi event types we process
+VALID_EVENT_TYPES = {"transaction.updated"}
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -85,24 +92,68 @@ def validate_webhook_signature(
     timestamp_header: Optional[str],
 ) -> Tuple[bool, str]:
     """
-    Validar firma HMAC del webhook de Wompi.
+    Validar firma del webhook de Wompi con replay protection.
     Cadena: {timestamp}{raw_body}{events_secret}
     Retorna: (valid: bool, reason: str)
     """
     if not signature_header or not timestamp_header:
+        logger.warning("Webhook rejected: missing signature or timestamp headers")
         return False, "Missing signature or timestamp headers"
 
     if not WOMPI_EVENTS_SECRET:
         logger.error("WOMPI_EVENTS_KEY not configured — rejecting webhook (production mode)")
         return False, "Events secret not configured — webhook rejected"
 
+    # Replay protection: reject old timestamps
+    try:
+        ts = int(timestamp_header)
+        now = int(time.time())
+        age = abs(now - ts)
+        if age > WEBHOOK_TIMESTAMP_TOLERANCE:
+            logger.warning(
+                "Webhook rejected: timestamp too old (age=%ds, tolerance=%ds, ts=%s)",
+                age, WEBHOOK_TIMESTAMP_TOLERANCE, timestamp_header,
+            )
+            return False, f"Timestamp too old ({age}s > {WEBHOOK_TIMESTAMP_TOLERANCE}s tolerance)"
+    except (ValueError, TypeError):
+        logger.warning("Webhook rejected: invalid timestamp format: %s", timestamp_header)
+        return False, "Invalid timestamp format"
+
+    # Signature validation (Wompi spec: SHA256 of timestamp+body+secret)
     raw_message = f"{timestamp_header}{raw_body.decode('utf-8')}{WOMPI_EVENTS_SECRET}"
     expected = hashlib.sha256(raw_message.encode("utf-8")).hexdigest()
 
     if hmac.compare_digest(expected, signature_header):
         return True, "Webhook integrity check passed"
     else:
+        logger.warning("Webhook rejected: signature mismatch (expected=%s...)", expected[:16])
         return False, "Invalid webhook signature"
+
+
+def validate_webhook_event(event: Dict[str, Any]) -> Tuple[bool, str]:
+    """
+    Validar estructura y tipo del evento Wompi.
+    Solo procesa event types conocidos.
+    """
+    event_type = event.get("event")
+    if not event_type:
+        return False, "Missing 'event' field in payload"
+
+    if event_type not in VALID_EVENT_TYPES:
+        logger.warning("Webhook ignored: unknown event type '%s'", event_type)
+        return False, f"Unknown event type: {event_type}"
+
+    tx_data = event.get("data", {}).get("transaction", {})
+    if not tx_data:
+        return False, "Missing transaction data in event"
+
+    if not tx_data.get("reference"):
+        return False, "Missing transaction reference"
+
+    if not tx_data.get("status"):
+        return False, "Missing transaction status"
+
+    return True, "Event structure valid"
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -119,15 +170,18 @@ def process_webhook_event(event: Dict[str, Any]) -> Dict[str, Any]:
     from core.industries.turismo.db.client import pg_query, pg_execute
 
     try:
+        # Validate event structure
+        valid, reason = validate_webhook_event(event)
+        if not valid:
+            logger.warning("Webhook event validation failed: %s", reason)
+            return {"ok": False, "detail": reason, "payment_status": "UNKNOWN", "booking_status": "UNKNOWN"}
+
         tx_data = event.get("data", {}).get("transaction", {})
         tx_reference = tx_data.get("reference")
         tx_status = tx_data.get("status")
         tx_id = tx_data.get("id", "")
 
-        if not tx_reference:
-            return {"ok": False, "detail": "No transaction reference in event"}
-
-        logger.info("Webhook received: ref=%s status=%s", tx_reference, tx_status)
+        logger.info("Webhook received: ref=%s status=%s gateway_id=%s", tx_reference, tx_status, tx_id)
 
         if tx_status != "APPROVED":
             # Registrar evento no-aprobado pero no fallar
@@ -141,6 +195,20 @@ def process_webhook_event(event: Dict[str, Any]) -> Dict[str, Any]:
                 "detail": f"Event received but status={tx_status}, no transition",
                 "payment_status": "PENDING",
                 "booking_status": "HOLD",
+            }
+
+        # Idempotency guard: check if already processed before expensive DB call
+        existing = pg_query(
+            "SELECT status FROM odi_payments WHERE idempotency_key = %s",
+            (tx_reference,),
+        )
+        if existing and len(existing) > 0 and existing[0].get("status") == "CAPTURED":
+            logger.info("Idempotent: payment %s already CAPTURED, skipping", tx_reference)
+            return {
+                "ok": True,
+                "detail": "Payment already captured (idempotent)",
+                "payment_status": "CAPTURED",
+                "booking_status": "CONFIRMED",
             }
 
         # Ejecutar transición atómica
