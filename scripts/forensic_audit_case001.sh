@@ -86,7 +86,7 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo "  PASO 5: VALIDACIÓN HTTP DEL WEBHOOK"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-curl -i -X POST "$API_URL/paem/webhooks/wompi" \
+curl -i -X POST "$API_URL/webhooks/wompi" \
     -H "Content-Type: application/json" \
     -d '{}' 2>&1
 
