@@ -55,3 +55,15 @@ logs/
 # Cache
 .cache/
 *.cache
+
+# Runtime data (not tracked)
+data/
+backups/
+n8n/
+embeddings/
+cache/
+vision_output/
+ingesta/
+
+# Backup files
+*.backup.*
