@@ -24,13 +24,14 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 - **Aplicación:** /opt/odi/
 - **Variables de entorno:** /opt/odi/.env
 
-### Docker Containers (7 activos)
+### Docker Containers (8 activos)
 
 | Container | Imagen | Puerto | Función |
 |-----------|--------|--------|---------|
 | odi-n8n | n8nio/n8n:latest | 5678 | Workflow engine (cerebro) |
 | odi-voice | odi-odi_voice | 7777 | Motor de voz ElevenLabs |
 | odi-m62-fitment | odi-odi_m62_fitment | 8802 | Motor de compatibilidad motos |
+| odi-paem-api | odi-paem-api | 8807 | PAEM API v2.2.1 (pagos, turismo) |
 | odi-postgres | postgres:15 | 5432 | Base de datos transaccional + n8n |
 | odi-redis | redis:alpine | 6379 | Cache, pub/sub eventos |
 | odi-prometheus | prom/prometheus | 9090 | Métricas |
@@ -65,6 +66,8 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 | Subdominio | Destino | Uso |
 |------------|---------|-----|
 | odi.larocamotorepuestos.com | A → 64.23.170.118 | Webhook WhatsApp + n8n |
+| api.liveodi.com | A → 64.23.170.118 | PAEM API v2.2.1 + WhatsApp API |
+| ws.liveodi.com | A → 64.23.170.118 | WebSocket (voz) |
 | catrmu.liveodi.com | A → 64.23.170.118 | Landing CATRMU |
 | kaiqi.liveodi.com | A → 64.23.170.118 | Tienda Kaiqi |
 
@@ -247,8 +250,10 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 ## PAEM — Protocolo de Activación Económica Multindustria
 
-**Estado:** v2.0 implementado, v2.2.1 spec lista (pendiente implementar)
+**Estado:** v2.2.1 ✅ DEPLOYED (14 Feb 2026)
 **Spec completa:** `docs/PAEM_API_v2_2_1_SPEC.md`
+**API URL:** https://api.liveodi.com/paem/*
+**Pagos:** Wompi (checkout público, COP, amount_in_cents)
 
 ### Módulo Turismo (IMPLEMENTADO — core/industries/turismo/)
 
@@ -270,13 +275,14 @@ Migraciones en `data/turismo/migrations/`:
 - `V001_health_census.sql` — Schema completo (7 tablas + vista + función)
 - `V002_seed_demo_data.sql` — 3 nodos, 9 certs, 6 entretenimiento, 4 hospedaje
 
-### PAEM v2.2.1 (SPEC — pendiente implementar)
+### PAEM v2.2.1 (✅ DEPLOYED — 14 Feb 2026)
 
-- HOLD automático de slots clínicos (15 min TTL)
-- POST /paem/confirm con confirmación atómica
-- Rate limiting por IP via Redis
-- Event sourcing (odi_events)
-- Puerto 8807 (odi-paem-api)
+- ✅ HOLD automático de slots clínicos (15 min TTL)
+- ✅ POST /paem/confirm con confirmación atómica
+- ✅ POST /paem/pay/init — Checkout Wompi integrado
+- ✅ Rate limiting por IP via Redis
+- ✅ Event sourcing (odi_events)
+- ✅ Puerto 8807 (odi-paem-api) → https://api.liveodi.com
 
 ### Industria 5.0/6.0/7.0
 
@@ -288,8 +294,8 @@ Documentación completa: `docs/ODI_INDUSTRIA_5_0_7_0.md`
 2. ~~**CRÍTICA:** Intent Override Gate~~ ✅ DEPLOYED
 3. ~~**CRÍTICA:** Ejecutar Caso 001 (primera venta real)~~ ✅ COMPLETADO
 4. ~~**ALTA:** Activar Turismo Odontológico (segundo vertical)~~ ✅ PAEM v2.0 IMPLEMENTADO
-5. **ALTA:** Ejecutar SQL Health Census en servidor + activar API turismo
-6. **ALTA:** Implementar PAEM v2.2.1 (HOLD + confirm + rate limit)
+5. ~~**ALTA:** Ejecutar SQL Health Census en servidor + activar API turismo~~ ✅ COMPLETADO
+6. ~~**ALTA:** Implementar PAEM v2.2.1 (HOLD + confirm + rate limit)~~ ✅ DEPLOYED 14 Feb 2026
 7. **MEDIA:** Activar productos Shopify draft → active
 8. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
 9. **BAJA:** Configurar Groq como tercer failover IA
