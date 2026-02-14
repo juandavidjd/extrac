@@ -1,4 +1,4 @@
-# ODI — Organismo Digital Industrial v17.5
+# ODI — Organismo Digital Industrial v18.0
 
 ## Paradigma
 
@@ -39,7 +39,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 ### Bases de Datos
 
-- **PostgreSQL 15:** Datos transaccionales, estado n8n
+- **PostgreSQL 15:** Datos transaccionales, estado n8n, auditoría cognitiva (odi_decision_logs)
 - **Redis Alpine:** Cache, pub/sub de eventos ODI
 - **ChromaDB:** Embeddings semánticos, búsqueda vectorial (en /opt/odi/)
 
@@ -231,6 +231,59 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 - **"Para tu ECO"**: ODI ya no responde con repuestos de motos a mensajes de turismo, emprendimiento o urgencias
 
+## ODI V8.1 — Personalidad + Auditoría Cognitiva (14 Feb 2026)
+
+**Estado:** ✅ CERTIFICADO 9/9 tests
+**Reporte:** `reports/V81_CERTIFICATION_REPORT.md`
+**Principio:** "ODI no solo decide. ODI rinde cuentas."
+
+### Las 4 Dimensiones
+
+| Dimensión | Qué define | Motor |
+|-----------|-----------|-------|
+| PERSONALIDAD | Quién es ODI (ADN inmutable, 7 genes) | `personalidad/adn.yaml` |
+| ESTADO | Cómo se siente ODI (Guardian Layer: verde/amarillo/rojo/negro) | `core/odi_personalidad.py` |
+| MODO | Cómo opera ODI (Automático/Supervisado/Custodio) | `core/odi_personalidad.py` |
+| CARÁCTER | Cómo responde ODI (calibrado por usuario + industria + intimidad) | `core/odi_personalidad.py` |
+
+### Estructura de Personalidad (`/opt/odi/personalidad/`)
+
+| Archivo | Función |
+|---------|---------|
+| `adn.yaml` | 7 genes inmutables del organismo |
+| `voz.yaml` | Tono, ritmo, reglas de voz |
+| `niveles_intimidad.yaml` | 5 niveles: OBSERVADOR → CONOCIDO → CONFIDENTE → CUSTODIO → PUENTE |
+| `verticales/p1_transporte.yaml` | Repuestos de motos (SRM) |
+| `verticales/p2_salud.yaml` | Dental / Turismo médico (PAEM) |
+| `verticales/p3_turismo.yaml` | Experiencias + Turismo médico |
+| `verticales/p4_belleza.yaml` | Estética y bienestar |
+| `perfiles/arquetipos.yaml` | 5 arquetipos: don_carlos, andres, lucia, dona_martha, diego |
+| `guardian/etica.yaml` | Niveles éticos: verde/amarillo/rojo/negro + reglas de cobro |
+| `guardian/red_humana.json` | Contactos de emergencia (106, 123, 125, 119) |
+| `frases/prohibidas.yaml` | 10 frases chatbot bloqueadas + 3 de imitación |
+| `frases/adn_expresado.yaml` | Frases constitucionales de ODI |
+
+### Auditoría Cognitiva Nativa
+
+| Componente | Ubicación | Función |
+|------------|-----------|---------|
+| Tabla SQL | `odi_decision_logs` (PostgreSQL) | 18 columnas, 6 índices, UUID PK |
+| Vista | `odi_audit_resumen` | Resumen por estado_guardian |
+| Logger | `core/odi_decision_logger.py` | Async, asyncpg, SHA-256, fallback JSON |
+| Hook PAEM | `payments_api.py` v1.2.0 | Guardian evalúa ANTES de checkout Wompi |
+| Fallback | `/opt/odi/data/audit_fallback/` | JSON si PostgreSQL falla |
+
+### Eventos Auditados
+
+`PAY_INIT_AUTORIZADO`, `PAY_INIT_BLOQUEADO`, `VENTA_AUTORIZADA`, `VENTA_BLOQUEADA`, `ESTADO_CAMBIO_AMARILLO/ROJO/NEGRO`, `EMERGENCIA_ACTIVADA`, `MODO_CAMBIO`, `OVERRIDE_MANUAL`, `PRECIO_ANOMALO`
+
+### Guardian Pre-Wompi (Hook en `/paem/pay/init`)
+
+1. Guardian evalúa estado del usuario/transacción
+2. Si estado != verde → 403 `guardian_block` + log `PAY_INIT_BLOQUEADO`
+3. Si estado == verde → log `PAY_INIT_AUTORIZADO` + checkout Wompi normal
+4. Fail-safe: si V8.1 falla internamente, el flujo existente continúa sin bloqueo
+
 ## CASO 001 — Primera Venta Real (10 Feb 2026)
 
 **Estado:** ✅ COMPLETADO
@@ -279,7 +332,7 @@ Migraciones en `data/turismo/migrations/`:
 
 - ✅ HOLD automático de slots clínicos (15 min TTL)
 - ✅ POST /paem/confirm con confirmación atómica
-- ✅ POST /paem/pay/init — Checkout Wompi integrado
+- ✅ POST /paem/pay/init — Checkout Wompi integrado + Guardian V8.1 pre-check
 - ✅ Rate limiting por IP via Redis
 - ✅ Event sourcing (odi_events)
 - ✅ Puerto 8807 (odi-paem-api) → https://api.liveodi.com
@@ -296,9 +349,10 @@ Documentación completa: `docs/ODI_INDUSTRIA_5_0_7_0.md`
 4. ~~**ALTA:** Activar Turismo Odontológico (segundo vertical)~~ ✅ PAEM v2.0 IMPLEMENTADO
 5. ~~**ALTA:** Ejecutar SQL Health Census en servidor + activar API turismo~~ ✅ COMPLETADO
 6. ~~**ALTA:** Implementar PAEM v2.2.1 (HOLD + confirm + rate limit)~~ ✅ DEPLOYED 14 Feb 2026
-7. **MEDIA:** Activar productos Shopify draft → active
-8. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
-9. **BAJA:** Configurar Groq como tercer failover IA
+7. ~~**ALTA:** V8.1 Personalidad + Auditoría Cognitiva~~ ✅ CERTIFICADO 9/9 — 14 Feb 2026
+8. **MEDIA:** Activar productos Shopify draft → active
+9. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
+10. **BAJA:** Configurar Groq como tercer failover IA
 
 ## Convenciones de Código
 

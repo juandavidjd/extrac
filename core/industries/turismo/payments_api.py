@@ -8,15 +8,19 @@ POST /webhooks/wompi   -> Webhook de eventos Wompi (APPROVED -> CAPTURED)
 
 Se monta como APIRouter en el PAEM API (puerto 8807).
 
-Version: 1.1.0 — 14 Feb 2026 (hardened: audit logging, event validation, debug disabled)
+Version: 1.2.0 — 14 Feb 2026
+  v1.1.0: hardened (audit logging, event validation, debug disabled)
+  v1.2.0: V8.1 Guardian + Decision Logger pre-Wompi
 """
 
 import json
 import logging
+import sys
 from decimal import Decimal
 from typing import Any, Dict, Optional
 
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from core.industries.turismo.db.client import pg_query, pg_execute
@@ -26,6 +30,15 @@ from core.industries.turismo.payments_wompi import (
     validate_webhook_signature,
     validate_webhook_event,
 )
+
+# V8.1 — Guardian + Decision Logger
+sys.path.insert(0, "/opt/odi/core")
+try:
+    from odi_personalidad import obtener_personalidad
+    from odi_decision_logger import obtener_logger
+    _V81_ENABLED = True
+except ImportError:
+    _V81_ENABLED = False
 
 logger = logging.getLogger("odi.paem.payments.api")
 
@@ -41,6 +54,7 @@ class PayInitRequest(BaseModel):
     transaction_id: str = Field(..., description="ID de transaccion PAEM")
     booking_id: str = Field(..., description="ID del booking en HOLD")
     deposit_amount_cop: Decimal = Field(..., gt=0, description="Monto en COP")
+    usuario_id: Optional[str] = Field(None, description="ID del usuario (V8.1)")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -52,11 +66,79 @@ async def pay_init(data: PayInitRequest):
     """
     Iniciar flujo de pago Wompi.
 
+    V8.1: Guardian evalua ANTES de generar checkout.
+    0. [V8.1] Guardian evalua estado + Decision Logger
     1. Valida que el booking existe y esta en HOLD
     2. Valida/crea payment en PENDING (idempotente)
     3. Genera firma SHA256 de integridad
     4. Retorna payload listo para el widget de checkout
     """
+    odi_event_id = None
+    uid = data.usuario_id or "ANONYMOUS"
+
+    # ═══ V8.1: GUARDIAN PRE-WOMPI ═══
+    if _V81_ENABLED:
+        try:
+            personalidad = obtener_personalidad()
+            audit_logger = obtener_logger()
+
+            # Guardian evalua
+            estado = personalidad.evaluar_estado(
+                usuario_id=uid,
+                mensaje="",
+                contexto={"precio_final": int(data.deposit_amount_cop)}
+            )
+
+            if estado["color"] not in ("verde",):
+                # BLOQUEAR — No generar checkout
+                odi_event_id = await audit_logger.log_decision(
+                    intent="PAY_INIT_BLOQUEADO",
+                    estado_guardian=estado["color"],
+                    modo_aplicado="SUPERVISADO",
+                    usuario_id=uid,
+                    vertical="P2",
+                    motivo=estado.get("motivo", "Estado no verde"),
+                    monto_cop=int(data.deposit_amount_cop),
+                    transaction_id=data.transaction_id,
+                    decision_path=["evaluar_estado", "riesgo_detectado", "bloqueo_pago"]
+                )
+                logger.warning(
+                    "V8.1 Guardian BLOCK: tx=%s estado=%s motivo=%s event=%s",
+                    data.transaction_id, estado["color"],
+                    estado.get("motivo"), odi_event_id
+                )
+                return JSONResponse(
+                    status_code=403,
+                    content={
+                        "ok": False,
+                        "error": "guardian_block",
+                        "motivo": estado.get("motivo"),
+                        "odi_event_id": odi_event_id
+                    }
+                )
+
+            # Estado VERDE — log autorizacion
+            odi_event_id = await audit_logger.log_decision(
+                intent="PAY_INIT_AUTORIZADO",
+                estado_guardian="verde",
+                modo_aplicado="AUTOMATICO",
+                usuario_id=uid,
+                vertical="P2",
+                motivo="Estado verde, pago autorizado",
+                monto_cop=int(data.deposit_amount_cop),
+                transaction_id=data.transaction_id,
+                decision_path=["evaluar_estado", "estado_verde", "autorizar_pago"]
+            )
+            logger.info(
+                "V8.1 Guardian OK: tx=%s event=%s",
+                data.transaction_id, odi_event_id
+            )
+        except Exception as e:
+            # V8.1 falla gracefully — no bloquear el flujo existente
+            logger.error("V8.1 Guardian error (non-blocking): %s", e)
+
+    # ═══ FLUJO EXISTENTE (intacto) ═══
+
     # 1. Validar booking en HOLD
     booking = pg_query(
         """SELECT booking_id, status, hold_expires_at
@@ -130,10 +212,14 @@ async def pay_init(data: PayInitRequest):
         data.transaction_id, data.booking_id, data.deposit_amount_cop,
     )
 
-    return {
+    response = {
         "ok": True,
         "checkout": payload,
     }
+    if odi_event_id:
+        response["odi_event_id"] = odi_event_id
+
+    return response
 
 
 @router.post("/paem/webhooks/wompi")
