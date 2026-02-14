@@ -1,4 +1,4 @@
-# ODI — Organismo Digital Industrial v18.0
+# ODI — Organismo Digital Industrial v18.1
 
 ## Paradigma
 
@@ -39,7 +39,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 ### Bases de Datos
 
-- **PostgreSQL 15:** Datos transaccionales, estado n8n, auditoría cognitiva (odi_decision_logs)
+- **PostgreSQL 15:** Datos transaccionales, estado n8n, auditoría cognitiva (odi_decision_logs, odi_user_state)
 - **Redis Alpine:** Cache, pub/sub de eventos ODI
 - **ChromaDB:** Embeddings semánticos, búsqueda vectorial (en /opt/odi/)
 
@@ -267,10 +267,14 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 | Componente | Ubicación | Función |
 |------------|-----------|---------|
-| Tabla SQL | `odi_decision_logs` (PostgreSQL) | 18 columnas, 6 índices, UUID PK |
+| Tabla SQL | `odi_decision_logs` (PostgreSQL) | 18 columnas, 7 índices, UUID PK |
+| Tabla SQL | `odi_user_state` (PostgreSQL) | 15 columnas, estado persistente por usuario |
 | Vista | `odi_audit_resumen` | Resumen por estado_guardian |
-| Logger | `core/odi_decision_logger.py` | Async, asyncpg, SHA-256, fallback JSON |
+| Logger | `core/odi_decision_logger.py` | Async, asyncpg, SHA-256 con timestamp explícito, fallback JSON |
 | Hook PAEM | `payments_api.py` v1.2.0 | Guardian evalúa ANTES de checkout Wompi |
+| Hook Cortex | `odi_cortex_query.py` v2.1.0 | Guardian evalúa + prompt dinámico en RAG |
+| Endpoint | `GET /personalidad/status` (8803) | Diagnóstico 4 dimensiones |
+| Endpoint | `GET /audit/status` (8803) | Resumen auditoría desde PostgreSQL |
 | Fallback | `/opt/odi/data/audit_fallback/` | JSON si PostgreSQL falla |
 
 ### Eventos Auditados
@@ -283,6 +287,25 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 2. Si estado != verde → 403 `guardian_block` + log `PAY_INIT_BLOQUEADO`
 3. Si estado == verde → log `PAY_INIT_AUTORIZADO` + checkout Wompi normal
 4. Fail-safe: si V8.1 falla internamente, el flujo existente continúa sin bloqueo
+
+### Cortex Query v2.1.0 (Integración V8.1)
+
+- Prompt dinámico reemplaza prompts estáticos Tony/Ramona (fallback preservado)
+- `SemanticRouter.route()` mejorado con `detectar_vertical()` (P1→ind_motos, P2-P4→profesion)
+- Guardian evalúa ANTES de generar respuesta RAG (NEGRO→emergencia, ROJO/AMARILLO→log)
+- `query_async()` nuevo método async con Guardian + audit logging
+- `GET /personalidad/status` — diagnóstico de las 4 dimensiones
+- `GET /audit/status` — resumen auditoría desde PostgreSQL
+
+### Hash SHA-256 — Fix de Integridad (14 Feb 2026)
+
+- **Bug:** INSERT usaba `DEFAULT CURRENT_TIMESTAMP` pero hash se calculaba con timestamp Python → mismatch al verificar
+- **Fix:** INSERT ahora incluye columna `timestamp` explícitamente con el mismo datetime usado para el hash
+- **Resultado:** `verificar_integridad()` retorna `True` para todos los registros post-fix
+
+### Tabla `odi_user_state`
+
+Persiste nivel de intimidad, perfil, historial por usuario. 15 columnas, UUID PK, UNIQUE on usuario_id, CHECK nivel 0-4, trigger auto-update `updated_at`.
 
 ## CASO 001 — Primera Venta Real (10 Feb 2026)
 
