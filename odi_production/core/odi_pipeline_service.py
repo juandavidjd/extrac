@@ -36,6 +36,16 @@ from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+
+# Security: Input sanitization
+import sys
+sys.path.insert(0, "/opt/odi/core")
+from odi_sanitizer import validate_llm_products, sanitize_html
+
+# Security: Rate limiting
+import sys
+sys.path.insert(0, "/opt/odi/core")
+from odi_rate_limiter import RateLimitMiddleware
 import httpx
 
 # OpenAI for Vision
@@ -226,7 +236,7 @@ Responde SOLO con el JSON, sin explicaciones."""
             )
 
             result = json.loads(response.choices[0].message.content)
-            return result.get("products", [])
+            return validate_llm_products(result.get("products", []))
 
         except Exception as e:
             log.error(f"Text extraction error: {e}")
@@ -271,7 +281,7 @@ Responde SOLO con el JSON, sin explicaciones."""
                 content = content.split("```")[1].split("```")[0]
 
             result = json.loads(content)
-            return result.get("products", [])
+            return validate_llm_products(result.get("products", []))
 
         except Exception as e:
             log.error(f"Vision extraction error: {e}")
@@ -394,7 +404,7 @@ Responde SOLO con la descripción, sin comillas ni formato especial."""
                         temperature=0.7,
                         max_tokens=200
                     )
-                    p["description"] = response.choices[0].message.content.strip()
+                    p["description"] = sanitize_html(response.choices[0].message.content.strip())
                 except Exception as e:
                     log.error(f"Enrichment error: {e}")
                     p["description"] = f"Repuesto de calidad para motos. {p.get('category', '')}."
@@ -462,7 +472,7 @@ class ShopifyUploader:
         shopify_product = {
             "product": {
                 "title": product.get("title"),
-                "body_html": product.get("description", ""),
+                "body_html": sanitize_html(product.get("description", "")),
                 "vendor": product.get("brand", ""),
                 "product_type": product.get("category", ""),
                 "tags": ",".join(product.get("compatibility", [])),
@@ -493,7 +503,7 @@ class ShopifyUploader:
             "product": {
                 "id": product_id,
                 "title": product.get("title"),
-                "body_html": product.get("description", ""),
+                "body_html": sanitize_html(product.get("description", "")),
             }
         }
 
@@ -632,6 +642,14 @@ app.add_middleware(
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Rate limiting: 15 req/min for pipeline (heavier operations), burst 5/5s
+app.add_middleware(
+    RateLimitMiddleware,
+    requests_per_minute=15,
+    burst_limit=5,
+    exclude_paths=["/health", "/docs", "/openapi.json", "/stores"],
 )
 
 executor = PipelineExecutor()
