@@ -134,23 +134,23 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 - **Ramona Anfitriona:** Pendiente asignar Voice ID — hospitalidad, validación (S4-S6)
 - **Container:** odi-voice (puerto 7777), speed 0.85, stability 0.65
 
-## E-Commerce — Shopify (10 Tiendas)
+## E-Commerce — Shopify (10 Tiendas) — ✅ 12,578 productos ACTIVE
 
-| # | Tienda | Dominio |
-|---|--------|---------|
-| 1 | Bara | 4jqcki-jq.myshopify.com |
-| 2 | Yokomar | u1zmhk-ts.myshopify.com |
-| 3 | Kaiqi | u03tqc-0e.myshopify.com |
-| 4 | DFG | 0se1jt-q1.myshopify.com |
-| 5 | Duna | ygsfhq-fs.myshopify.com |
-| 6 | Imbra | 0i1mdf-gi.myshopify.com |
-| 7 | Japan | 7cy1zd-qz.myshopify.com |
-| 8 | Leo | h1hywg-pq.myshopify.com |
-| 9 | Store | 0b6umv-11.myshopify.com |
-| 10 | Vaisand | z4fpdj-mz.myshopify.com |
+| # | Tienda | Dominio | Productos | Estado |
+|---|--------|---------|:---------:|--------|
+| 1 | Bara | 4jqcki-jq.myshopify.com | 698 | ✅ Active |
+| 2 | Yokomar | u1zmhk-ts.myshopify.com | 1,000 | ✅ Active |
+| 3 | Kaiqi | u03tqc-0e.myshopify.com | 138 | ✅ Active |
+| 4 | DFG | 0se1jt-q1.myshopify.com | 7,441 | ✅ Active |
+| 5 | Duna | ygsfhq-fs.myshopify.com | 1,200 | ✅ Active |
+| 6 | Imbra | 0i1mdf-gi.myshopify.com | 1,131 | ✅ Active |
+| 7 | Japan | 7cy1zd-qz.myshopify.com | 734 | ✅ Active |
+| 8 | Leo | h1hywg-pq.myshopify.com | 120 | ✅ Active |
+| 9 | Store | 0b6umv-11.myshopify.com | 66 | ✅ Active |
+| 10 | Vaisand | z4fpdj-mz.myshopify.com | 50 | ✅ Active |
 
 **Tienda dev:** somos-moto-repuestos-v95pc.myshopify.com
-**Estado productos:** DRAFT (pendiente activar para Caso 001)
+**Activación:** 14 Feb 2026 — `scripts/activate_all_stores.py` + `scripts/activate_drafts.py`
 
 ## Marketing & CRM — Systeme.io
 
@@ -432,7 +432,7 @@ Documentación completa: `docs/ODI_INDUSTRIA_5_0_7_0.md`
 8. ~~**ALTA:** Activar BARA en ChromaDB + E2E WhatsApp~~ ✅ 3,251 docs + WhatsApp live — 14 Feb 2026
 9. ~~**ALTA:** Stress Test V8.1 /paem/pay/init~~ ✅ 500 req, 0 errores, 10/10 hashes — 14 Feb 2026
 10. ~~**ALTA:** Integrar V8.1 en workflow n8n ODI_v6_CORTEX~~ ✅ 4 nodos + WhatsApp creds — 14 Feb 2026
-11. **MEDIA:** Activar productos Shopify draft → active
+11. ~~**MEDIA:** Activar productos Shopify draft → active~~ ✅ 12,578 productos en 10 tiendas — 14 Feb 2026
 12. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
 13. **MEDIA:** Activar Yokomar, Vaisand, Leo en ChromaDB (mismo flujo que BARA)
 14. **BAJA:** Configurar Groq como tercer failover IA
