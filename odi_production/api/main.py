@@ -26,11 +26,20 @@ import sys
 
 # Añadir path del core para importar módulos inter-industria
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, "/opt/odi")  # Root ODI path for core modules
 try:
     from core.industries.turismo.api_routes import router as tourism_router
     _TOURISM_AVAILABLE = True
 except ImportError:
     _TOURISM_AVAILABLE = False
+
+# WhatsApp routes with LLM failover
+try:
+    from core.whatsapp_routes import router as whatsapp_router
+    _WHATSAPP_AVAILABLE = True
+except ImportError as e:
+    print(f"WhatsApp routes not available: {e}")
+    _WHATSAPP_AVAILABLE = False
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
@@ -56,6 +65,10 @@ app.add_middleware(
 # Montar módulo Industria Turismo si está disponible
 if _TOURISM_AVAILABLE:
     app.include_router(tourism_router)
+
+# Mount WhatsApp routes with LLM failover
+if _WHATSAPP_AVAILABLE:
+    app.include_router(whatsapp_router)
 
 # Configuración interna
 CORTEX_URL = os.getenv("CORTEX_URL", "http://127.0.0.1:8803")
