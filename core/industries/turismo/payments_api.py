@@ -135,6 +135,43 @@ async def pay_init(data: PayInitRequest):
     }
 
 
+@router.post("/paem/webhooks/wompi")
+async def wompi_webhook_paem(request: Request):
+    """Alias canónico bajo /paem/ para el webhook Wompi."""
+    return await wompi_webhook(request)
+
+
+@router.post("/paem/_debug/mock_webhook")
+async def debug_mock_webhook(request: Request):
+    """
+    Mock webhook para testing — simula evento Wompi APPROVED.
+    Salta validación de firma. Solo usar en depuración.
+
+    Body: {"transaction_id": "TX-CASE-001"}
+    """
+    body = await request.json()
+    tx_id = body.get("transaction_id")
+    if not tx_id:
+        raise HTTPException(status_code=400, detail="transaction_id required")
+
+    mock_event = {
+        "event": "transaction.updated",
+        "data": {
+            "transaction": {
+                "id": f"mock-wompi-{tx_id}",
+                "reference": tx_id,
+                "status": "APPROVED",
+                "amount_in_cents": 0,
+                "currency": "COP",
+            }
+        },
+    }
+
+    result = process_webhook_event(mock_event)
+    logger.info("Mock webhook: tx=%s result=%s", tx_id, result)
+    return result
+
+
 @router.post("/webhooks/wompi")
 async def wompi_webhook(request: Request):
     """
