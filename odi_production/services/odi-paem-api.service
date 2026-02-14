@@ -1,0 +1,27 @@
+[Unit]
+Description=ODI PAEM API v2.2.1 - Metabolismo Economico Multindustria
+After=network.target odi-api.service
+Wants=odi-api.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/odi
+ExecStart=/usr/bin/python3 -m uvicorn core.industries.turismo.paem_api:app --host 127.0.0.1 --port 8807
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+Environment=ODI_PG_HOST=127.0.0.1
+Environment=ODI_PG_PORT=5432
+Environment=ODI_PG_USER=odi
+Environment=ODI_PG_PASS=odi
+Environment=ODI_PG_DB=odi
+Environment=ODI_REDIS_HOST=127.0.0.1
+Environment=ODI_REDIS_PORT=6379
+EnvironmentFile=-/opt/odi/.env
+StandardOutput=append:/opt/odi/logs/paem_api.log
+StandardError=append:/opt/odi/logs/paem_api_error.log
+MemoryMax=256M
+
+[Install]
+WantedBy=multi-user.target

@@ -12,6 +12,11 @@ Componentes:
   - lead_scoring.py          : Scoring inter-industria compuesto
   - api_routes.py            : Endpoints FastAPI (/tourism/*)
 
+Metabolismo Económico (v2.2.1):
+  - payments_wompi.py        : Firma de integridad + webhook Wompi
+  - payments_api.py          : Endpoints /paem/pay/init + /webhooks/wompi
+  - paem_api.py              : API standalone puerto 8807
+
 Providers (pluggable):
   - providers/base.py        : Interfaces abstractas
   - providers/flights_demo.py: Demo sin API keys
@@ -24,4 +29,4 @@ Modos:
   B) ACTION MODE — Con keys de provider: prebooking / reservas reales.
 """
 
-__version__ = "1.0.0"
+__version__ = "2.2.1"
