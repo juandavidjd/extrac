@@ -52,6 +52,14 @@ import httpx
 from openai import OpenAI
 
 load_dotenv("/opt/odi/.env")
+# Image matcher for local images
+sys.path.insert(0, "/opt/odi/pipeline")
+try:
+    from odi_image_matcher import match_products_with_local_images
+    IMAGE_MATCHER_AVAILABLE = True
+except:
+    IMAGE_MATCHER_AVAILABLE = False
+
 
 # ============================================
 # CONFIGURACIÓN
@@ -97,6 +105,27 @@ SHOPIFY_STORES = {
         "shop": os.getenv("VAISAND_SHOP"),
         "token": os.getenv("VAISAND_TOKEN"),
     },
+    "OH_IMPORTACIONES": {
+        "shop": os.getenv("OH_IMPORTACIONES_SHOP"),
+        "token": os.getenv("OH_IMPORTACIONES_TOKEN"),
+    },
+    "ARMOTOS": {
+        "shop": os.getenv("ARMOTOS_SHOP"),
+        "token": os.getenv("ARMOTOS_TOKEN"),
+    },
+    "MCLMOTOS": {
+        "shop": os.getenv("MCLMOTOS_SHOP"),
+        "token": os.getenv("MCLMOTOS_TOKEN"),
+    },
+    "VITTON": {
+        "shop": os.getenv("VITTON_SHOP"),
+        "token": os.getenv("VITTON_TOKEN"),
+    },
+    "CBI": {
+        "shop": os.getenv("CBI_SHOP"),
+        "token": os.getenv("CBI_TOKEN"),
+    },
+
 }
 
 JOBS_PATH = Path("/opt/odi/data/pipeline_jobs")
@@ -692,6 +721,67 @@ async def list_stores():
     return {
         name: {"configured": bool(config.get("shop") and config.get("token"))}
         for name, config in SHOPIFY_STORES.items()
+    }
+
+
+
+
+# ============================================
+# UPLOAD ENDPOINT WITH IMAGE MATCHING
+# ============================================
+
+class UploadRequest(BaseModel):
+    store: str
+    match_images: bool = True
+
+@app.post("/pipeline/upload")
+async def upload_with_image_matching(request: UploadRequest, background_tasks: BackgroundTasks):
+    """
+    Upload products from JSON with automatic image matching.
+    Searches in pdf_images and image bank.
+    """
+    store = request.store.upper()
+    
+    if store not in SHOPIFY_STORES:
+        raise HTTPException(status_code=400, detail=f"Store {store} not configured")
+    
+    shop = SHOPIFY_STORES[store]["shop"]
+    token = SHOPIFY_STORES[store]["token"]
+    
+    if not shop or not token:
+        raise HTTPException(status_code=400, detail=f"No credentials for {store}")
+    
+    # Load products from JSON
+    json_path = f"/opt/odi/data/orden_maestra_v6/{store}_products.json"
+    if not os.path.exists(json_path):
+        raise HTTPException(status_code=404, detail=f"JSON not found: {json_path}")
+    
+    with open(json_path, "r") as f:
+        products = json.load(f)
+    
+    # Image matching
+    matched_count = 0
+    if request.match_images and IMAGE_MATCHER_AVAILABLE:
+        try:
+            products = match_products_with_local_images(products, store)
+            matched_count = sum(1 for p in products if p.get("image") and not "placeholder" in str(p.get("image", "")).lower())
+        except Exception as e:
+            logging.warning(f"Image matching failed: {e}")
+    
+    # Upload
+    uploader = ShopifyUploader(shop, token)
+    
+    async def do_upload():
+        return await uploader.upload_products(products)
+    
+    background_tasks.add_task(do_upload)
+    
+    return {
+        "status": "started",
+        "store": store,
+        "products": len(products),
+        "with_images": matched_count,
+        "match_images": request.match_images
     }
 
 

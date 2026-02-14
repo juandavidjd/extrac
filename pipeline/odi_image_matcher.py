@@ -22,6 +22,9 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Tuple, Optional
 from difflib import SequenceMatcher
+import glob
+from pathlib import Path
+
 
 try:
     import pandas as pd
@@ -46,6 +49,10 @@ WEIGHT_NOMBRE = 0.4
 WEIGHT_DESCRIPCION = 0.3
 WEIGHT_CATEGORIA = 0.2
 WEIGHT_SISTEMA = 0.1
+# Directorios de imágenes
+PDF_IMAGES_DIR = "/opt/odi/data/pdf_images"
+IMAGE_BANK_DIR = "/mnt/volume_sfo3_01/profesion/ecosistema_odi"
+
 
 
 # ============================================================================
@@ -186,6 +193,167 @@ def categories_match(cat1: str, cat2: str) -> float:
         if (norm1 == a and norm2 == b) or (norm1 == b and norm2 == a):
             return score
     return 0.0
+
+
+
+# ============================================================================
+# BÚSQUEDA EN DIRECTORIOS DE IMÁGENES
+# ============================================================================
+
+def search_pdf_images(store_name: str) -> List[Dict]:
+    """
+    Busca imágenes extraídas de PDFs para una tienda.
+    Retorna lista de dicts con path y metadata.
+    """
+    store_dir = os.path.join(PDF_IMAGES_DIR, store_name)
+    images = []
+    
+    if not os.path.isdir(store_dir):
+        return images
+    
+    for f in os.listdir(store_dir):
+        if f.lower().endswith((.png, .jpg, .jpeg, .webp)):
+            # Parse filename: STORE_pXXX_iYY_hash.ext
+            parts = f.split(_)
+            page = 0
+            index = 0
+            if len(parts) >= 3:
+                try:
+                    page = int(parts[1][1:]) if parts[1].startswith(p) else 0
+                    index = int(parts[2][1:]) if parts[2].startswith(i) else 0
+                except:
+                    pass
+            
+            images.append({
+                filename: f,
+                path: os.path.join(store_dir, f),
+                page: page,
+                index: index,
+                source: pdf_extract
+            })
+    
+    # Ordenar por página e índice
+    images.sort(key=lambda x: (x[page], x[index]))
+    return images
+
+
+def search_image_bank(store_name: str) -> List[Dict]:
+    """
+    Busca imágenes en el banco de imágenes del ecosistema.
+    Retorna lista de dicts con path y filename para fuzzy matching.
+    """
+    store_dir = os.path.join(IMAGE_BANK_DIR, store_name, "imagenes")
+    images = []
+    
+    if not os.path.isdir(store_dir):
+        # Intentar variantes del nombre
+        for variant in [store_name.upper(), store_name.lower(), store_name.title()]:
+            alt_dir = os.path.join(IMAGE_BANK_DIR, variant, "imagenes")
+            if os.path.isdir(alt_dir):
+                store_dir = alt_dir
+                break
+    
+    if not os.path.isdir(store_dir):
+        return images
+    
+    for f in os.listdir(store_dir):
+        if f.lower().endswith((.png, .jpg, .jpeg, .webp)):
+            # Extraer nombre limpio para matching
+            name_clean = os.path.splitext(f)[0]
+            name_clean = name_clean.replace(-,  ).replace(_,  )
+            
+            images.append({
+                filename: f,
+                path: os.path.join(store_dir, f),
+                name_normalized: normalize_text(name_clean),
+                source: image_bank
+            })
+    
+    return images
+
+
+def fuzzy_match_image(product_desc: str, images: List[Dict], threshold: float = 0.3) -> Optional[Dict]:
+    """
+    Encuentra la mejor imagen para un producto usando fuzzy matching.
+    """
+    if not images or not product_desc:
+        return None
+    
+    product_norm = normalize_text(product_desc)
+    best_match = None
+    best_score = threshold
+    
+    for img in images:
+        # Para imágenes del banco, usar nombre normalizado
+        if name_normalized in img:
+            score = max(
+                similarity_ratio(product_norm, img[name_normalized]),
+                word_overlap(product_norm, img[name_normalized])
+            )
+        else:
+            # Para PDF images, usar filename
+            filename_norm = normalize_text(os.path.splitext(img[filename])[0])
+            score = word_overlap(product_norm, filename_norm)
+        
+        if score > best_score:
+            best_score = score
+            best_match = img
+    
+    return best_match
+
+
+def match_products_with_local_images(
+    products: List[Dict],
+    store_name: str,
+    use_pdf_images: bool = True,
+    use_image_bank: bool = True
+) -> List[Dict]:
+    """
+    Asocia productos con imágenes locales (PDF extracts + banco).
+    Modifica los productos in-place agregando campo image_path.
+    """
+    log(f"🔍 Buscando imágenes locales para {store_name}...")
+    
+    available_images = []
+    
+    if use_pdf_images:
+        pdf_imgs = search_pdf_images(store_name)
+        log(f"   PDF images: {len(pdf_imgs)}")
+        available_images.extend(pdf_imgs)
+    
+    if use_image_bank:
+        bank_imgs = search_image_bank(store_name)
+        log(f"   Image bank: {len(bank_imgs)}")
+        available_images.extend(bank_imgs)
+    
+    if not available_images:
+        log("   ⚠️ No hay imágenes disponibles", "warning")
+        return products
+    
+    matched = 0
+    used_images = set()
+    
+    for i, prod in enumerate(products):
+        # Ya tiene imagen?
+        if prod.get(image) and not placeholder in str(prod.get(image, )).lower():
+            continue
+        
+        # Buscar match
+        desc = str(prod.get(title, ) or prod.get(descripcion, ) or prod.get(name, ))
+        
+        # Filtrar imágenes ya usadas
+        available = [img for img in available_images if img[path] not in used_images]
+        
+        match = fuzzy_match_image(desc, available)
+        
+        if match:
+            prod[image] = match[path]
+            prod[image_source] = match[source]
+            used_images.add(match[path])
+            matched += 1
+    
+    log(f"   ✅ Productos con imagen: {matched}/{len(products)}", "success")
+    return products
 
 
 # ============================================================================
