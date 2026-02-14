@@ -144,11 +144,17 @@ async def wompi_webhook_paem(request: Request):
 @router.post("/paem/_debug/mock_webhook")
 async def debug_mock_webhook(request: Request):
     """
-    Mock webhook para testing — simula evento Wompi APPROVED.
-    Salta validación de firma. Solo usar en depuración.
-
-    Body: {"transaction_id": "TX-CASE-001"}
+    Mock webhook deshabilitado en producción.
+    Solo disponible si ODI_DEBUG=1 en variables de entorno.
     """
+    import os
+
+    if os.getenv("ODI_DEBUG", "0") != "1":
+        raise HTTPException(
+            status_code=403,
+            detail="Debug endpoint disabled in production",
+        )
+
     body = await request.json()
     tx_id = body.get("transaction_id")
     if not tx_id:
@@ -168,7 +174,7 @@ async def debug_mock_webhook(request: Request):
     }
 
     result = process_webhook_event(mock_event)
-    logger.info("Mock webhook: tx=%s result=%s", tx_id, result)
+    logger.info("Mock webhook (DEBUG): tx=%s result=%s", tx_id, result)
     return result
 
 

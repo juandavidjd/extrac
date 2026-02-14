@@ -93,8 +93,8 @@ def validate_webhook_signature(
         return False, "Missing signature or timestamp headers"
 
     if not WOMPI_EVENTS_SECRET:
-        logger.warning("WOMPI_EVENTS_KEY not configured — skipping signature validation")
-        return True, "Events secret not configured (sandbox mode)"
+        logger.error("WOMPI_EVENTS_KEY not configured — rejecting webhook (production mode)")
+        return False, "Events secret not configured — webhook rejected"
 
     raw_message = f"{timestamp_header}{raw_body.decode('utf-8')}{WOMPI_EVENTS_SECRET}"
     expected = hashlib.sha256(raw_message.encode("utf-8")).hexdigest()
