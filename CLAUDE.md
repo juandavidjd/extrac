@@ -41,7 +41,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 - **PostgreSQL 15:** Datos transaccionales, estado n8n, auditoría cognitiva (odi_decision_logs, odi_user_state)
 - **Redis Alpine:** Cache, pub/sub de eventos ODI
-- **ChromaDB:** Embeddings semánticos, búsqueda vectorial (en /opt/odi/)
+- **ChromaDB:** Embeddings semánticos, búsqueda vectorial (`/mnt/volume_sfo3_01/embeddings/kb_embeddings`, collection `odi_ind_motos`: 3,251 docs)
 
 ## Dominios y DNS
 
@@ -195,7 +195,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 | Flujo | Función |
 |-------|---------|
-| ODI_v6_CORTEX | Pipeline principal WhatsApp (ingest → intent → cortex → respuesta) |
+| ODI_v6_CORTEX | Pipeline principal WhatsApp (ingest → intent → cortex → respuesta) — V8.1 integrado |
 | ODI_GOBERNANZA_V1 | Gobernanza y control |
 | ODI_T007_WhatsApp_v2 | WhatsApp saliente |
 | ODI_T007_WhatsApp_Incoming | WhatsApp entrante |
@@ -206,7 +206,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 | Cliente | Catálogo | Estado |
 |---------|----------|--------|
-| Bara Importaciones | Tienda Shopify configurada | Listo para piloto |
+| Bara Importaciones | 698 productos + 2,553 KB chunks en ChromaDB | ✅ ACTIVA en producción (14 Feb 2026) |
 | Yokomar | 1,000 productos normalizados, embeddings generados | Listo para piloto |
 | Vaisand | Tienda Shopify configurada | Listo para piloto |
 | Industrias Leo | Tienda Shopify configurada | Listo para piloto |
@@ -307,6 +307,62 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 Persiste nivel de intimidad, perfil, historial por usuario. 15 columnas, UUID PK, UNIQUE on usuario_id, CHECK nivel 0-4, trigger auto-update `updated_at`.
 
+### n8n Workflow V8.1 — ODI_v6_CORTEX (14 Feb 2026)
+
+**Archivo:** `odi_production/n8n/ODI_v6_CORTEX.json`
+**Backup:** `odi_production/n8n/ODI_v6_CORTEX.v6-backup.json`
+
+4 nodos modificados para integrar personalidad V8.1 en el flujo WhatsApp:
+
+| Nodo | Cambio | Detalle |
+|------|--------|---------|
+| `cortex-query` | Body actualizado | `voice: "auto"`, `lobe: "auto"`, `usuario_id: $json.from` |
+| `format-cortex` | Campos V8.1 extraídos | `guardian_estado`, `odi_event_id` del response Cortex |
+| `general-response` | Frases prohibidas eliminadas | Reescrito con voz ODI nativa (sin "¿En qué puedo ayudarte?") |
+| `prepare-api` | Objeto guardian en API | `guardian: { estado, odi_event_id }` en respuesta |
+
+- `send-whatsapp` habilitado con credencial `wa-header-auth` (httpHeaderAuth)
+- Credencial cifrada en n8n SQLite, token desde `WHATSAPP_TOKEN` env var
+- Pipeline E2E verificado: webhook → intent → cortex → WhatsApp → entrega confirmada
+
+### BARA — Activación Knowledge Base (14 Feb 2026)
+
+**Estado:** ✅ ACTIVA EN PRODUCCIÓN
+**Script:** `scripts/activate_bara.py`
+**Collection:** `odi_ind_motos` en ChromaDB
+**Path:** `/mnt/volume_sfo3_01/embeddings/kb_embeddings`
+**Embedding model:** `text-embedding-3-small` (OpenAI)
+
+| Fuente | Documentos | Origen |
+|--------|-----------|--------|
+| Manuales/Catálogos (KB chunks) | 2,553 | `kb_text_20260127_232312.json` |
+| Productos BARA | 698 | `BARA_products.json` |
+| **Total** | **3,251** | — |
+
+Cada producto BARA indexado con: título, SKU, precio COP, sistema, categoría, proveedor.
+Cada KB chunk indexado con: contenido, source_name, source_path, chunk_id.
+
+Consideraciones de ingesta:
+- Batches de 100 docs con 3s pausa entre batches (TPM OpenAI)
+- Retry 5x con backoff 15s*attempt en rate limit 429
+- Resume capability: calcula `skip_batches` desde docs existentes en colección
+
+### Stress Test V8.1 — `/paem/pay/init` (14 Feb 2026)
+
+**Estado:** ✅ PASSED
+**Script:** `scripts/stress_v81.py`
+**Reporte:** `reports/STRESS_TEST_V81.md`
+
+| Ronda | Requests | Concurrencia | Throughput | P95 | Errores |
+|-------|----------|-------------|-----------|-----|---------|
+| R1 | 200 | 20 | 919 req/s | 28ms | 0 |
+| R2 | 300 | 50 | 924 req/s | 88ms | 0 |
+
+- 500 decision logs insertados en PostgreSQL, 0 perdidos
+- 0 locks PostgreSQL detectados durante ejecución
+- 10/10 hashes SHA-256 verificados correctamente
+- Todos los requests retornaron 404 (pre-Wompi, montos altos → Guardian verde pero producto no existe)
+
 ## CASO 001 — Primera Venta Real (10 Feb 2026)
 
 **Estado:** ✅ COMPLETADO
@@ -373,9 +429,13 @@ Documentación completa: `docs/ODI_INDUSTRIA_5_0_7_0.md`
 5. ~~**ALTA:** Ejecutar SQL Health Census en servidor + activar API turismo~~ ✅ COMPLETADO
 6. ~~**ALTA:** Implementar PAEM v2.2.1 (HOLD + confirm + rate limit)~~ ✅ DEPLOYED 14 Feb 2026
 7. ~~**ALTA:** V8.1 Personalidad + Auditoría Cognitiva~~ ✅ CERTIFICADO 9/9 — 14 Feb 2026
-8. **MEDIA:** Activar productos Shopify draft → active
-9. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
-10. **BAJA:** Configurar Groq como tercer failover IA
+8. ~~**ALTA:** Activar BARA en ChromaDB + E2E WhatsApp~~ ✅ 3,251 docs + WhatsApp live — 14 Feb 2026
+9. ~~**ALTA:** Stress Test V8.1 /paem/pay/init~~ ✅ 500 req, 0 errores, 10/10 hashes — 14 Feb 2026
+10. ~~**ALTA:** Integrar V8.1 en workflow n8n ODI_v6_CORTEX~~ ✅ 4 nodos + WhatsApp creds — 14 Feb 2026
+11. **MEDIA:** Activar productos Shopify draft → active
+12. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
+13. **MEDIA:** Activar Yokomar, Vaisand, Leo en ChromaDB (mismo flujo que BARA)
+14. **BAJA:** Configurar Groq como tercer failover IA
 
 ## Convenciones de Código
 
