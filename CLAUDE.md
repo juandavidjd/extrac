@@ -41,7 +41,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 - **PostgreSQL 15:** Datos transaccionales, estado n8n, auditoría cognitiva (odi_decision_logs, odi_user_state)
 - **Redis Alpine:** Cache, pub/sub de eventos ODI
-- **ChromaDB:** Embeddings semánticos, búsqueda vectorial (`/mnt/volume_sfo3_01/embeddings/kb_embeddings`, collection `odi_ind_motos`: 19,145 docs)
+- **ChromaDB:** Embeddings semánticos, búsqueda vectorial (`/mnt/volume_sfo3_01/embeddings/kb_embeddings`, collection `odi_ind_motos`: 16,681 docs)
 
 ## Dominios y DNS
 
@@ -134,7 +134,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 - **Ramona Anfitriona:** Pendiente asignar Voice ID — hospitalidad, validación (S4-S6)
 - **Container:** odi-voice (puerto 7777), speed 0.85, stability 0.65
 
-## E-Commerce — Shopify (10 Tiendas) — ✅ 12,578 productos ACTIVE
+## E-Commerce — Shopify (15 Tiendas) — ✅ 16,681 productos ACTIVE
 
 | # | Tienda | Dominio | Productos | Estado |
 |---|--------|---------|:---------:|--------|
@@ -327,7 +327,7 @@ Persiste nivel de intimidad, perfil, historial por usuario. 15 columnas, UUID PK
 
 ### Knowledge Base ChromaDB — Todas las Tiendas (14 Feb 2026)
 
-**Estado:** ✅ 19,145 DOCS EN PRODUCCIÓN
+**Estado:** ✅ 16,681 DOCS EN PRODUCCIÓN
 **Collection:** `odi_ind_motos` en ChromaDB
 **Path:** `/mnt/volume_sfo3_01/embeddings/kb_embeddings`
 **Embedding model:** `text-embedding-3-small` (OpenAI)
@@ -448,7 +448,7 @@ Documentación completa: `docs/ODI_INDUSTRIA_5_0_7_0.md`
 10. ~~**ALTA:** Integrar V8.1 en workflow n8n ODI_v6_CORTEX~~ ✅ 4 nodos + WhatsApp creds — 14 Feb 2026
 11. ~~**MEDIA:** Activar productos Shopify draft → active~~ ✅ 12,578 productos en 10 tiendas — 14 Feb 2026
 12. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
-13. ~~**MEDIA:** Activar todas las tiendas en ChromaDB~~ ✅ 19,145 docs (14 proveedores) — 14 Feb 2026
+13. ~~**MEDIA:** Activar todas las tiendas en ChromaDB~~ ✅ 16,681 docs (14 proveedores) — 14 Feb 2026
 14. **BAJA:** Configurar Groq como tercer failover IA
 
 ## Convenciones de Código
