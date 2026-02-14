@@ -41,7 +41,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 - **PostgreSQL 15:** Datos transaccionales, estado n8n, auditoría cognitiva (odi_decision_logs, odi_user_state)
 - **Redis Alpine:** Cache, pub/sub de eventos ODI
-- **ChromaDB:** Embeddings semánticos, búsqueda vectorial (`/mnt/volume_sfo3_01/embeddings/kb_embeddings`, collection `odi_ind_motos`: 3,251 docs)
+- **ChromaDB:** Embeddings semánticos, búsqueda vectorial (`/mnt/volume_sfo3_01/embeddings/kb_embeddings`, collection `odi_ind_motos`: 19,145 docs)
 
 ## Dominios y DNS
 
@@ -325,27 +325,41 @@ Persiste nivel de intimidad, perfil, historial por usuario. 15 columnas, UUID PK
 - Credencial cifrada en n8n SQLite, token desde `WHATSAPP_TOKEN` env var
 - Pipeline E2E verificado: webhook → intent → cortex → WhatsApp → entrega confirmada
 
-### BARA — Activación Knowledge Base (14 Feb 2026)
+### Knowledge Base ChromaDB — Todas las Tiendas (14 Feb 2026)
 
-**Estado:** ✅ ACTIVA EN PRODUCCIÓN
-**Script:** `scripts/activate_bara.py`
+**Estado:** ✅ 19,145 DOCS EN PRODUCCIÓN
 **Collection:** `odi_ind_motos` en ChromaDB
 **Path:** `/mnt/volume_sfo3_01/embeddings/kb_embeddings`
 **Embedding model:** `text-embedding-3-small` (OpenAI)
+**Scripts:** `scripts/activate_bara.py`, `scripts/activate_all_embeddings.py`
 
-| Fuente | Documentos | Origen |
-|--------|-----------|--------|
-| Manuales/Catálogos (KB chunks) | 2,553 | `kb_text_20260127_232312.json` |
-| Productos BARA | 698 | `BARA_products.json` |
-| **Total** | **3,251** | — |
+| Fuente | Documentos |
+|--------|:---------:|
+| Manuales/Catálogos (KB chunks) | 2,553 |
+| BARA | 698 |
+| YOKOMAR | 1,000 |
+| KAIQI | 138 |
+| DFG | 7,445 |
+| DUNA | 1,200 |
+| IMBRA | 1,131 |
+| JAPAN | 734 |
+| LEO | 120 |
+| STORE | 66 |
+| VAISAND | 50 |
+| ARMOTOS | 1,953 |
+| CBI | 227 |
+| MCLMOTOS | 349 |
+| OH_IMPORTACIONES | 1,414 |
+| VITTON | 67 |
+| **Total** | **19,145** |
 
-Cada producto BARA indexado con: título, SKU, precio COP, sistema, categoría, proveedor.
+Cada producto indexado con: título, SKU, precio COP, sistema, categoría, proveedor, store.
 Cada KB chunk indexado con: contenido, source_name, source_path, chunk_id.
 
 Consideraciones de ingesta:
 - Batches de 100 docs con 3s pausa entre batches (TPM OpenAI)
-- Retry 5x con backoff 15s*attempt en rate limit 429
-- Resume capability: calcula `skip_batches` desde docs existentes en colección
+- Retry 5x con backoff 20s*attempt en rate limit 429
+- Detección automática de stores ya ingestados (skip duplicados)
 
 ### Stress Test V8.1 — `/paem/pay/init` (14 Feb 2026)
 
@@ -434,7 +448,7 @@ Documentación completa: `docs/ODI_INDUSTRIA_5_0_7_0.md`
 10. ~~**ALTA:** Integrar V8.1 en workflow n8n ODI_v6_CORTEX~~ ✅ 4 nodos + WhatsApp creds — 14 Feb 2026
 11. ~~**MEDIA:** Activar productos Shopify draft → active~~ ✅ 12,578 productos en 10 tiendas — 14 Feb 2026
 12. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
-13. **MEDIA:** Activar Yokomar, Vaisand, Leo en ChromaDB (mismo flujo que BARA)
+13. ~~**MEDIA:** Activar todas las tiendas en ChromaDB~~ ✅ 19,145 docs (14 proveedores) — 14 Feb 2026
 14. **BAJA:** Configurar Groq como tercer failover IA
 
 ## Convenciones de Código
