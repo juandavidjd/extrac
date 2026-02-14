@@ -118,11 +118,13 @@ class ODIDecisionLogger:
             return None
 
         event_id = self._generar_event_id()
-        timestamp = datetime.now(timezone.utc).isoformat()
+        ts_dt = datetime.now(timezone.utc)
+        timestamp = ts_dt.isoformat()
 
         registro = {
             "odi_event_id": event_id,
             "timestamp": timestamp,
+            "_timestamp_dt": ts_dt,
             "transaction_id": transaction_id,
             "usuario_id": usuario_id,
             "vertical": vertical,
@@ -150,17 +152,18 @@ class ODIDecisionLogger:
             async with pool.acquire() as conn:
                 await conn.execute("""
                     INSERT INTO odi_decision_logs (
-                        odi_event_id, transaction_id, usuario_id, vertical,
+                        odi_event_id, timestamp, transaction_id, usuario_id, vertical,
                         estado_guardian, modo_aplicado, intent_detectado,
                         decision_motivo, monto_cop, confianza_score,
                         adn_version, decision_path, hash_integridad,
                         override_flag, override_by, metadata
                     ) VALUES (
-                        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-                        $11, $12, $13, $14, $15, $16
+                        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+                        $12, $13, $14, $15, $16, $17
                     )
                 """,
                     registro["odi_event_id"],
+                    registro["_timestamp_dt"],
                     registro["transaction_id"] or None,
                     registro["usuario_id"],
                     registro["vertical"],
@@ -196,8 +199,9 @@ class ODIDecisionLogger:
         os.makedirs(fallback_dir, exist_ok=True)
         filepath = os.path.join(fallback_dir, f"{registro['odi_event_id']}.json")
         try:
+            safe_registro = {k: v for k, v in registro.items() if not k.startswith("_")}
             with open(filepath, "w", encoding="utf-8") as f:
-                json.dump(registro, f, indent=2, ensure_ascii=False)
+                json.dump(safe_registro, f, indent=2, ensure_ascii=False)
             logger.warning("Decision guardada en fallback: %s", filepath)
         except Exception as e:
             logger.critical("CRITICO: No se pudo guardar decision: %s", e)
