@@ -31,7 +31,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 | odi-n8n | n8nio/n8n:latest | 5678 | Workflow engine (cerebro) |
 | odi-voice | odi-odi_voice | 7777 | Motor de voz ElevenLabs |
 | odi-m62-fitment | odi-odi_m62_fitment | 8802 | Motor de compatibilidad motos |
-| odi-paem-api | odi-paem-api | 8807 | PAEM API v2.2.1 (pagos, turismo) |
+| odi-paem-api | odi-paem-api | 8807 | PAEM API v2.3.0 (pagos, turismo, override) |
 | odi-postgres | postgres:15 | 5432 | Base de datos transaccional + n8n |
 | odi-redis | redis:alpine | 6379 | Cache, pub/sub eventos |
 | odi-prometheus | prom/prometheus | 9090 | Métricas |
@@ -41,7 +41,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 - **PostgreSQL 15:** Datos transaccionales, estado n8n, auditoría cognitiva (odi_decision_logs, odi_user_state)
 - **Redis Alpine:** Cache, pub/sub de eventos ODI
-- **ChromaDB:** Embeddings semánticos, búsqueda vectorial (`/mnt/volume_sfo3_01/embeddings/kb_embeddings`, collection `odi_ind_motos`: 16,681 docs)
+- **ChromaDB:** Embeddings semánticos, búsqueda vectorial (`/mnt/volume_sfo3_01/embeddings/kb_embeddings`, collection `odi_ind_motos`: 19,145 docs)
 
 ## Dominios y DNS
 
@@ -134,25 +134,20 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 - **Ramona Anfitriona:** Pendiente asignar Voice ID — hospitalidad, validación (S4-S6)
 - **Container:** odi-voice (puerto 7777), speed 0.85, stability 0.65
 
-## E-Commerce — Shopify (15 Tiendas) — 16,681 productos | 99.9% con precio (15 Feb 2026)
+## E-Commerce — Shopify (10 Tiendas) — ✅ 12,578 productos ACTIVE
 
-| # | Tienda | Dominio | Productos | Precio |
+| # | Tienda | Dominio | Productos | Estado |
 |---|--------|---------|:---------:|--------|
-| 1 | DFG | 0se1jt-q1.myshopify.com | 7,441 | OK |
-| 2 | ARMOTOS | znxx5p-10.myshopify.com | 1,953 | CASI |
-| 3 | OH_IMPORTACIONES | 6fbakq-sj.myshopify.com | 1,414 | OK |
-| 4 | DUNA | ygsfhq-fs.myshopify.com | 1,200 | PARCIAL |
-| 5 | IMBRA | 0i1mdf-gi.myshopify.com | 1,131 | OK |
-| 6 | YOKOMAR | u1zmhk-ts.myshopify.com | 1,000 | CASI |
-| 7 | JAPAN | 7cy1zd-qz.myshopify.com | 734 | PARCIAL |
-| 8 | BARA | 4jqcki-jq.myshopify.com | 698 | OK |
-| 9 | MCLMOTOS | v023qz-8x.myshopify.com | 349 | CASI |
-| 10 | CBI | yrf6hp-f6.myshopify.com | 227 | PARCIAL |
-| 11 | VITTON | hxjebc-it.myshopify.com | 160 | CASI |
-| 12 | KAIQI | u03tqc-0e.myshopify.com | 138 | OK |
-| 13 | LEO | h1hywg-pq.myshopify.com | 120 | CASI |
-| 14 | STORE | 0b6umv-11.myshopify.com | 66 | CASI |
-| 15 | VAISAND | z4fpdj-mz.myshopify.com | 50 | CASI |
+| 1 | Bara | 4jqcki-jq.myshopify.com | 698 | ✅ Active |
+| 2 | Yokomar | u1zmhk-ts.myshopify.com | 1,000 | ✅ Active |
+| 3 | Kaiqi | u03tqc-0e.myshopify.com | 138 | ✅ Active |
+| 4 | DFG | 0se1jt-q1.myshopify.com | 7,441 | ✅ Active |
+| 5 | Duna | ygsfhq-fs.myshopify.com | 1,200 | ✅ Active |
+| 6 | Imbra | 0i1mdf-gi.myshopify.com | 1,131 | ✅ Active |
+| 7 | Japan | 7cy1zd-qz.myshopify.com | 734 | ✅ Active |
+| 8 | Leo | h1hywg-pq.myshopify.com | 120 | ✅ Active |
+| 9 | Store | 0b6umv-11.myshopify.com | 66 | ✅ Active |
+| 10 | Vaisand | z4fpdj-mz.myshopify.com | 50 | ✅ Active |
 
 **Tienda dev:** somos-moto-repuestos-v95pc.myshopify.com
 **Activación:** 14 Feb 2026 — `scripts/activate_all_stores.py` + `scripts/activate_drafts.py`
@@ -235,40 +230,6 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 ### Bug Corregido
 
 - **"Para tu ECO"**: ODI ya no responde con repuestos de motos a mensajes de turismo, emprendimiento o urgencias
-
-
-
-## WhatsApp Handler v1.2 + Meta Intents + P2 SALUD (15 Feb 2026)
-
-**Archivo:** `/opt/odi/core/whatsapp_routes.py`
-**API:** https://api.liveodi.com/v1/webhook/whatsapp
-**ChromaDB:** 16,681 docs | 99.9% con precio
-
-### Intent Routing (sin LLM)
-
-| Intent | Keywords | Respuesta |
-|--------|----------|-----------|
-| meta | "quien eres", "hola", "que empresas" | Identidad ODI, 15 proveedores |
-| salud | "turismo dental", "implantes", "bruxismo" | Precios PAEM, routing dental |
-| non_moto | "soy panadero", "tengo restaurante" | Redirige a core business |
-| rag | cualquier repuesto | ChromaDB + LLM con precios |
-
-### Empresas ODI (15)
-
-ARMOTOS, BARA, CBI, DFG, DUNA, IMBRA, JAPAN, KAIQI, LEO, MCLMOTOS, OH IMPORTACIONES, STORE, VAISAND, VITTON, YOKOMAR
-
-### Test Endpoints
-
-```bash
-# Meta intent
-curl -X POST "http://localhost:8800/v1/webhook/whatsapp/test?phone=573001234567&message=quien%20eres"
-
-# P2 SALUD
-curl -X POST "http://localhost:8800/v1/webhook/whatsapp/test?phone=573001234567&message=turismo%20dental"
-
-# RAG con precios
-curl -X POST "http://localhost:8800/v1/webhook/whatsapp/test?phone=573001234567&message=bujia%20moto"
-```
 
 ## ODI V8.1 — Personalidad + Auditoría Cognitiva (14 Feb 2026)
 
@@ -366,7 +327,7 @@ Persiste nivel de intimidad, perfil, historial por usuario. 15 columnas, UUID PK
 
 ### Knowledge Base ChromaDB — Todas las Tiendas (14 Feb 2026)
 
-**Estado:** ✅ 16,681 DOCS EN PRODUCCIÓN
+**Estado:** ✅ 19,145 DOCS EN PRODUCCIÓN
 **Collection:** `odi_ind_motos` en ChromaDB
 **Path:** `/mnt/volume_sfo3_01/embeddings/kb_embeddings`
 **Embedding model:** `text-embedding-3-small` (OpenAI)
@@ -433,9 +394,72 @@ Consideraciones de ingesta:
 5. ODI calcula total y solicita confirmación
 6. Pedido generado automáticamente
 
+## ODI V8.2 — Override Humano Seguro (15 Feb 2026)
+
+**Estado:** ✅ CERTIFICADO 4/4 tests (O1-O4)
+**Principio:** "ROJO no se edita. ROJO se supera con huella humana."
+**Commit:** `c69764c`
+
+### Arquitectura
+
+| Componente | Ubicación | Función |
+|------------|-----------|---------|
+| Override Engine | `core/odi_override.py` | JWT + TOTP validation, override execution, hash SHA-256 |
+| Auth Login | `POST /odi/auth/login` (8807) | TOTP → JWT (TTL 10 min) |
+| Override | `POST /odi/override` (8807) | JWT + TOTP → override encadenado |
+| Status | `GET /odi/override/status` (8807) | Estado del sistema de overrides |
+| Pay Override | `override_event_id` en `/paem/pay/init` | Bypass Guardian con autorización humana |
+| Tabla SQL | `odi_humans` (PostgreSQL) | Humanos autorizados (role + TOTP secret) |
+| Tabla SQL | `odi_overrides` (PostgreSQL) | Overrides con evidence + hash |
+| Vista SQL | `odi_override_audit` | Auditoría de overrides con contexto original |
+| Columnas | `prev_event_id`, `event_type` en `odi_decision_logs` | Encadenamiento de eventos |
+
+### Roles y Permisos
+
+| Rol | Override ROJO | Override AMARILLO | Escalar NEGRO | Vertical |
+|-----|:---:|:---:|:---:|----------|
+| ARQUITECTO | si | si | si | Todas (*) |
+| SUPERVISOR | si | si | no | Asignada |
+| CUSTODIO | si | si | no | Asignada |
+
+### Reglas Inmutables
+
+- NEGRO **nunca** se convierte en VERDE — solo `ESCALAMIENTO_NEGRO`
+- Override crea **nuevo evento** enlazado al original (`prev_event_id`)
+- El evento original **nunca se modifica**
+- Hash SHA-256 inmutable por override
+- JWT expira en 10 min (configurable: `ODI_OVERRIDE_TTL_MINUTES`)
+- TOTP secret se muestra **solo una vez** al crear humano
+
+### Decisiones Válidas
+
+`VERDE_OVERRIDE_SUPERVISADO`, `AMARILLO_OVERRIDE_SUPERVISADO`, `ESCALAMIENTO_NEGRO`
+
+### Humanos Registrados
+
+| human_id | Nombre | Rol | Vertical |
+|----------|--------|-----|----------|
+| JD | Juan David Jiménez | ARQUITECTO | * |
+
+### Tests Certificación
+
+| Test | Descripción | Resultado |
+|------|-------------|-----------|
+| O1 | Override ROJO → VERDE con chain + hash DB | PASSED |
+| O2 | Supervisor fuera de vertical → 403 | PASSED |
+| O3 | NEGRO → VERDE → 403 "Solo ESCALAMIENTO" | PASSED |
+| O4 | pay/init con override_event_id → no 403 | PASSED |
+
+### Variables de Entorno V8.2
+
+- `ODI_JWT_SECRET` — HMAC-SHA256 key (128 hex chars, nunca en logs)
+- `ODI_JWT_ISSUER` — "odi"
+- `ODI_OVERRIDE_ENABLED` — "true"
+- `ODI_OVERRIDE_TTL_MINUTES` — "10"
+
 ## PAEM — Protocolo de Activación Económica Multindustria
 
-**Estado:** v2.2.1 ✅ DEPLOYED (14 Feb 2026)
+**Estado:** v2.3.0 ✅ DEPLOYED (15 Feb 2026)
 **Spec completa:** `docs/PAEM_API_v2_2_1_SPEC.md`
 **API URL:** https://api.liveodi.com/paem/*
 **Pagos:** Wompi (checkout público, COP, amount_in_cents)
@@ -460,11 +484,14 @@ Migraciones en `data/turismo/migrations/`:
 - `V001_health_census.sql` — Schema completo (7 tablas + vista + función)
 - `V002_seed_demo_data.sql` — 3 nodos, 9 certs, 6 entretenimiento, 4 hospedaje
 
-### PAEM v2.2.1 (✅ DEPLOYED — 14 Feb 2026)
+### PAEM v2.3.0 (✅ DEPLOYED — 15 Feb 2026)
 
 - ✅ HOLD automático de slots clínicos (15 min TTL)
 - ✅ POST /paem/confirm con confirmación atómica
-- ✅ POST /paem/pay/init — Checkout Wompi integrado + Guardian V8.1 pre-check
+- ✅ POST /paem/pay/init — Checkout Wompi + Guardian V8.1 + Override V8.2
+- ✅ POST /odi/auth/login — Login humano (TOTP → JWT)
+- ✅ POST /odi/override — Override humano seguro (JWT + TOTP)
+- ✅ GET /odi/override/status — Estado overrides
 - ✅ Rate limiting por IP via Redis
 - ✅ Event sourcing (odi_events)
 - ✅ Puerto 8807 (odi-paem-api) → https://api.liveodi.com
@@ -487,7 +514,7 @@ Documentación completa: `docs/ODI_INDUSTRIA_5_0_7_0.md`
 10. ~~**ALTA:** Integrar V8.1 en workflow n8n ODI_v6_CORTEX~~ ✅ 4 nodos + WhatsApp creds — 14 Feb 2026
 11. ~~**MEDIA:** Activar productos Shopify draft → active~~ ✅ 12,578 productos en 10 tiendas — 14 Feb 2026
 12. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
-13. ~~**MEDIA:** Activar todas las tiendas en ChromaDB~~ ✅ 16,681 docs (14 proveedores) — 14 Feb 2026
+13. ~~**MEDIA:** Activar todas las tiendas en ChromaDB~~ ✅ 19,145 docs (14 proveedores) — 14 Feb 2026
 14. **BAJA:** Configurar Groq como tercer failover IA
 
 ## Convenciones de Código
