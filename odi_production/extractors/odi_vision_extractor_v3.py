@@ -1406,3 +1406,208 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# ============================================================================
+# VISION AI PRODUCT DETECTOR v1.0
+# ============================================================================
+# Detecta productos individuales usando Vision AI en lugar de OpenCV edges
+# Implementado: 15 Feb 2026
+
+VISION_DETECT_PROMPT = """Analiza esta pagina de catalogo de repuestos.
+
+Identifica CADA producto con su FOTO individual.
+
+IMPORTANTE:
+- El bbox debe cubrir SOLO la foto del producto
+- NO incluir toda la columna, solo la imagen individual
+- El bbox debe ser proporcional (ratio alto/ancho entre 0.5 y 2.5)
+
+Para cada producto:
+{"name": "nombre corto", "bbox": [x1, y1, x2, y2]}
+
+Coordenadas en pixeles o porcentaje.
+Devuelve array JSON, max 15 productos."""
+
+
+class VisionProductDetector:
+    def __init__(self, api_key=None, use_gemini=True):
+        self.api_key = api_key or os.getenv("OPENAI_API_KEY")
+        self.gemini_key = os.getenv("GEMINI_API_KEY")
+        self.use_gemini = use_gemini and self.gemini_key
+        
+        if self.use_gemini:
+            try:
+                import google.generativeai as genai
+                genai.configure(api_key=self.gemini_key)
+                self.gemini_model = genai.GenerativeModel("gemini-2.0-flash")
+            except Exception as e:
+                self.use_gemini = False
+        
+        if not self.use_gemini:
+            self.client = OpenAI(api_key=self.api_key)
+    
+    def _parse_bbox_response(self, response_text):
+        try:
+            text = response_text.strip()
+            if text.startswith("```"):
+                text = text.split("```")[1]
+                if text.startswith("json"):
+                    text = text[4:]
+            text = text.strip()
+            
+            products = json.loads(text)
+            valid = []
+            for p in products:
+                if "bbox" in p and len(p["bbox"]) == 4:
+                    bbox = p["bbox"]
+                    # Auto-normalize if pixels
+                    if any(v > 100 for v in bbox):
+                        max_v = max(max(bbox), 1)
+                        bbox = [min(v * 100.0 / max_v, 100) for v in bbox]
+                    if True:  # Always accept normalized
+                        valid.append({"name": p.get("name", "Producto"), "bbox": bbox})
+            return valid
+        except:
+            return []
+    
+    def detect(self, image_path):
+        try:
+            if self.use_gemini:
+                return self._detect_gemini(image_path)
+            else:
+                return self._detect_openai(image_path)
+        except Exception as e:
+            return []
+    
+    def _detect_gemini(self, image_path):
+        import google.generativeai as genai
+        from PIL import Image
+        img = Image.open(image_path)
+        response = self.gemini_model.generate_content(
+            [VISION_DETECT_PROMPT, img],
+            generation_config={"temperature": 0.1, "max_output_tokens": 2048}
+        )
+        return self._parse_bbox_response(response.text)
+    
+    def _detect_openai(self, image_path):
+        with open(image_path, "rb") as f:
+            base64_img = base64.b64encode(f.read()).decode("utf-8")
+        response = self.client.chat.completions.create(
+            model="gpt-4o",
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": VISION_DETECT_PROMPT},
+                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_img}", "detail": "high"}}
+                ]
+            }],
+            max_tokens=2048, temperature=0.1
+        )
+        return self._parse_bbox_response(response.choices[0].message.content)
+    
+    def crop_products(self, image_path, products, output_dir, prefix, page_num, min_size=400):
+        from PIL import Image
+        ensure_dir(output_dir)
+        img = Image.open(image_path)
+        width, height = img.size
+        results = []
+        
+        for i, prod in enumerate(products):
+            try:
+                bbox = prod["bbox"]
+                x1 = int(bbox[0] * width / 100)
+                y1 = int(bbox[1] * height / 100)
+                x2 = int(bbox[2] * width / 100)
+                y2 = int(bbox[3] * height / 100)
+                
+                padding = 10
+                x1 = max(0, x1 - padding)
+                y1 = max(0, y1 - padding)
+                x2 = min(width, x2 + padding)
+                y2 = min(height, y2 + padding)
+                
+                crop = img.crop((x1, y1, x2, y2))
+                crop_w, crop_h = crop.size
+                
+                if crop_w < min_size or crop_h < min_size:
+                    scale = max(min_size / crop_w, min_size / crop_h)
+                    new_w = int(crop_w * scale)
+                    new_h = int(crop_h * scale)
+                    crop = crop.resize((new_w, new_h), Image.LANCZOS)
+                
+                filename = f"{prefix}_p{page_num:03d}_prod{i+1:02d}.png"
+                filepath = os.path.join(output_dir, filename)
+                crop.save(filepath, "PNG", optimize=True)
+                
+                results.append({
+                    "name": prod["name"],
+                    "filename": filename,
+                    "path": filepath,
+                    "size": crop.size,
+                    "page": page_num
+                })
+            except:
+                pass
+        return results
+
+
+def reconstruct_product_images(pdf_path, store_name, pages=None, output_dir=None, dpi=300):
+    from pdf2image import convert_from_path
+    from pdf2image.pdf2image import pdfinfo_from_path
+    
+    if not os.path.exists(pdf_path):
+        raise FileNotFoundError(f"PDF no encontrado: {pdf_path}")
+    
+    output_dir = output_dir or f"/opt/odi/data/{store_name}/images"
+    temp_dir = f"/tmp/odi_reconstruct_{store_name}"
+    ensure_dir(output_dir)
+    ensure_dir(temp_dir)
+    
+    print(f"=== RECONSTRUCT PRODUCT IMAGES ===")
+    print(f"PDF: {pdf_path}")
+    print(f"Store: {store_name}")
+    print(f"DPI: {dpi}")
+    
+    detector = VisionProductDetector(use_gemini=True)
+    
+    stats = {"pages_processed": 0, "products_detected": 0, "images_saved": 0, "products": []}
+    
+    info = pdfinfo_from_path(pdf_path)
+    total_pages = info["Pages"]
+    print(f"Total paginas: {total_pages}")
+    
+    if pages is None:
+        pages = list(range(1, total_pages + 1))
+    
+    for page_num in pages:
+        print(f"\n[Pagina {page_num}]")
+        try:
+            images = convert_from_path(pdf_path, dpi=dpi, first_page=page_num, last_page=page_num)
+            if not images:
+                continue
+            
+            page_img_path = os.path.join(temp_dir, f"page_{page_num:03d}.png")
+            images[0].save(page_img_path, "PNG")
+            print(f"  Renderizada: {images[0].size[0]}x{images[0].size[1]}")
+            
+            products = detector.detect(page_img_path)
+            print(f"  Productos: {len(products)}")
+            
+            if products:
+                saved = detector.crop_products(page_img_path, products, output_dir, store_name, page_num)
+                stats["products_detected"] += len(products)
+                stats["images_saved"] += len(saved)
+                stats["products"].extend(saved)
+                for s in saved:
+                    print(f"    - {s['name']}: {s['size'][0]}x{s['size'][1]}")
+            
+            stats["pages_processed"] += 1
+            os.remove(page_img_path)
+        except Exception as e:
+            print(f"  Error: {e}")
+    
+    print(f"\n=== RESULTADO ===")
+    print(f"Paginas: {stats['pages_processed']}")
+    print(f"Productos: {stats['products_detected']}")
+    print(f"Imagenes: {stats['images_saved']}")
+    return stats
