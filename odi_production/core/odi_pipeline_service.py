@@ -51,6 +51,15 @@ import httpx
 # OpenAI for Vision
 from openai import OpenAI
 
+# Image extraction from PDFs
+sys.path.insert(0, "/opt/odi/odi_production/extractors")
+try:
+    from odi_vision_extractor_v3 import VisionProductDetector
+    VISION_DETECTOR_AVAILABLE = True
+except ImportError:
+    VISION_DETECTOR_AVAILABLE = False
+    VisionProductDetector = None
+
 load_dotenv("/opt/odi/.env")
 # Image matcher for local images
 sys.path.insert(0, "/opt/odi/pipeline")
@@ -315,6 +324,55 @@ Responde SOLO con el JSON, sin explicaciones."""
         except Exception as e:
             log.error(f"Vision extraction error: {e}")
             return []
+
+    async def extract_images_from_pdf(self, pdf_path: str, store_name: str, pages: List[int] = None) -> Dict[str, Any]:
+        """Extrae imagenes de productos del PDF usando Vision AI."""
+        if not VISION_DETECTOR_AVAILABLE:
+            log.warning("VisionProductDetector not available, skipping image extraction")
+            return {"images_extracted": 0, "products": []}
+        
+        try:
+            from pdf2image import convert_from_path
+            from pdf2image.pdf2image import pdfinfo_from_path
+            
+            output_dir = f"/opt/odi/data/{store_name}/images"
+            os.makedirs(output_dir, exist_ok=True)
+            
+            detector = VisionProductDetector(use_gemini=True)
+            
+            info = pdfinfo_from_path(pdf_path)
+            total_pages = info.get("Pages", 0)
+            
+            if pages is None:
+                pages = list(range(1, min(total_pages + 1, 51)))  # Max 50 pages
+            
+            stats = {"images_extracted": 0, "products": []}
+            
+            for page_num in pages:
+                log.info(f"  Extracting images from page {page_num}")
+                try:
+                    images = convert_from_path(pdf_path, dpi=300, first_page=page_num, last_page=page_num)
+                    if not images:
+                        continue
+                    
+                    temp_path = f"/tmp/page_{store_name}_{page_num}.png"
+                    images[0].save(temp_path, "PNG")
+                    
+                    products = detector.detect(temp_path)
+                    if products:
+                        saved = detector.crop_products(temp_path, products, output_dir, store_name, page_num)
+                        stats["images_extracted"] += len(saved)
+                        stats["products"].extend(saved)
+                        log.info(f"    {len(saved)} product images extracted")
+                    
+                    os.remove(temp_path)
+                except Exception as e:
+                    log.error(f"    Error on page {page_num}: {e}")
+            
+            return stats
+        except Exception as e:
+            log.error(f"Image extraction error: {e}")
+            return {"images_extracted": 0, "products": []}
 
 
 # ============================================
@@ -592,6 +650,15 @@ class PipelineExecutor:
 
             products = await self.extractor.extract_from_pdf(request.source_file)
             log.info(f"[{job.job_id}] Extracted {len(products)} products")
+
+            # Extract product images from PDF
+            if request.source_file.lower().endswith(".pdf"):
+                log.info(f"[{job.job_id}] Extracting product images...")
+                img_stats = await self.extractor.extract_images_from_pdf(
+                    request.source_file, request.empresa
+                )
+                log.info(f"[{job.job_id}] Extracted {img_stats.get(images_extracted, 0)} product images")
+                job.metadata["images_extracted"] = img_stats.get("images_extracted", 0)
 
             if not products:
                 job.stage = PipelineStage.FAILED.value
