@@ -102,7 +102,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api-free.deepl.com/v2/translate",
+        "url": "https://api.deepl.com/v2/translate",
         "authentication": "genericCredentialType",
         "genericAuthType": "httpHeaderAuth",
         "sendHeaders": true,
@@ -326,7 +326,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "https://api-free.deepl.com/v2/translate",
+        "url": "https://api.deepl.com/v2/translate",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
