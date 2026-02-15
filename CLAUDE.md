@@ -134,20 +134,25 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 - **Ramona Anfitriona:** Pendiente asignar Voice ID — hospitalidad, validación (S4-S6)
 - **Container:** odi-voice (puerto 7777), speed 0.85, stability 0.65
 
-## E-Commerce — Shopify (15 Tiendas) — ✅ 16,681 productos ACTIVE
+## E-Commerce — Shopify (15 Tiendas) — 16,681 productos | 86% con precio (15 Feb 2026)
 
-| # | Tienda | Dominio | Productos | Estado |
+| # | Tienda | Dominio | Productos | Precio |
 |---|--------|---------|:---------:|--------|
-| 1 | Bara | 4jqcki-jq.myshopify.com | 698 | ✅ Active |
-| 2 | Yokomar | u1zmhk-ts.myshopify.com | 1,000 | ✅ Active |
-| 3 | Kaiqi | u03tqc-0e.myshopify.com | 138 | ✅ Active |
-| 4 | DFG | 0se1jt-q1.myshopify.com | 7,441 | ✅ Active |
-| 5 | Duna | ygsfhq-fs.myshopify.com | 1,200 | ✅ Active |
-| 6 | Imbra | 0i1mdf-gi.myshopify.com | 1,131 | ✅ Active |
-| 7 | Japan | 7cy1zd-qz.myshopify.com | 734 | ✅ Active |
-| 8 | Leo | h1hywg-pq.myshopify.com | 120 | ✅ Active |
-| 9 | Store | 0b6umv-11.myshopify.com | 66 | ✅ Active |
-| 10 | Vaisand | z4fpdj-mz.myshopify.com | 50 | ✅ Active |
+| 1 | DFG | 0se1jt-q1.myshopify.com | 7,441 | OK |
+| 2 | ARMOTOS | znxx5p-10.myshopify.com | 1,953 | CASI |
+| 3 | OH_IMPORTACIONES | 6fbakq-sj.myshopify.com | 1,414 | OK |
+| 4 | DUNA | ygsfhq-fs.myshopify.com | 1,200 | PARCIAL |
+| 5 | IMBRA | 0i1mdf-gi.myshopify.com | 1,131 | OK |
+| 6 | YOKOMAR | u1zmhk-ts.myshopify.com | 1,000 | CASI |
+| 7 | JAPAN | 7cy1zd-qz.myshopify.com | 734 | PARCIAL |
+| 8 | BARA | 4jqcki-jq.myshopify.com | 698 | OK |
+| 9 | MCLMOTOS | v023qz-8x.myshopify.com | 349 | CASI |
+| 10 | CBI | yrf6hp-f6.myshopify.com | 227 | PARCIAL |
+| 11 | VITTON | hxjebc-it.myshopify.com | 160 | CASI |
+| 12 | KAIQI | u03tqc-0e.myshopify.com | 138 | OK |
+| 13 | LEO | h1hywg-pq.myshopify.com | 120 | CASI |
+| 14 | STORE | 0b6umv-11.myshopify.com | 66 | CASI |
+| 15 | VAISAND | z4fpdj-mz.myshopify.com | 50 | CASI |
 
 **Tienda dev:** somos-moto-repuestos-v95pc.myshopify.com
 **Activación:** 14 Feb 2026 — `scripts/activate_all_stores.py` + `scripts/activate_drafts.py`
@@ -230,6 +235,40 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 ### Bug Corregido
 
 - **"Para tu ECO"**: ODI ya no responde con repuestos de motos a mensajes de turismo, emprendimiento o urgencias
+
+
+
+## WhatsApp Handler v1.2 + Meta Intents + P2 SALUD (15 Feb 2026)
+
+**Archivo:** `/opt/odi/core/whatsapp_routes.py`
+**API:** https://api.liveodi.com/v1/webhook/whatsapp
+**ChromaDB:** 16,681 docs | 86% con precio
+
+### Intent Routing (sin LLM)
+
+| Intent | Keywords | Respuesta |
+|--------|----------|-----------|
+| meta | "quien eres", "hola", "que empresas" | Identidad ODI, 15 proveedores |
+| salud | "turismo dental", "implantes", "bruxismo" | Precios PAEM, routing dental |
+| non_moto | "soy panadero", "tengo restaurante" | Redirige a core business |
+| rag | cualquier repuesto | ChromaDB + LLM con precios |
+
+### Empresas ODI (15)
+
+ARMOTOS, BARA, CBI, DFG, DUNA, IMBRA, JAPAN, KAIQI, LEO, MCLMOTOS, OH IMPORTACIONES, STORE, VAISAND, VITTON, YOKOMAR
+
+### Test Endpoints
+
+```bash
+# Meta intent
+curl -X POST "http://localhost:8800/v1/webhook/whatsapp/test?phone=573001234567&message=quien%20eres"
+
+# P2 SALUD
+curl -X POST "http://localhost:8800/v1/webhook/whatsapp/test?phone=573001234567&message=turismo%20dental"
+
+# RAG con precios
+curl -X POST "http://localhost:8800/v1/webhook/whatsapp/test?phone=573001234567&message=bujia%20moto"
+```
 
 ## ODI V8.1 — Personalidad + Auditoría Cognitiva (14 Feb 2026)
 
