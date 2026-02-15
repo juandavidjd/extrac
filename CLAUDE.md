@@ -134,7 +134,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 - **Ramona Anfitriona:** Pendiente asignar Voice ID — hospitalidad, validación (S4-S6)
 - **Container:** odi-voice (puerto 7777), speed 0.85, stability 0.65
 
-## E-Commerce — Shopify (10 Tiendas) — ✅ 12,578 productos ACTIVE
+## E-Commerce — Shopify (15 Tiendas) — 16,681 productos | 100% con precio (15 Feb 2026)
 
 | # | Tienda | Dominio | Productos | Estado |
 |---|--------|---------|:---------:|--------|
