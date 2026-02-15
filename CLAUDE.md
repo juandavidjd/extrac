@@ -134,7 +134,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 - **Ramona Anfitriona:** Pendiente asignar Voice ID — hospitalidad, validación (S4-S6)
 - **Container:** odi-voice (puerto 7777), speed 0.85, stability 0.65
 
-## E-Commerce — Shopify (15 Tiendas) — 16,681 productos | 86% con precio (15 Feb 2026)
+## E-Commerce — Shopify (15 Tiendas) — 16,681 productos | 99.9% con precio (15 Feb 2026)
 
 | # | Tienda | Dominio | Productos | Precio |
 |---|--------|---------|:---------:|--------|
@@ -242,7 +242,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 **Archivo:** `/opt/odi/core/whatsapp_routes.py`
 **API:** https://api.liveodi.com/v1/webhook/whatsapp
-**ChromaDB:** 16,681 docs | 86% con precio
+**ChromaDB:** 16,681 docs | 99.9% con precio
 
 ### Intent Routing (sin LLM)
 
