@@ -41,7 +41,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 - **PostgreSQL 15:** Datos transaccionales, estado n8n, auditoría cognitiva (odi_decision_logs, odi_user_state)
 - **Redis Alpine:** Cache, pub/sub de eventos ODI
-- **ChromaDB:** Embeddings semánticos, búsqueda vectorial (`/mnt/volume_sfo3_01/embeddings/kb_embeddings`, collection `odi_ind_motos`: 19,145 docs)
+- **ChromaDB:** Embeddings semánticos, búsqueda vectorial (`/mnt/volume_sfo3_01/embeddings/kb_embeddings`, collection `odi_ind_motos`: 16,681 docs)
 
 ## Dominios y DNS
 
@@ -134,7 +134,7 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 - **Ramona Anfitriona:** Pendiente asignar Voice ID — hospitalidad, validación (S4-S6)
 - **Container:** odi-voice (puerto 7777), speed 0.85, stability 0.65
 
-## E-Commerce — Shopify (15 Tiendas) — 16,681 productos | 100% con precio (15 Feb 2026)
+## E-Commerce — Shopify (15 Tiendas) — ✅ 16,681 productos ACTIVE
 
 | # | Tienda | Dominio | Productos | Estado |
 |---|--------|---------|:---------:|--------|
@@ -148,9 +148,15 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 | 8 | Leo | h1hywg-pq.myshopify.com | 120 | ✅ Active |
 | 9 | Store | 0b6umv-11.myshopify.com | 66 | ✅ Active |
 | 10 | Vaisand | z4fpdj-mz.myshopify.com | 50 | ✅ Active |
+| 11 | Armotos | — | 1,953 | ✅ Active |
+| 12 | CBI | — | 227 | ✅ Active |
+| 13 | MCLMOTOS | — | 349 | ✅ Active |
+| 14 | OH Importaciones | — | 1,414 | ✅ Active |
+| 15 | Vitton | — | 160 | ✅ Active |
 
 **Tienda dev:** somos-moto-repuestos-v95pc.myshopify.com
 **Activación:** 14 Feb 2026 — `scripts/activate_all_stores.py` + `scripts/activate_drafts.py`
+**Limpieza:** 14 Feb 2026 — Wipe duplicados YOKOMAR (33K→1K), re-upload OH_IMPORTACIONES, ARMOTOS, VITTON
 
 ## Marketing & CRM — Systeme.io
 
@@ -202,27 +208,28 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 | ODI_v16_9_3_LINUX_CERTIFIED | Flujo certificado Linux |
 | ODI_Etapa_3_Autonomía_por_SKU | Autonomía decisional por producto |
 
-## Clientes / Proveedores — 14 activos en ChromaDB (14 Feb 2026)
+## Clientes / Proveedores — 15 activos (14 Feb 2026)
 
 | # | Cliente | Docs ChromaDB | Shopify | Estado |
 |---|---------|:------------:|---------|--------|
 | 1 | Bara Importaciones | 698 | ✅ Active (698) | ✅ PRODUCCIÓN |
 | 2 | Yokomar | 1,000 | ✅ Active (1,000) | ✅ PRODUCCIÓN |
 | 3 | Kaiqi | 138 | ✅ Active (138) | ✅ PRODUCCIÓN |
-| 4 | DFG | 7,445 | ✅ Active (7,441) | ✅ PRODUCCIÓN |
+| 4 | DFG | 7,441 | ✅ Active (7,441) | ✅ PRODUCCIÓN |
 | 5 | Duna | 1,200 | ✅ Active (1,200) | ✅ PRODUCCIÓN |
 | 6 | Imbra | 1,131 | ✅ Active (1,131) | ✅ PRODUCCIÓN |
 | 7 | Japan | 734 | ✅ Active (734) | ✅ PRODUCCIÓN |
 | 8 | Leo | 120 | ✅ Active (120) | ✅ PRODUCCIÓN |
 | 9 | Store | 66 | ✅ Active (66) | ✅ PRODUCCIÓN |
 | 10 | Vaisand | 50 | ✅ Active (50) | ✅ PRODUCCIÓN |
-| 11 | Armotos | 1,953 | — | ChromaDB only |
-| 12 | CBI | 227 | — | ChromaDB only |
-| 13 | MCLMOTOS | 349 | — | ChromaDB only (0 imágenes) |
-| 14 | OH Importaciones | 1,414 | — | ChromaDB only |
-| 15 | Vitton | 67 | — | ChromaDB only |
-| — | KB Chunks (manuales) | 2,553 | — | Base knowledge |
-| | **TOTAL** | **19,145** | **12,578** | |
+| 11 | Armotos | 1,953 | ✅ Active (1,953) | ✅ PRODUCCIÓN |
+| 12 | CBI | 227 | ✅ Active (227) | ✅ PRODUCCIÓN |
+| 13 | MCLMOTOS | 349 | ✅ Active (349) | ✅ PRODUCCIÓN |
+| 14 | OH Importaciones | 1,414 | ✅ Active (1,414) | ✅ PRODUCCIÓN |
+| 15 | Vitton | 160 | ✅ Active (160) | ✅ PRODUCCIÓN |
+| | **TOTAL** | **16,681** | **16,681** | |
+
+**Limpieza 14 Feb:** YOKOMAR 33K→1K (wipe duplicados), OH_IMPORTACIONES 2,703→1,414 (wipe + re-upload), ARMOTOS 1,120→1,953 (wipe + upload PDF), VITTON 67→160 (upload PDF), CBI/MCLMOTOS DRAFT→ACTIVE
 
 ## Intent Override Gate (Febrero 2026)
 
@@ -340,19 +347,19 @@ Persiste nivel de intimidad, perfil, historial por usuario. 15 columnas, UUID PK
 
 ### Knowledge Base ChromaDB — Todas las Tiendas (14 Feb 2026)
 
-**Estado:** ✅ 19,145 DOCS EN PRODUCCIÓN
+**Estado:** ✅ 16,681 DOCS EN PRODUCCIÓN (post-limpieza)
 **Collection:** `odi_ind_motos` en ChromaDB
 **Path:** `/mnt/volume_sfo3_01/embeddings/kb_embeddings`
 **Embedding model:** `text-embedding-3-small` (OpenAI)
 **Scripts:** `scripts/activate_bara.py`, `scripts/activate_all_embeddings.py`
+**Cobertura precios:** 99.9% (16,661 con precio / 16,681 total — solo 20 sin precio)
 
 | Fuente | Documentos |
 |--------|:---------:|
-| Manuales/Catálogos (KB chunks) | 2,553 |
 | BARA | 698 |
 | YOKOMAR | 1,000 |
 | KAIQI | 138 |
-| DFG | 7,445 |
+| DFG | 7,441 |
 | DUNA | 1,200 |
 | IMBRA | 1,131 |
 | JAPAN | 734 |
@@ -363,16 +370,51 @@ Persiste nivel de intimidad, perfil, historial por usuario. 15 columnas, UUID PK
 | CBI | 227 |
 | MCLMOTOS | 349 |
 | OH_IMPORTACIONES | 1,414 |
-| VITTON | 67 |
-| **Total** | **19,145** |
+| VITTON | 160 |
+| **Total** | **16,681** |
 
 Cada producto indexado con: título, SKU, precio COP, sistema, categoría, proveedor, store.
-Cada KB chunk indexado con: contenido, source_name, source_path, chunk_id.
 
 Consideraciones de ingesta:
 - Batches de 100 docs con 3s pausa entre batches (TPM OpenAI)
 - Retry 5x con backoff 20s*attempt en rate limit 429
 - Detección automática de stores ya ingestados (skip duplicados)
+
+### WhatsApp RAG v1.2 (15 Feb 2026)
+
+**Estado:** ✅ OPERATIVO
+**Endpoint:** `POST /v1/webhook/whatsapp/test`
+**Handler:** `core/whatsapp_routes.py`
+**Latencia:** ~1.5s - 4.4s (varía por query)
+
+**Flujo:** WhatsApp message → Meta Intents → ChromaDB semantic search → LLM (failover chain) → respuesta con productos reales
+
+**Intents directos (sin LLM):**
+- **Meta:** "quien eres", "hola", "que empresas" → respuesta directa ODI
+- **P2 SALUD:** "turismo dental" → precios PAEM
+
+**Tests RAG verificados:**
+
+| Query | Resultados | Tiendas | Latencia |
+|-------|:----------:|---------|----------|
+| cadena para pulsar 200 ns | 5 | IMBRA, DFG | 2,388ms |
+| repuesto de freno disco | 5 | VAISAND, ARMOTOS, YOKOMAR, MCLMOTOS | 2,471ms |
+| llanta 110 70 trasera | 5 | DFG | 1,468ms |
+| kit de arrastre | 5 | DFG, ARMOTOS | 4,386ms |
+| bujia | 5 | ARMOTOS, DFG, JAPAN | — |
+| balinera ak 100 | 5 | CBI ($8,000 — antes $0) | — |
+| banda freno | 5 | JAPAN ($23,682 — antes $0) | — |
+
+**Comportamiento inteligente del LLM:**
+- Diferencia entre modelos (NS 200 vs 180), advierte compatibilidad
+- Detecta precios $0 y advierte posible error
+- Agrupa por tipo y compara precios
+- Pregunta detalles adicionales (modelo, marca, delantero/trasero)
+
+**Enriquecimiento agresivo de precios (15 Feb 2026):**
+- De 677 productos $0 (86%) a solo 20 (99.9%)
+- Método 4 capas: ChromaDB semántico → promedio categoría → promedio tienda → fallback global
+- Tiendas corregidas: DUNA, JAPAN, CBI, LEO, STORE, VAISAND, YOKOMAR, VITTON
 
 ### Stress Test V8.1 — `/paem/pay/init` (14 Feb 2026)
 
@@ -525,10 +567,10 @@ Documentación completa: `docs/ODI_INDUSTRIA_5_0_7_0.md`
 8. ~~**ALTA:** Activar BARA en ChromaDB + E2E WhatsApp~~ ✅ 3,251 docs + WhatsApp live — 14 Feb 2026
 9. ~~**ALTA:** Stress Test V8.1 /paem/pay/init~~ ✅ 500 req, 0 errores, 10/10 hashes — 14 Feb 2026
 10. ~~**ALTA:** Integrar V8.1 en workflow n8n ODI_v6_CORTEX~~ ✅ 4 nodos + WhatsApp creds — 14 Feb 2026
-11. ~~**MEDIA:** Activar productos Shopify draft → active~~ ✅ 12,578 productos en 10 tiendas — 14 Feb 2026
+11. ~~**MEDIA:** Activar productos Shopify draft → active~~ ✅ 16,681 productos en 15 tiendas — 14 Feb 2026
 12. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
-13. ~~**MEDIA:** Activar todas las tiendas en ChromaDB~~ ✅ 19,145 docs (14 proveedores) — 14 Feb 2026
-14. **BAJA:** Configurar Groq como tercer failover IA
+13. ~~**MEDIA:** Activar todas las tiendas en ChromaDB~~ ✅ 16,681 docs (15 proveedores) — 14 Feb 2026
+14. ~~**BAJA:** Configurar Groq como tercer failover IA~~ ✅ Llama 3.3 70B en `core/llm_failover.py` — 15 Feb 2026
 
 ## Convenciones de Código
 
