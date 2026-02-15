@@ -1,10 +1,9 @@
 """
-ODI WhatsApp Webhook Handler v1.2 + Meta Intents + P2 SALUD
-===========================================================
+ODI WhatsApp Webhook Handler v1.1 + ChromaDB RAG
+================================================
 """
 
 import os
-import re
 import json
 import hmac
 import hashlib
@@ -12,7 +11,7 @@ import logging
 import httpx
 import chromadb
 from datetime import datetime
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List
 from fastapi import APIRouter, Request, HTTPException, Query
 from pydantic import BaseModel
 
@@ -42,14 +41,8 @@ except Exception as e:
     log.warning(f"ChromaDB connection failed: {e}")
     chroma_collection = None
 
-# Lista oficial de 15 proveedores ODI
-ODI_EMPRESAS = [
-    "ARMOTOS", "BARA", "CBI", "DFG", "DUNA", "IMBRA", "JAPAN", "KAIQI",
-    "LEO", "MCLMOTOS", "OH IMPORTACIONES", "STORE", "VAISAND", "VITTON", "YOKOMAR"
-]
-
-SYSTEM_PROMPT = """Eres ODI, el Organismo Digital Industrial de La Roca Motorepuestos.
-Conectas 15 proveedores de repuestos de motos en Colombia.
+SYSTEM_PROMPT = """Eres ODI, asistente experto de repuestos de motos en Colombia.
+Tu rol es ayudar a clientes a encontrar repuestos usando el catalogo de productos.
 
 INSTRUCCIONES:
 - Si recibes PRODUCTOS ENCONTRADOS, usales para responder con precios y detalles reales
@@ -67,150 +60,9 @@ stats = {
     "errors": 0,
     "last_message": None,
     "providers_used": {},
-    "chromadb_queries": 0,
-    "meta_intents": 0,
-    "salud_intents": 0
+    "chromadb_queries": 0
 }
 
-
-# =============================================================================
-# PASO 1: META INTENTS - Identidad ODI (NO pasan por RAG)
-# =============================================================================
-
-def detect_meta_intent(message: str, user_name: str = "Usuario") -> Optional[str]:
-    """
-    Detecta meta-intents que NO deben pasar por el RAG.
-    Retorna respuesta directa o None si debe continuar al RAG.
-    """
-    msg = message.lower().strip()
-
-    # Intent: Identidad ODI
-    identity_patterns = [
-        r"qui[eé]n eres", r"qu[eé] eres", r"c[oó]mo te llamas",
-        r"eres un bot", r"eres humano", r"con qui[eé]n hablo"
-    ]
-    for pattern in identity_patterns:
-        if re.search(pattern, msg):
-            return (
-                "Soy ODI, el Organismo Digital Industrial de La Roca Motorepuestos. "
-                "Conecto 15 proveedores de repuestos de motos en Colombia. "
-                "Preguntame por cualquier repuesto y te muestro opciones con precios reales."
-            )
-
-    # Intent: Saludo
-    greeting_patterns = [
-        r"^hola\b", r"^buenos d[ií]as", r"^buenas tardes", r"^buenas noches",
-        r"^hey\b", r"^saludos"
-    ]
-    for pattern in greeting_patterns:
-        if re.search(pattern, msg):
-            hour = datetime.now().hour
-            if hour < 12:
-                saludo = "Buenos dias"
-            elif hour < 18:
-                saludo = "Buenas tardes"
-            else:
-                saludo = "Buenas noches"
-            return (
-                f"{saludo}, {user_name}! Soy ODI, tu asistente de repuestos de motos. "
-                "Dime que repuesto necesitas y te muestro opciones de nuestros 15 proveedores."
-            )
-
-    # Intent: Lista de empresas
-    empresas_patterns = [
-        r"qu[eé] empresas", r"cu[aá]les empresas", r"lista.*empresas",
-        r"qu[eé] proveedores", r"cu[aá]les proveedores", r"lista.*proveedores",
-        r"qu[eé] tiendas", r"cu[aá]ntas tiendas", r"cu[aá]ntos proveedores"
-    ]
-    for pattern in empresas_patterns:
-        if re.search(pattern, msg):
-            empresas_str = ", ".join(ODI_EMPRESAS)
-            return (
-                f"ODI conecta 15 proveedores de repuestos de motos:\n\n"
-                f"{empresas_str}\n\n"
-                "Preguntame por cualquier repuesto y te muestro las mejores opciones."
-            )
-
-    return None
-
-
-# =============================================================================
-# PASO 2: P2 SALUD INTENT - Turismo Dental
-# =============================================================================
-
-def detect_salud_intent(message: str) -> Optional[str]:
-    """
-    Detecta intents de turismo dental / salud.
-    Si PAEM esta disponible, redirige. Si no, responde con info basica.
-    """
-    msg = message.lower().strip()
-
-    salud_keywords = [
-        "dentista", "dental", "odontolog", "turismo dental", "implante",
-        "bruxismo", "ortodoncia", "blanqueamiento", "caries", "carilla",
-        "corona dental", "endodoncia", "periodoncia", "protesis dental"
-    ]
-
-    if not any(kw in msg for kw in salud_keywords):
-        return None
-
-    # Verificar si PAEM esta vivo
-    paem_alive = False
-    try:
-        import requests
-        r = requests.get("http://localhost:8807/health", timeout=2)
-        paem_alive = r.status_code == 200
-    except:
-        pass
-
-    if paem_alive:
-        return (
-            "Tenemos servicios de turismo dental en Cartagena, Colombia. "
-            "Ahorro de 60-80% vs USA/Europa. Procedimientos disponibles:\n\n"
-            "- Diseno de sonrisa: $2,800-$5,500 USD\n"
-            "- Implantes dentales: $800-$2,000 USD\n"
-            "- Carillas: $250-$450 USD/unidad\n"
-            "- Blanqueamiento: $150-$300 USD\n\n"
-            "Para agendar una valoracion, escribe 'AGENDAR DENTAL' o contacta directamente."
-        )
-    else:
-        return (
-            "Tenemos servicios de turismo dental en Colombia con ahorro de 60-80% vs USA/Europa. "
-            "Para mas informacion, contacta directamente a nuestro equipo de salud."
-        )
-
-
-# =============================================================================
-# PASO 3: Intent no-motos generico
-# =============================================================================
-
-def detect_non_moto_intent(message: str) -> Optional[str]:
-    """
-    Detecta si el usuario pregunta por algo que NO es motos ni salud.
-    """
-    msg = message.lower().strip()
-
-    non_moto_patterns = [
-        r"soy (panadero|chef|abogado|contador|ingeniero|arquitecto)",
-        r"tengo (restaurante|tienda de ropa|negocio de)",
-        r"vendo (comida|ropa|zapatos|tecnolog)",
-        r"emprendimiento.*(comida|restaurante|ropa)"
-    ]
-
-    for pattern in non_moto_patterns:
-        if re.search(pattern, msg):
-            return (
-                "ODI se especializa en repuestos de motos y turismo dental. "
-                "Si tienes alguna moto o conoces a alguien que necesite repuestos, "
-                "estoy para ayudarte con precios de 15 proveedores."
-            )
-
-    return None
-
-
-# =============================================================================
-# Core Functions
-# =============================================================================
 
 def search_products(query: str, n_results: int = 5) -> List[Dict]:
     if not chroma_collection:
@@ -300,36 +152,6 @@ def extract_message_from_webhook(data: Dict) -> Optional[Dict]:
         return None
 
 
-def process_message(message: str, user_name: str = "Usuario") -> Tuple[str, str, dict]:
-    """
-    Procesa mensaje y retorna (respuesta, intent_type, metadata).
-    Intent types: meta, salud, non_moto, rag
-    """
-    # PASO 1: Meta intents (identidad, saludo, empresas)
-    meta_response = detect_meta_intent(message, user_name)
-    if meta_response:
-        stats["meta_intents"] += 1
-        return meta_response, "meta", {}
-
-    # PASO 2: P2 SALUD intent
-    salud_response = detect_salud_intent(message)
-    if salud_response:
-        stats["salud_intents"] += 1
-        return salud_response, "salud", {}
-
-    # PASO 3: Non-moto intent
-    non_moto_response = detect_non_moto_intent(message)
-    if non_moto_response:
-        return non_moto_response, "non_moto", {}
-
-    # Default: RAG flow
-    return None, "rag", {}
-
-
-# =============================================================================
-# Endpoints
-# =============================================================================
-
 @router.get("")
 async def verify_webhook(
     hub_mode: str = Query(None, alias="hub.mode"),
@@ -352,25 +174,13 @@ async def receive_webhook(request: Request):
     msg_data = extract_message_from_webhook(data)
     if not msg_data or not msg_data.get("message"):
         return {"status": "ok", "action": "ignored"}
-
     stats["messages_received"] += 1
     stats["last_message"] = datetime.now().isoformat()
     phone = msg_data["phone"]
     message = msg_data["message"]
     name = msg_data.get("name", "Usuario")
     log.info(f"[{phone}] {name}: {message}")
-
     try:
-        # Check intents BEFORE RAG
-        response_text, intent_type, _ = process_message(message, name)
-
-        if response_text:
-            # Direct response (meta/salud/non_moto) - NO LLM
-            log.info(f"[{phone}] ODI ({intent_type}): {response_text[:100]}...")
-            await send_whatsapp_message(phone, response_text)
-            return {"status": "ok", "intent": intent_type}
-
-        # RAG flow
         products = search_products(message, n_results=5)
         log.info(f"[{phone}] ChromaDB: {len(products)} productos encontrados")
         prompt = build_rag_prompt(message, products, name)
@@ -380,7 +190,6 @@ async def receive_webhook(request: Request):
         await send_whatsapp_message(phone, response.content)
         log.info(f"[{phone}] ODI ({provider}, {response.latency_ms}ms): {response.content[:100]}...")
         return {"status": "ok", "provider": provider, "latency_ms": response.latency_ms, "products_found": len(products)}
-
     except Exception as e:
         stats["errors"] += 1
         log.error(f"Error processing message: {e}")
@@ -397,21 +206,7 @@ async def test_message(
     stats["messages_received"] += 1
     stats["last_message"] = datetime.now().isoformat()
     log.info(f"[TEST] {phone}: {message}")
-
     try:
-        # Check intents BEFORE RAG
-        response_text, intent_type, _ = process_message(message)
-
-        if response_text:
-            # Direct response (meta/salud/non_moto) - NO LLM
-            log.info(f"[TEST] ODI ({intent_type}): {response_text[:100]}...")
-            return {
-                "status": "ok", "phone": phone, "input": message,
-                "response": response_text, "intent": intent_type,
-                "provider": "direct", "products_found": 0
-            }
-
-        # RAG flow
         products = search_products(message, n_results=5)
         log.info(f"[TEST] ChromaDB: {len(products)} productos encontrados")
         prompt = build_rag_prompt(message, products)
@@ -425,9 +220,8 @@ async def test_message(
         log.info(f"[TEST] ODI ({provider_used}, {response.latency_ms}ms): {response.content[:100]}...")
         return {
             "status": "ok", "phone": phone, "input": message, "response": response.content,
-            "intent": "rag", "provider": provider_used, "model": response.model,
-            "latency_ms": response.latency_ms, "fallback_chain": response.fallback_chain,
-            "products_found": len(products),
+            "provider": provider_used, "model": response.model, "latency_ms": response.latency_ms,
+            "fallback_chain": response.fallback_chain, "products_found": len(products),
             "products": [{"store": p["store"], "title": p["title"], "price": p["price"]} for p in products[:3]]
         }
     except Exception as e:
@@ -454,10 +248,9 @@ async def get_status():
         pass
     chroma_status = {"connected": chroma_collection is not None, "collection": CHROMA_COLLECTION, "docs": chroma_docs}
     return {
-        "status": "healthy", "service": "odi-whatsapp", "version": "1.2.0",
+        "status": "healthy", "service": "odi-whatsapp", "version": "1.1.0",
         "timestamp": datetime.now().isoformat(),
         "whatsapp": {"phone_id": WHATSAPP_PHONE_ID, "token_configured": bool(WHATSAPP_TOKEN), "verify_token": WHATSAPP_VERIFY_TOKEN},
         "chromadb": chroma_status, "llm_chain": ["gemini", "openai", "claude", "groq", "lobotomy"],
-        "llm_providers": llm_status, "stats": stats,
-        "empresas_odi": ODI_EMPRESAS
+        "llm_providers": llm_status, "stats": stats
     }
