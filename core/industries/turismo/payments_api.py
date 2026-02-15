@@ -8,9 +8,10 @@ POST /webhooks/wompi   -> Webhook de eventos Wompi (APPROVED -> CAPTURED)
 
 Se monta como APIRouter en el PAEM API (puerto 8807).
 
-Version: 1.2.0 — 14 Feb 2026
+Version: 1.3.0 — 15 Feb 2026
   v1.1.0: hardened (audit logging, event validation, debug disabled)
   v1.2.0: V8.1 Guardian + Decision Logger pre-Wompi
+  v1.3.0: V8.2 Override Humano — reintento con override_event_id
 """
 
 import json
@@ -40,6 +41,13 @@ try:
 except ImportError:
     _V81_ENABLED = False
 
+# V8.2 — Override Humano
+try:
+    from odi_override import obtener_override_engine
+    _V82_ENABLED = True
+except ImportError:
+    _V82_ENABLED = False
+
 logger = logging.getLogger("odi.paem.payments.api")
 
 router = APIRouter(tags=["PAEM Payments"])
@@ -55,6 +63,7 @@ class PayInitRequest(BaseModel):
     booking_id: str = Field(..., description="ID del booking en HOLD")
     deposit_amount_cop: Decimal = Field(..., gt=0, description="Monto en COP")
     usuario_id: Optional[str] = Field(None, description="ID del usuario (V8.1)")
+    override_event_id: Optional[str] = Field(None, description="Override event ID (V8.2)")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -67,17 +76,41 @@ async def pay_init(data: PayInitRequest):
     Iniciar flujo de pago Wompi.
 
     V8.1: Guardian evalua ANTES de generar checkout.
-    0. [V8.1] Guardian evalua estado + Decision Logger
-    1. Valida que el booking existe y esta en HOLD
-    2. Valida/crea payment en PENDING (idempotente)
-    3. Genera firma SHA256 de integridad
-    4. Retorna payload listo para el widget de checkout
+    V8.2: Si viene override_event_id, valida y permite reintento.
+
+    0. [V8.2] Si override_event_id → validar override
+    1. [V8.1] Guardian evalua estado + Decision Logger
+    2. Valida que el booking existe y esta en HOLD
+    3. Valida/crea payment en PENDING (idempotente)
+    4. Genera firma SHA256 de integridad
+    5. Retorna payload listo para el widget de checkout
     """
     odi_event_id = None
     uid = data.usuario_id or "ANONYMOUS"
 
-    # ═══ V8.1: GUARDIAN PRE-WOMPI ═══
-    if _V81_ENABLED:
+    # ═══ V8.2: OVERRIDE — Reintento con autorización humana ═══
+    if data.override_event_id and _V82_ENABLED:
+        try:
+            engine = obtener_override_engine()
+            valid, detail = await engine.validate_override_for_payment(data.override_event_id)
+            if not valid:
+                return JSONResponse(status_code=403, content={
+                    "ok": False,
+                    "error": "override_invalid",
+                    "motivo": detail
+                })
+            # Override válido — skip Guardian, continuar a checkout en modo SUPERVISADO
+            logger.info(
+                "V8.2 Override OK: tx=%s override=%s prev=%s",
+                data.transaction_id, data.override_event_id, detail
+            )
+            odi_event_id = data.override_event_id
+        except Exception as e:
+            logger.error("V8.2 Override error (non-blocking): %s", e)
+            # Fall through to normal Guardian check
+
+    # ═══ V8.1: GUARDIAN PRE-WOMPI (skip if override valid) ═══
+    if _V81_ENABLED and odi_event_id is None:
         try:
             personalidad = obtener_personalidad()
             audit_logger = obtener_logger()
