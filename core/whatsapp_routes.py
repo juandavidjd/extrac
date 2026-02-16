@@ -212,42 +212,94 @@ def detect_non_moto_intent(message: str) -> Optional[str]:
 # Core Functions
 # =============================================================================
 
-def search_products(query: str, n_results: int = 5) -> List[Dict]:
+def search_knowledge(query: str, n_results: int = 8) -> List[Dict]:
+    """
+    Busca en TODA la base de conocimiento: productos, info tecnica, educativo.
+    """
     if not chroma_collection:
         return []
     try:
         results = chroma_collection.query(query_texts=[query], n_results=n_results)
         stats["chromadb_queries"] += 1
-        products = []
+        items = []
         if results and results.get("documents"):
             for i, doc in enumerate(results["documents"][0]):
                 meta = results["metadatas"][0][i] if results.get("metadatas") else {}
-                products.append({
+                items.append({
                     "content": doc,
+                    "type": meta.get("type", "unknown"),
                     "store": meta.get("store", ""),
                     "sku": meta.get("sku", ""),
-                    "price": meta.get("price", ""),
-                    "title": meta.get("title", "")
+                    "price": meta.get("price", 0),
+                    "title": meta.get("title", ""),
+                    "filename": meta.get("filename", ""),
+                    "category": meta.get("category", ""),
+                    "folder": meta.get("folder", ""),
                 })
-        return products
+        return items
     except Exception as e:
         log.error(f"ChromaDB search error: {e}")
         return []
 
 
-def build_rag_prompt(user_message: str, products: List[Dict], user_name: str = "Usuario") -> str:
+def search_products(query: str, n_results: int = 5) -> List[Dict]:
+    """Alias para compatibilidad."""
+    return search_knowledge(query, n_results)
+
+
+def build_rag_prompt(user_message: str, items: List[Dict], user_name: str = "Usuario") -> str:
     prompt = f"{user_name} pregunta: {user_message}\n\n"
+    
+    # Separar por tipo
+    products = [i for i in items if i.get("type") in ("product", "kb_chunk")]
+    technical = [i for i in items if i.get("type") in ("kb_technical", "kb_manual")]
+    educational = [i for i in items if i.get("type") in ("kb_sales_training", "kb_health", "kb_values", "kb_marketing", "kb_tutorial", "kb_business")]
+    vendor = [i for i in items if i.get("type") == "kb_vendor_catalog"]
+    
+    has_content = False
+    
     if products:
-        prompt += "PRODUCTOS ENCONTRADOS EN CATALOGO:\n"
+        has_content = True
+        prompt += "PRODUCTOS DISPONIBLES:\n"
         prompt += "-" * 40 + "\n"
-        for i, p in enumerate(products, 1):
-            prompt += f"{i}. [{p['store']}] {p['title']}\n"
-            prompt += f"   SKU: {p['sku']} | Precio: ${p['price']} COP\n"
+        for idx, p in enumerate(products[:4], 1):
+            price = p.get("price", 0) or 0
+            price_str = f"${int(price):,} COP" if price > 0 else "Consultar"
+            prompt += f"{idx}. [{p.get('store','')}] {p.get('title','')}\n"
+            prompt += f"   SKU: {p.get('sku','')} | Precio: {price_str}\n"
+        prompt += "\n"
+    
+    if technical:
+        has_content = True
+        prompt += "INFORMACION TECNICA:\n"
         prompt += "-" * 40 + "\n"
-        prompt += "\nUsa estos productos para responder al cliente."
+        for t in technical[:2]:
+            prompt += f"- {t.get('content','')[:500]}...\n"
+        prompt += "\n"
+    
+    if educational:
+        has_content = True
+        prompt += "CONOCIMIENTO RELACIONADO:\n"
+        prompt += "-" * 40 + "\n"
+        for e in educational[:2]:
+            source = e.get('folder') or e.get('filename', '')
+            prompt += f"[{source}] {e.get('content','')[:400]}...\n"
+        prompt += "\n"
+    
+    if vendor:
+        has_content = True
+        prompt += "CATALOGO PROVEEDOR:\n"
+        for v in vendor[:1]:
+            prompt += f"[{v.get('store','')}] {v.get('content','')[:300]}...\n"
+        prompt += "\n"
+    
+    if has_content:
+        prompt += "Usa esta informacion para responder de manera util y concisa."
     else:
-        prompt += "(No se encontraron productos relacionados en el catalogo)"
+        prompt += "(No se encontro informacion relacionada)"
+    
     return prompt
+
 
 
 def verify_webhook_signature(payload: bytes, signature: str) -> bool:
@@ -371,7 +423,7 @@ async def receive_webhook(request: Request):
             return {"status": "ok", "intent": intent_type}
 
         # RAG flow
-        products = search_products(message, n_results=5)
+        products = search_knowledge(message, n_results=15)
         log.info(f"[{phone}] ChromaDB: {len(products)} productos encontrados")
         prompt = build_rag_prompt(message, products, name)
         response = llm.generate(prompt)
@@ -412,7 +464,7 @@ async def test_message(
             }
 
         # RAG flow
-        products = search_products(message, n_results=5)
+        products = search_knowledge(message, n_results=15)
         log.info(f"[TEST] ChromaDB: {len(products)} productos encontrados")
         prompt = build_rag_prompt(message, products)
         preferred = None
