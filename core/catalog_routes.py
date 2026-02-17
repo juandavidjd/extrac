@@ -94,3 +94,18 @@ async def list_pages(store: str):
 
     pages.sort(key=lambda x: x["number"])
     return JSONResponse(content={"store": store, "pages": pages, "total": len(pages)})
+
+
+@router.get("/{store}/srm-index")
+async def get_srm_index(store: str):
+    """Get SRM category index for a store"""
+    store = store.upper()
+    srm_file = DATA_DIR / store / "srm_index.json"
+
+    if not srm_file.exists():
+        raise HTTPException(status_code=404, detail=f"SRM index not found for {store}")
+
+    with open(srm_file) as f:
+        data = json.load(f)
+
+    return JSONResponse(content=data)
