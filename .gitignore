@@ -67,3 +67,5 @@ ingesta/
 
 # Backup files
 *.backup.*
+node_modules/
+.next/

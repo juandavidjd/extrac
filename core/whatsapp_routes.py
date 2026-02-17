@@ -19,6 +19,7 @@ from pydantic import BaseModel
 import sys
 sys.path.insert(0, "/opt/odi/core")
 from llm_failover import LLMFailover, Provider
+from catalog_link_generator import get_catalog_link
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("whatsapp")
@@ -302,6 +303,27 @@ def build_rag_prompt(user_message: str, items: List[Dict], user_name: str = "Usu
 
 
 
+def append_catalog_links(response_text: str, products: List[Dict]) -> str:
+    """Append catalog links for ARMOTOS products to the response."""
+    armotos_links = []
+    seen_skus = set()
+    for p in products:
+        sku = p.get('sku', '')
+        if p.get('store') == 'ARMOTOS' and sku and sku not in seen_skus:
+            link = get_catalog_link('ARMOTOS', sku)
+            if link:
+                title = p.get('title', 'Producto')[:35]
+                armotos_links.append(f"- {title}: {link}")
+                seen_skus.add(sku)
+
+    if armotos_links:
+        response_text += "\n\n*Ver en catalogo ARMOTOS:*\n"
+        response_text += "\n".join(armotos_links[:3])
+
+    return response_text
+
+
+
 def verify_webhook_signature(payload: bytes, signature: str) -> bool:
     if not WHATSAPP_APP_SECRET or not signature:
         return True
@@ -429,7 +451,8 @@ async def receive_webhook(request: Request):
         response = llm.generate(prompt)
         provider = response.provider
         stats["providers_used"][provider] = stats["providers_used"].get(provider, 0) + 1
-        await send_whatsapp_message(phone, response.content)
+        final_response = append_catalog_links(response.content, products)
+        await send_whatsapp_message(phone, final_response)
         log.info(f"[{phone}] ODI ({provider}, {response.latency_ms}ms): {response.content[:100]}...")
         return {"status": "ok", "provider": provider, "latency_ms": response.latency_ms, "products_found": len(products)}
 
@@ -476,7 +499,7 @@ async def test_message(
         stats["providers_used"][provider_used] = stats["providers_used"].get(provider_used, 0) + 1
         log.info(f"[TEST] ODI ({provider_used}, {response.latency_ms}ms): {response.content[:100]}...")
         return {
-            "status": "ok", "phone": phone, "input": message, "response": response.content,
+            "status": "ok", "phone": phone, "input": message, "response": append_catalog_links(response.content, products),
             "intent": "rag", "provider": provider_used, "model": response.model,
             "latency_ms": response.latency_ms, "fallback_chain": response.fallback_chain,
             "products_found": len(products),

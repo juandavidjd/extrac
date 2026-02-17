@@ -1,0 +1,90 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for ARMOTOS Catalog */
+
+:root {
+  --armotos-yellow: #FFD700;
+  --armotos-red: #DC2626;
+  --armotos-dark: #1F2937;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+}
+
+/* Hotspot animation */
+@keyframes pulse-hotspot {
+  0%, 100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+.hotspot-pulse {
+  animation: pulse-hotspot 2s ease-in-out infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1F2937;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #4B5563;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #6B7280;
+}
+
+/* Loading spinner */
+.spinner {
+  border: 3px solid rgba(255, 215, 0, 0.3);
+  border-top: 3px solid #FFD700;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Product popup animations */
+.popup-enter {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+.popup-enter-active {
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 200ms, transform 200ms;
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+  .catalog-viewer {
+    padding: 0.5rem;
+  }
+
+  .product-popup {
+    margin: 1rem;
+    max-height: calc(100vh - 2rem);
+  }
+}

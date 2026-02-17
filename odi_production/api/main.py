@@ -41,6 +41,14 @@ except ImportError as e:
     print(f"WhatsApp routes not available: {e}")
     _WHATSAPP_AVAILABLE = False
 
+# Catalog routes for interactive catalog viewer
+try:
+    from core.catalog_routes import router as catalog_router
+    _CATALOG_AVAILABLE = True
+except ImportError as e:
+    print(f"Catalog routes not available: {e}")
+    _CATALOG_AVAILABLE = False
+
 # ══════════════════════════════════════════════════════════════════════════════
 # CONFIGURACIÓN
 # ══════════════════════════════════════════════════════════════════════════════
@@ -69,6 +77,10 @@ if _TOURISM_AVAILABLE:
 # Mount WhatsApp routes with LLM failover
 if _WHATSAPP_AVAILABLE:
     app.include_router(whatsapp_router)
+
+# Mount Catalog routes for interactive viewer
+if _CATALOG_AVAILABLE:
+    app.include_router(catalog_router)
 
 # Configuración interna
 CORTEX_URL = os.getenv("CORTEX_URL", "http://127.0.0.1:8803")
