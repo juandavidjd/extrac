@@ -1,11 +1,19 @@
+"use client";
+
 import Link from "next/link";
+import FlameIndicator from "@/components/FlameIndicator";
 
 export default function Home() {
   return (
     <main className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
       <div className="flex flex-col items-center gap-8 max-w-md">
-        {/* Pulso vital */}
-        <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse" />
+        {/* Llama que respira */}
+        <FlameIndicator
+          guardianColor="verde"
+          isThinking={false}
+          isSpeaking={false}
+          size={120}
+        />
 
         {/* Identidad */}
         <div>
