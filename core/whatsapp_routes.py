@@ -248,59 +248,124 @@ def search_products(query: str, n_results: int = 5) -> List[Dict]:
     return search_knowledge(query, n_results)
 
 
-def build_rag_prompt(user_message: str, items: List[Dict], user_name: str = "Usuario") -> str:
-    prompt = f"{user_name} pregunta: {user_message}\n\n"
+# =============================================================================
+# CLASIFICADOR DE INTENT + DOBLE BUSQUEDA v2.0
+# =============================================================================
+
+def classify_intent(message: str) -> str:
+    msg = message.lower().strip()
     
-    # Separar por tipo
-    products = [i for i in items if i.get("type") in ("product", "kb_chunk")]
-    technical = [i for i in items if i.get("type") in ("kb_technical", "kb_manual")]
-    educational = [i for i in items if i.get("type") in ("kb_sales_training", "kb_health", "kb_values", "kb_marketing", "kb_tutorial", "kb_business")]
-    vendor = [i for i in items if i.get("type") == "kb_vendor_catalog"]
+    product_patterns = [
+        r"(sku|codigo|referencia)",
+        r"(cu[aá]nto|precio|vale|cuesta)",
+        r"(tienen|hay|venden|manejan)",
+        r"(filtro|empaque|kit|pastilla|cadena|pinon|corona|clutch|freno|aceite|bujia)",
+        r"(akt|pulsar|yamaha|honda|suzuki|bajaj|tvs|hero|kymco|victory|auteco)",
+    ]
     
-    has_content = False
+    knowledge_patterns = [
+        r"(c[oó]mo|ayuda|proceso|pasos)",
+        r"(quiero aprender|ense[ñn]ame|explica)",
+        r"(t[eé]cnica|estrategia|consejo|tip)",
+        r"(objeci[oó]n|cierre|seguimiento|prospecto)",
+        r"(funnel|embudo|automatizaci[oó]n|email)",
+        r"(setter|closer|ventas|cliente)",
+        r"(dropshipping|dropi|tienda)",
+    ]
+    
+    product_score = sum(1 for p in product_patterns if re.search(p, msg))
+    knowledge_score = sum(1 for p in knowledge_patterns if re.search(p, msg))
+    
+    if product_score > 0 and knowledge_score == 0:
+        return "product"
+    elif knowledge_score > 0 and product_score == 0:
+        return "knowledge"
+    else:
+        return "dual"
+
+
+def search_dual(query: str, intent: str = "dual") -> dict:
+    if not chroma_collection:
+        return {"products": [], "knowledge": []}
+    
+    results = {"products": [], "knowledge": []}
+    
+    try:
+        # BUSQUEDA 1: Productos
+        if intent in ("product", "dual"):
+            prod_results = chroma_collection.query(
+                query_texts=[query], n_results=5, where={"type": "product"}
+            )
+            stats["chromadb_queries"] += 1
+            
+            if prod_results and prod_results.get("documents"):
+                for i, doc in enumerate(prod_results["documents"][0]):
+                    meta = prod_results["metadatas"][0][i] if prod_results.get("metadatas") else {}
+                    results["products"].append({
+                        "content": doc, "type": "product",
+                        "store": meta.get("store", ""), "sku": meta.get("sku", ""),
+                        "price": meta.get("price", 0), "title": meta.get("title", ""),
+                    })
+        
+        # BUSQUEDA 2: Conocimiento
+        if intent in ("knowledge", "dual"):
+            for kb_type in ["kb_sales_training", "kb_tutorial", "kb_marketing"]:
+                kb_results = chroma_collection.query(
+                    query_texts=[query], n_results=2, where={"type": kb_type}
+                )
+                stats["chromadb_queries"] += 1
+                
+                if kb_results and kb_results.get("documents"):
+                    for i, doc in enumerate(kb_results["documents"][0]):
+                        meta = kb_results["metadatas"][0][i] if kb_results.get("metadatas") else {}
+                        if not any(k["content"][:100] == doc[:100] for k in results["knowledge"]):
+                            results["knowledge"].append({
+                                "content": doc, "type": meta.get("type", kb_type),
+                                "domain": meta.get("domain", ""), "folder": meta.get("folder", ""),
+                            })
+        
+        return results
+    except Exception as e:
+        log.error(f"Dual search error: {e}")
+        return {"products": [], "knowledge": []}
+
+
+def build_dual_rag_prompt(user_message: str, dual_results: dict, user_name: str = "Usuario") -> str:
+    prompt = f"{user_name} pregunta: {user_message}" + chr(10) + chr(10)
+    
+    products = dual_results.get("products", [])
+    knowledge = dual_results.get("knowledge", [])
     
     if products:
-        has_content = True
-        prompt += "PRODUCTOS DISPONIBLES:\n"
-        prompt += "-" * 40 + "\n"
+        prompt += "PRODUCTOS DISPONIBLES:" + chr(10) + "-" * 40 + chr(10)
         for idx, p in enumerate(products[:4], 1):
             price = p.get("price", 0) or 0
-            price_str = f"${int(price):,} COP" if price > 0 else "Consultar"
-            prompt += f"{idx}. [{p.get('store','')}] {p.get('title','')}\n"
-            prompt += f"   SKU: {p.get('sku','')} | Precio: {price_str}\n"
-        prompt += "\n"
+            price_str = f"${int(float(price)):,} COP" if price > 0 else "Consultar"
+            store = p.get("store", "")
+            title = p.get("title", "")
+            sku = p.get("sku", "")
+            prompt += f"{idx}. [{store}] {title}" + chr(10)
+            prompt += f"   SKU: {sku} | Precio: {price_str}" + chr(10)
+        prompt += chr(10)
     
-    if technical:
-        has_content = True
-        prompt += "INFORMACION TECNICA:\n"
-        prompt += "-" * 40 + "\n"
-        for t in technical[:2]:
-            prompt += f"- {t.get('content','')[:500]}...\n"
-        prompt += "\n"
+    if knowledge:
+        prompt += "CONOCIMIENTO DE VENTAS:" + chr(10) + "-" * 40 + chr(10)
+        for k in knowledge[:2]:
+            domain = k.get("domain") or k.get("folder") or ""
+            content_text = k.get("content", "")[:350]
+            prompt += f"[{domain}] {content_text}..." + chr(10)
+        prompt += chr(10)
     
-    if educational:
-        has_content = True
-        prompt += "CONOCIMIENTO RELACIONADO:\n"
-        prompt += "-" * 40 + "\n"
-        for e in educational[:2]:
-            source = e.get('folder') or e.get('filename', '')
-            prompt += f"[{source}] {e.get('content','')[:400]}...\n"
-        prompt += "\n"
-    
-    if vendor:
-        has_content = True
-        prompt += "CATALOGO PROVEEDOR:\n"
-        for v in vendor[:1]:
-            prompt += f"[{v.get('store','')}] {v.get('content','')[:300]}...\n"
-        prompt += "\n"
-    
-    if has_content:
-        prompt += "Usa esta informacion para responder de manera util y concisa."
+    if products and knowledge:
+        prompt += "INSTRUCCIONES: Responde con PRODUCTOS (precio, SKU) + usa CONOCIMIENTO para agregar valor. Max 120 palabras."
+    elif products:
+        prompt += "Responde con los productos encontrados. Menciona precio y tienda."
+    elif knowledge:
+        prompt += "Responde usando el conocimiento. Se util y conciso."
     else:
-        prompt += "(No se encontro informacion relacionada)"
+        prompt += "(No se encontro informacion)"
     
     return prompt
-
 
 
 def append_catalog_links(response_text: str, products: List[Dict]) -> str:
@@ -396,8 +461,14 @@ def process_message(message: str, user_name: str = "Usuario") -> Tuple[str, str,
     if non_moto_response:
         return non_moto_response, "non_moto", {}
 
-    # Default: RAG flow
-    return None, "rag", {}
+    # Default: RAG flow con DOBLE BUSQUEDA
+    intent = classify_intent(message)
+    dual_results = search_dual(message, intent)
+    
+    # Guardar productos para catalog links
+    products_found = dual_results.get("products", [])
+    
+    return None, "rag", {"intent": intent, "dual_results": dual_results, "products": products_found}
 
 
 # =============================================================================
@@ -444,17 +515,21 @@ async def receive_webhook(request: Request):
             await send_whatsapp_message(phone, response_text)
             return {"status": "ok", "intent": intent_type}
 
-        # RAG flow
-        products = search_knowledge(message, n_results=15)
-        log.info(f"[{phone}] ChromaDB: {len(products)} productos encontrados")
-        prompt = build_rag_prompt(message, products, name)
+        # RAG flow con DOBLE BUSQUEDA
+        dual_results = metadata.get("dual_results", {})
+        intent = metadata.get("intent", "dual")
+        products = metadata.get("products", [])
+        
+        log.info(f"[{phone}] Intent: {intent} | Productos: {len(dual_results.get('products',[]))} | KB: {len(dual_results.get('knowledge',[]))}")
+        
+        prompt = build_dual_rag_prompt(message, dual_results, name)
         response = llm.generate(prompt)
         provider = response.provider
         stats["providers_used"][provider] = stats["providers_used"].get(provider, 0) + 1
         final_response = append_catalog_links(response.content, products)
         await send_whatsapp_message(phone, final_response)
         log.info(f"[{phone}] ODI ({provider}, {response.latency_ms}ms): {response.content[:100]}...")
-        return {"status": "ok", "provider": provider, "latency_ms": response.latency_ms, "products_found": len(products)}
+        return {"status": "ok", "provider": provider, "latency_ms": response.latency_ms, "intent": intent, "products_found": len(products)}
 
     except Exception as e:
         stats["errors"] += 1
@@ -486,10 +561,12 @@ async def test_message(
                 "provider": "direct", "products_found": 0
             }
 
-        # RAG flow
-        products = search_knowledge(message, n_results=15)
-        log.info(f"[TEST] ChromaDB: {len(products)} productos encontrados")
-        prompt = build_rag_prompt(message, products)
+        # RAG flow con DOBLE BUSQUEDA
+        intent = classify_intent(message)
+        dual_results = search_dual(message, intent)
+        products = dual_results.get("products", [])
+        log.info(f"[TEST] Intent: {intent} | Productos: {len(products)} | KB: {len(dual_results.get('knowledge',[]))}")
+        prompt = build_dual_rag_prompt(message, dual_results)
         preferred = None
         if provider:
             provider_map = {"gemini": Provider.GEMINI, "openai": Provider.OPENAI, "claude": Provider.CLAUDE, "groq": Provider.GROQ}
