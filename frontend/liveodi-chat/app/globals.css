@@ -1,1 +1,7 @@
 @import "tailwindcss";
+
+/* Ocultar toolbar de Vercel en produccion */
+[data-vercel-toolbar] {
+  display: none !important;
+}
+

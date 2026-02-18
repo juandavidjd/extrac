@@ -9,7 +9,7 @@ Dominio: chat.liveodi.com -> localhost:8813
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from pydantic import BaseModel
 from typing import Optional, List
 import uuid
@@ -40,7 +40,11 @@ logging.basicConfig(
 )
 log = logging.getLogger("odi.chat.api")
 
-app = FastAPI(title="ODI Chat API", version="1.0.0")
+app = FastAPI(title="ODI Chat API", version="1.1.0")
+
+# --- V13.1 Voice Config ---
+ODI_VOICE_URL = os.getenv("ODI_VOICE_URL", "http://172.18.0.6:7777")
+ODI_VOICE_TOKEN = os.getenv("ODI_VOICE_TOKEN", "011ab9e9878f7ebc20b67137b7ac5f40a13bf4c5bc458f7447be0928ad251fdf")
 
 app.add_middleware(
     CORSMiddleware,
@@ -82,6 +86,8 @@ class ChatResponse(BaseModel):
     productos_encontrados: int = 0
     nivel_intimidad: int = 0
     modo: str = "AUTOMATICO"
+    voice: str = "ramona"
+    audio_enabled: bool = True
 
 # --- Estado de sesiones (memoria — Redis despues) ---
 sessions = {}
@@ -227,6 +233,65 @@ async def generar_respuesta_odi(
         return f"Tengo {len(productos)} opciones. La mejor: {meta.get('title', 'producto')} a ${meta.get('price', 'consultar')} COP."
     return "Dame un momento. Que necesitas exactamente para tu moto?"
 
+# --- V13.1 Voice Selection ---
+def seleccionar_voz(mensaje: str, session: dict, productos: list) -> str:
+    """
+    Ramona: hospitalidad, bienvenida, emocional, validacion
+    Tony: productos, precios, tecnico, diagnostico, ejecucion
+    """
+    interacciones = session.get("interacciones", 0)
+    if interacciones <= 1:
+        return "ramona"
+    if productos and len(productos) > 0:
+        return "tony"
+    msg_lower = mensaje.lower()
+    tony_keywords = ["precio", "cuanto", "stock", "disponible", "envio",
+                     "garantia", "ficha", "especificacion", "sku"]
+    if any(kw in msg_lower for kw in tony_keywords):
+        return "tony"
+    return "ramona"
+
+
+# --- V13.1 TTS Endpoint ---
+@app.post("/odi/chat/speak")
+async def speak(request: Request):
+    """
+    Genera audio con ElevenLabs via odi-voice container.
+    Ramona: conversacion. Tony: productos/tecnico.
+    """
+    body = await request.json()
+    texto = body.get("text", "")
+    voz = body.get("voice", "ramona")
+
+    if not texto:
+        return JSONResponse(status_code=400, content={"error": "text requerido"})
+
+    if len(texto) > 500:
+        texto = texto[:497] + "..."
+
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            resp = await client.post(
+                f"{ODI_VOICE_URL}/odi/speak",
+                json={"token": ODI_VOICE_TOKEN, "texto": texto, "voice": voz}
+            )
+            if resp.status_code == 200:
+                return Response(
+                    content=resp.content,
+                    media_type="audio/mpeg",
+                    headers={
+                        "Content-Disposition": f"inline; filename=odi-{voz}.mp3",
+                        "Cache-Control": "no-cache"
+                    }
+                )
+            else:
+                log.warning("TTS error %d from odi-voice", resp.status_code)
+    except Exception as e:
+        log.error("TTS Error: %s", e)
+
+    return JSONResponse(status_code=503, content={"error": "voz no disponible"})
+
+
 # --- Endpoint Principal ---
 @app.post("/odi/chat")
 async def chat(msg: ChatMessage):
@@ -294,13 +359,18 @@ async def chat(msg: ChatMessage):
         len(productos), elapsed
     )
 
+    # 8. Seleccionar voz
+    voz = seleccionar_voz(msg.message, session, productos)
+
     return ChatResponse(
         response=respuesta,
         session_id=session["session_id"],
         guardian_color=estado.get("color", "verde"),
         productos_encontrados=len(productos),
         nivel_intimidad=session["nivel_intimidad"],
-        modo=modo.get("modo", "AUTOMATICO")
+        modo=modo.get("modo", "AUTOMATICO"),
+        voice=voz,
+        audio_enabled=True
     )
 
 @app.get("/odi/chat/health")
@@ -314,7 +384,7 @@ async def health():
             chroma_ok = False
     return {
         "ok": True,
-        "version": "1.0.0",
+        "version": "1.1.0",
         "organismo": "ODI",
         "estado": "vivo",
         "chromadb": {"connected": chroma_ok, "docs": chroma_count},

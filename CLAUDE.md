@@ -24,14 +24,15 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 - **Aplicación:** /opt/odi/
 - **Variables de entorno:** /opt/odi/.env
 
-### Docker Containers (8 activos)
+### Docker Containers (9 activos)
 
 | Container | Imagen | Puerto | Función |
 |-----------|--------|--------|---------|
 | odi-n8n | n8nio/n8n:latest | 5678 | Workflow engine (cerebro) |
-| odi-voice | odi-odi_voice | 7777 | Motor de voz ElevenLabs |
+| odi-voice | odi-odi_voice | 7777 (docker net) | Motor de voz ElevenLabs (Tony + Ramona) |
 | odi-m62-fitment | odi-odi_m62_fitment | 8802 | Motor de compatibilidad motos |
 | odi-paem-api | odi-paem-api | 8807 | PAEM API v2.3.0 (pagos, turismo, override) |
+| odi-chat-api | uvicorn | 8813 | Chat API v1.1 (liveodi.com conversación + TTS) |
 | odi-postgres | postgres:15 | 5432 | Base de datos transaccional + n8n |
 | odi-redis | redis:alpine | 6379 | Cache, pub/sub eventos |
 | odi-prometheus | prom/prometheus | 9090 | Métricas |
@@ -131,8 +132,8 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 ### Voces
 
 - **Tony Maestro:** Voice ID `qpjUiwx7YUVAavnmh2sF` — diagnóstico, ejecución (S0-S4)
-- **Ramona Anfitriona:** Pendiente asignar Voice ID — hospitalidad, validación (S4-S6)
-- **Container:** odi-voice (puerto 7777), speed 0.85, stability 0.65
+- **Ramona Anfitriona:** Voice ID `ZAQFLZQOmS9ClDGyVg6d` — hospitalidad, validación (S4-S6)
+- **Container:** odi-voice (docker network 172.18.0.6:7777), speed 0.85, stability 0.65, multi-voice (VOICE_MAP)
 
 ## E-Commerce — Shopify (15 Tiendas) — 16,681 productos | 100% con precio (15 Feb 2026)
 
@@ -457,6 +458,93 @@ Consideraciones de ingesta:
 - `ODI_OVERRIDE_ENABLED` — "true"
 - `ODI_OVERRIDE_TTL_MINUTES` — "10"
 
+## ODI V13 — liveodi.com Chat Conversacional (18 Feb 2026)
+
+**Estado:** ✅ DEPLOYED
+**Commit:** `12da68e`
+**Principio:** "ODI no se usa. ODI se habita."
+
+### Arquitectura
+
+| Componente | Ubicación | Función |
+|------------|-----------|---------|
+| Chat API | `core/odi_chat_api.py` v1.1 (puerto 8813) | Backend conversacional FastAPI + Uvicorn |
+| Frontend | `frontend/liveodi-chat/` (Vercel) | Next.js 15 + Tailwind CSS 4.0 |
+| Nginx | `/etc/nginx/sites-enabled/liveodi` | Proxy api.liveodi.com/odi/chat → 8813 |
+
+### URLs
+
+| URL | Destino |
+|-----|---------|
+| https://liveodi.com | Frontend Vercel (Next.js) |
+| https://api.liveodi.com/odi/chat | Chat API (servidor 8813) |
+| https://api.liveodi.com/odi/chat/health | Health check |
+| https://api.liveodi.com/odi/chat/speak | TTS endpoint (V13.1) |
+
+### Chat API Endpoints
+
+| Método | Path | Función |
+|--------|------|---------|
+| POST | `/odi/chat` | Enviar mensaje, recibir respuesta ODI |
+| GET | `/odi/chat/health` | Health check |
+| POST | `/odi/chat/speak` | TTS — texto a audio MP3 (V13.1) |
+
+### Frontend (Vercel)
+
+- **Proyecto:** liveodi-chat
+- **Framework:** Next.js 15.5.12 + Tailwind CSS 4.0
+- **Deploy:** Vercel Pro (auto-deploy desde GitHub no configurado, deploy manual con `vercel --prod`)
+- **Dominio:** liveodi.com → Vercel
+- **Scope:** juan-david-jimenez-sierras-projects
+
+## ODI V13.1 — Voz + Llama + Presencia (18 Feb 2026)
+
+**Estado:** ✅ DEPLOYED (Tests V1-V6 PASSED)
+**Principio:** "La presencia se siente antes de hablar."
+
+### Voz ElevenLabs (TTS)
+
+- **Endpoint:** `/odi/chat/speak` (proxy a odi-voice container 172.18.0.6:7777)
+- **Selección automática:** `seleccionar_voz()` en odi_chat_api.py
+  - Primera interacción → Ramona (hospitalidad)
+  - Productos encontrados → Tony (técnico)
+  - Keywords precio/stock/envío → Tony
+  - Default → Ramona
+- **Container odi-voice:** VOICE_MAP con Tony + Ramona, stability 0.65
+- **Audio ADITIVO:** Si TTS falla, el texto sigue funcionando (audio_enabled en response)
+- **Mute:** Persiste en localStorage (`odi_muted`)
+
+### FlameIndicator (Canvas)
+
+- **Componente:** `components/FlameIndicator.tsx`
+- **Técnica:** Canvas puro (sin bibliotecas), requestAnimationFrame
+- **Animación:** Respiración sinusoidal (normal), pulso rápido (thinking), rítmico (speaking)
+- **Colores:** verde=#10B981, amarillo=#F59E0B, rojo=#EF4444, negro=#6B7280
+- **Tamaños:** Landing 120px, Chat header 32px, Empty state 64px
+
+### Frontend V13.1
+
+| Archivo | Cambio |
+|---------|--------|
+| `lib/useODIVoice.ts` | Hook de audio: fetch /odi/chat/speak → blob → Audio |
+| `components/FlameIndicator.tsx` | Canvas llama respiratoria |
+| `components/ChatContainer.tsx` | Integra voz, llama, mute toggle |
+| `lib/api.ts` | voice + audio_enabled en ChatResponse |
+| `app/page.tsx` | FlameIndicator 120px en landing |
+| `app/globals.css` | Oculta toolbar Vercel |
+| `vercel.json` | cleanUrls |
+
+### Tests V13.1
+
+| Test | Descripción | Resultado |
+|------|-------------|-----------|
+| V1 | TTS Ramona genera MP3 | ✅ PASSED |
+| V2 | TTS Tony genera MP3 | ✅ PASSED |
+| V3 | Chat con productos → voice=tony, audio_enabled=true | ✅ PASSED |
+| V4 | Primer mensaje → voice=ramona | ✅ PASSED |
+| V5 | No toolbar Vercel en producción | ✅ PASSED |
+| V6 | Canvas elements presentes en frontend | ✅ PASSED |
+
 ## PAEM — Protocolo de Activación Económica Multindustria
 
 **Estado:** v2.3.0 ✅ DEPLOYED (15 Feb 2026)
@@ -513,9 +601,11 @@ Documentación completa: `docs/ODI_INDUSTRIA_5_0_7_0.md`
 9. ~~**ALTA:** Stress Test V8.1 /paem/pay/init~~ ✅ 500 req, 0 errores, 10/10 hashes — 14 Feb 2026
 10. ~~**ALTA:** Integrar V8.1 en workflow n8n ODI_v6_CORTEX~~ ✅ 4 nodos + WhatsApp creds — 14 Feb 2026
 11. ~~**MEDIA:** Activar productos Shopify draft → active~~ ✅ 12,578 productos en 10 tiendas — 14 Feb 2026
-12. **MEDIA:** Asignar Voice ID de Ramona en ElevenLabs
+12. ~~**MEDIA:** Asignar Voice ID de Ramona en ElevenLabs~~ ✅ ZAQFLZQOmS9ClDGyVg6d — 18 Feb 2026
 13. ~~**MEDIA:** Activar todas las tiendas en ChromaDB~~ ✅ 19,145 docs (14 proveedores) — 14 Feb 2026
 14. **BAJA:** Configurar Groq como tercer failover IA
+15. ~~**ALTA:** V13 — liveodi.com Chat API + Frontend Vercel~~ ✅ DEPLOYED 18 Feb 2026
+16. ~~**ALTA:** V13.1 — Voz ElevenLabs + Llama Canvas + Presencia~~ ✅ DEPLOYED 18 Feb 2026
 
 ## Convenciones de Código
 
