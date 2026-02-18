@@ -24,15 +24,16 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 - **Aplicación:** /opt/odi/
 - **Variables de entorno:** /opt/odi/.env
 
-### Docker Containers (9 activos)
+### Docker Containers (9 activos) + Services (2)
 
-| Container | Imagen | Puerto | Función |
+| Container/Service | Imagen | Puerto | Función |
 |-----------|--------|--------|---------|
 | odi-n8n | n8nio/n8n:latest | 5678 | Workflow engine (cerebro) |
 | odi-voice | odi-odi_voice | 7777 (docker net) | Motor de voz ElevenLabs (Tony + Ramona) |
-| odi-m62-fitment | odi-odi_m62_fitment | 8802 | Motor de compatibilidad motos |
+| odi-m62-fitment | odi-odi_m62_fitment | 8802 (docker net) | Motor de compatibilidad motos (5,750 SKUs) |
 | odi-paem-api | odi-paem-api | 8807 | PAEM API v2.3.0 (pagos, turismo, override) |
-| odi-chat-api | uvicorn | 8813 | Chat API v1.1 (liveodi.com conversación + TTS) |
+| odi-chat-api | uvicorn (systemd) | 8813 | Chat API v1.1 (liveodi.com conversación + TTS) |
+| odi-api-gateway | uvicorn (systemd) | 8815 | API Gateway V14 (expone ecosistema ODI) |
 | odi-postgres | postgres:15 | 5432 | Base de datos transaccional + n8n |
 | odi-redis | redis:alpine | 6379 | Cache, pub/sub eventos |
 | odi-prometheus | prom/prometheus | 9090 | Métricas |
@@ -545,6 +546,50 @@ Consideraciones de ingesta:
 | V5 | No toolbar Vercel en producción | ✅ PASSED |
 | V6 | Canvas elements presentes en frontend | ✅ PASSED |
 
+## ODI V14 — API Gateway (18 Feb 2026)
+
+**Estado:** ✅ DEPLOYED (Tests T1-T8 PASSED)
+**Puerto:** 8815 (systemd: odi-api-gateway)
+**URL pública:** `https://api.liveodi.com/odi/v1/`
+**Principio:** "No crear nada nuevo. EXPONER lo que ya existe."
+
+### Endpoints
+
+| Endpoint | Método | Función |
+|----------|--------|---------|
+| `/health` | GET | Estado de todos los servicios (chat, fitment, chromadb) |
+| `/products/search` | GET | Búsqueda semántica ChromaDB (q, limit, store) |
+| `/ecosystem/stores` | GET | 15 tiendas con conteos reales (33,326 productos) |
+| `/stores/{id}/summary` | GET | Resumen de tienda + top categorías + productos recientes |
+| `/products/{sku}/360` | GET | Ficha técnica completa de producto |
+| `/fitment/search` | GET | Búsqueda por compatibilidad (proxy Fitment M6.2) |
+| `/fitment/brands` | GET | Lista de 43 marcas disponibles |
+| `/chat` | POST | Proxy Chat V13.1 + productos estructurados |
+| `/chat/speak` | POST | Proxy TTS endpoint |
+
+### Arquitectura
+
+- **Gateway:** `core/odi_api_gateway.py` → FastAPI + uvicorn en puerto 8815
+- **Systemd:** `/etc/systemd/system/odi-api-gateway.service`
+- **Nginx:** `location /odi/v1/` → proxy_pass 8815 (con SSE support)
+- **CORS:** Abierto para desarrollo (Lovable, localhost, liveodi.com)
+- **Cache:** Conteos de tienda cacheados 5 min (evita escanear 72k docs por request)
+- **Fitment:** Proxy a docker net 172.18.0.5:8802 (`POST /fitment/query`)
+- **ChromaDB:** Lectura directa via `chromadb.HttpClient` (72,014 docs)
+
+### Tests T1-T8
+
+| Test | Descripción | Resultado |
+|------|-------------|-----------|
+| T1 | Gateway health alive | ✅ PASSED |
+| T2 | Búsqueda productos > 0 | ✅ PASSED |
+| T3 | 15 tiendas en ecosistema | ✅ PASSED |
+| T4 | Bara summary > 0 productos | ✅ PASSED |
+| T5 | Ficha 360° por SKU | ✅ PASSED |
+| T6 | Fitment compatible_products > 0 | ✅ PASSED |
+| T7 | Chat proxy con productos estructurados | ✅ PASSED |
+| T8 | CORS headers presentes | ✅ PASSED |
+
 ## PAEM — Protocolo de Activación Económica Multindustria
 
 **Estado:** v2.3.0 ✅ DEPLOYED (15 Feb 2026)
@@ -606,6 +651,7 @@ Documentación completa: `docs/ODI_INDUSTRIA_5_0_7_0.md`
 14. **BAJA:** Configurar Groq como tercer failover IA
 15. ~~**ALTA:** V13 — liveodi.com Chat API + Frontend Vercel~~ ✅ DEPLOYED 18 Feb 2026
 16. ~~**ALTA:** V13.1 — Voz ElevenLabs + Llama Canvas + Presencia~~ ✅ DEPLOYED 18 Feb 2026
+17. ~~**ALTA:** V14 — API Gateway ODI (expone ecosistema al frontend SRM)~~ ✅ DEPLOYED 18 Feb 2026
 
 ## Convenciones de Código
 
