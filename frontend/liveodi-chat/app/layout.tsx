@@ -7,7 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "ODI — Organismo Digital Industrial",
   description:
-    "Repuestos de motos. 16,681 productos, 15 proveedores, 43 marcas. Precios reales.",
+    "Repuestos de motos. 15 tiendas, 33,000+ productos. Precios reales. ODI no se usa, ODI se habita.",
 };
 
 export default function RootLayout({

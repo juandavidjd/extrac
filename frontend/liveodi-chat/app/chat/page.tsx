@@ -1,5 +1,5 @@
-import ChatContainer from "@/components/ChatContainer";
+import { redirect } from "next/navigation";
 
-export default function ChatPage() {
-  return <ChatContainer />;
+export default function ChatRedirect() {
+  redirect("/habitat");
 }
