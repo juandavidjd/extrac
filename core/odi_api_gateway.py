@@ -10,6 +10,7 @@ from fastapi import FastAPI, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 from typing import Optional
+from fastapi import UploadFile, File
 import httpx
 import time
 import os
@@ -476,6 +477,53 @@ async def proxy_chat(request: Request):
 
 
 
+
+
+
+# ============================================================
+# SPEECH-TO-TEXT — ODI escucha
+# ============================================================
+
+@app.post("/speech/transcribe")
+async def transcribe_speech(audio: UploadFile = File(...)):
+    """
+    Recibe audio del navegador (WebM/WAV), transcribe a texto.
+    Usa Whisper de OpenAI. Fallback: Web Speech API en frontend.
+    """
+    import tempfile
+    try:
+        import openai
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        
+        with tempfile.NamedTemporaryFile(suffix=".webm", delete=False) as tmp:
+            content_bytes = await audio.read()
+            tmp.write(content_bytes)
+            tmp_path = tmp.name
+        
+        with open(tmp_path, "rb") as audio_file:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file,
+                language="es"
+            )
+        
+        os.unlink(tmp_path)
+        
+        return {
+            "text": transcript.text,
+            "language": "es",
+            "confidence": 0.95
+        }
+    
+    except Exception as e:
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": str(e),
+                "fallback": "web_speech_api",
+                "hint": "Usar Web Speech API del navegador"
+            }
+        )
 
 # ============================================================
 # BILLING — V16 Stub

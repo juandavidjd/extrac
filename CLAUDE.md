@@ -707,3 +707,60 @@ sudo certbot certificates
 # Espacio en disco
 df -h && docker system df
 ```
+
+## ODI V17 — Habitat liveodi.com (19 Feb 2026)
+
+**Estado:** DEPLOYED
+**Principio:** "ODI no se usa. ODI se habita."
+
+### Backend
+
+| Componente | Puerto | Funcion |
+|------------|--------|---------|
+| VIVIR Telemetry Server | 8765 | WebSocket heartbeat, guardian state, ecosystem stats |
+| Speech/Transcribe | 8815 | POST /speech/transcribe (Whisper, fallback Web Speech API) |
+| Nginx ws proxy | 443 | wss://api.liveodi.com/ws/vivir → 8765 |
+| Systemd | odi-vivir | Auto-restart, enabled at boot |
+
+### Frontend Routes
+
+| Ruta | Funcion |
+|------|---------|
+| / | Portal de entrada — llama viva, stats reales, input directo |
+| /habitat | Habitat completo — conversacion + ecosistema + voz + accesibilidad |
+| /chat | Redirect → /habitat |
+| /accesibilidad | Configuracion de accesibilidad |
+
+### Hooks V17
+
+| Hook | Funcion |
+|------|---------|
+| useODIVoice | TTS (Tony/Ramona) — V13.1 |
+| useODIListen | STT (Web Speech API es-CO) — V17 |
+| useVivir | WebSocket telemetria VIVIR — V17 |
+| useEcosystem | Datos 15 tiendas via Gateway — V17 |
+| useAccessibility | Preferencias accesibilidad — V17 |
+
+### Components V17
+
+ProductCard (inline con imagen), EcosystemPanel (sidebar 15 tiendas),
+VoiceButton (microfono + Ctrl+M), MultimodalInput (texto + voz + enviar),
+EphemeralToast (notificaciones efimeras), PresenceHeader (llama + guardian + ws status),
+AccessibilityBar (contraste, tamano, solo texto, simplificado)
+
+### WebSocket VIVIR
+
+- URL: wss://api.liveodi.com/ws/vivir (o wss://ws.liveodi.com)
+- Heartbeat: 30s con guardian state + ecosystem stats
+- Manifest Gate: Regla 3/3, ethics_lock, severity filter
+- Redis: odi:vivir:last_event, odi:vivir:suppressed
+- Welcome event on connect
+
+### Accessibility
+
+- Font sizes: small/normal/large/xlarge
+- High contrast mode
+- Text only (para sordos)
+- Simplified mode (oculta ecosystem panel + toasts)
+- Reduce motion (prefers-reduced-motion)
+- Persiste en localStorage
