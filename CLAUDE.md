@@ -193,25 +193,29 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 - Si la voz falla, la operación continúa
 - **Componentes Excluidos del Núcleo:** Midjourney, Perplexity (no auditables)
 
-## Flujos n8n Activos
+## Flujos n8n Activos — V16 (18 Feb 2026)
 
-| Flujo | Función |
-|-------|---------|
-| ODI_v6_CORTEX | Pipeline principal WhatsApp (ingest → intent → cortex → respuesta) — V8.1 integrado |
-| ODI_GOBERNANZA_V1 | Gobernanza y control |
-| ODI_T007_WhatsApp_v2 | WhatsApp saliente |
-| ODI_T007_WhatsApp_Incoming | WhatsApp entrante |
-| ODI_v16_9_3_LINUX_CERTIFIED | Flujo certificado Linux |
-| ODI_Etapa_3_Autonomía_por_SKU | Autonomía decisional por producto |
+| Flujo | ID | Función | Estado |
+|-------|----|---------|--------|
+| ODI_v6_CORTEX_V16 | K6lAFE09nVUJDkRa | Pipeline WhatsApp principal → Gateway /chat → productos | Activo |
+| ODI_SHOPIFY_ORDER_HANDLER | z4OIpfTe05QhJeCB | Webhooks orders/paid → Log → Billing → Notificación | Activo |
 
-## Clientes Piloto
+### Cambios V16
+- ODI_v6_CORTEX actualizado a V16: ahora usa Gateway /chat (puerto 8815) en vez de Cortex directo
+- Nuevo endpoint /billing/register (stub) guarda en /opt/odi/billing/ledger_odi.json
+- Shopify webhooks: products/update registrados en 10/15 tiendas (orders/paid requiere scope upgrade)
+- Docker networking: usa 172.17.0.1 (bridge gateway) desde containers
+- n8n workflow import: debe hacerse via temp container para evitar SQLite lock
 
-| Cliente | Catálogo | Estado |
-|---------|----------|--------|
-| Bara Importaciones | 698 productos + 2,553 KB chunks en ChromaDB | ✅ ACTIVA en producción (14 Feb 2026) |
-| Yokomar | 1,000 productos normalizados, embeddings generados | Listo para piloto |
-| Vaisand | Tienda Shopify configurada | Listo para piloto |
-| Industrias Leo | Tienda Shopify configurada | Listo para piloto |
+## Clientes Piloto — V16 (18 Feb 2026)
+
+| Cliente | Productos Shopify | ChromaDB | Estado |
+|---------|------------------|----------|--------|
+| Bara Importaciones | 911 activos | 1,396 docs | Activo |
+| Yokomar | 0 | 2,038 docs | ChromaDB listo |
+| DFG | 172 activos | 14,890 docs | Activo |
+| Imbra | 864 activos | 2,262 docs | Activo |
+| 15 tiendas total | 33,326 docs en ecosistema | 62,951 docs ChromaDB | Gateway V14 operativo |
 
 ## Intent Override Gate (Febrero 2026)
 
@@ -309,21 +313,31 @@ Postgres manda. Redis acelera. JSON es fallback. El humano es co-piloto.
 
 Persiste nivel de intimidad, perfil, historial por usuario. 15 columnas, UUID PK, UNIQUE on usuario_id, CHECK nivel 0-4, trigger auto-update `updated_at`.
 
-### n8n Workflow V8.1 — ODI_v6_CORTEX (14 Feb 2026)
+### n8n Workflow V16 — ODI_v6_CORTEX_V16 (18 Feb 2026)
 
-**Archivo:** `odi_production/n8n/ODI_v6_CORTEX.json`
-**Backup:** `odi_production/n8n/ODI_v6_CORTEX.v6-backup.json`
+**ID n8n:** `K6lAFE09nVUJDkRa`
+**Backup pre-V16:** `/opt/odi/backups/n8n_pre_v16.json`
 
-4 nodos modificados para integrar personalidad V8.1 en el flujo WhatsApp:
+V16 reemplaza V8.1. Usa Gateway /chat (8815) en vez de Cortex directo:
 
-| Nodo | Cambio | Detalle |
-|------|--------|---------|
-| `cortex-query` | Body actualizado | `voice: "auto"`, `lobe: "auto"`, `usuario_id: $json.from` |
-| `format-cortex` | Campos V8.1 extraídos | `guardian_estado`, `odi_event_id` del response Cortex |
-| `general-response` | Frases prohibidas eliminadas | Reescrito con voz ODI nativa (sin "¿En qué puedo ayudarte?") |
-| `prepare-api` | Objeto guardian en API | `guardian: { estado, odi_event_id }` en respuesta |
+| Nodo | Cambio V16 | Detalle |
+|------|-----------|---------|
+| `cortex-query` | URL actualizada | `http://172.17.0.1:8815/chat` con body `{message, session_id, context}` |
+| `format-cortex` | Parsea respuesta Gateway | Extrae `response`, `productos[]`, `voice`, `guardian_color` |
+| `general-response` | Voz ODI nativa | Sin frases chatbot prohibidas |
+| `prepare-api` | API completa | Incluye `productos[]`, `cortex.voice`, `guardian.color` |
+| `send-whatsapp` | WhatsApp Cloud API | `Bearer $env.WHATSAPP_TOKEN`, formatea productos en lista |
 
-- `send-whatsapp` habilitado con credencial `wa-header-auth` (httpHeaderAuth)
+### n8n Workflow V16 — ODI_SHOPIFY_ORDER_HANDLER (18 Feb 2026)
+
+**ID n8n:** `z4OIpfTe05QhJeCB`
+
+| Nodo | Funcion |
+|------|---------|
+| Webhook | POST /webhook/shopify-order-paid |
+| Extraer Orden | Valida y extrae {order_id, store, customer, total, products[]} |
+| Billing Register | POST http://172.17.0.1:8815/billing/register |
+| Log Orden | Guarda en /home/node/orders.json |
 - Credencial cifrada en n8n SQLite, token desde `WHATSAPP_TOKEN` env var
 - Pipeline E2E verificado: webhook → intent → cortex → WhatsApp → entrega confirmada
 

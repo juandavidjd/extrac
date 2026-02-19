@@ -1,0 +1,27 @@
+[
+  {
+    "timestamp": "2026-02-18T22:39:36.763172Z",
+    "order_id": "TEST-001",
+    "store": "bara",
+    "total": 50000,
+    "event_id": "ORD-TEST",
+    "products": [
+      {
+        "sku": "216055B",
+        "title": "Filtro Aceite BAJAJ",
+        "quantity": 1,
+        "price": 10103
+      }
+    ],
+    "metrics": {}
+  },
+  {
+    "timestamp": "2026-02-18T22:45:19.487124Z",
+    "order_id": "test-t6",
+    "store": "bara",
+    "total": 50000,
+    "event_id": null,
+    "products": [],
+    "metrics": {}
+  }
+]

@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse, Response
 from typing import Optional
 import httpx
 import time
+import os
 import logging
 
 log = logging.getLogger("odi-gateway")
@@ -473,6 +474,48 @@ async def proxy_chat(request: Request):
 
     return data
 
+
+
+
+# ============================================================
+# BILLING — V16 Stub
+# ============================================================
+
+@app.post("/billing/register")
+async def billing_register(request: Request):
+    """Registra una orden en el ledger de billing. Stub V16."""
+    import json
+    from datetime import datetime
+
+    body = await request.json()
+    ledger_path = "/opt/odi/billing/ledger_odi.json"
+    os.makedirs("/opt/odi/billing", exist_ok=True)
+
+    entry = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "order_id": body.get("order_id"),
+        "store": body.get("store"),
+        "total": body.get("total", 0),
+        "event_id": body.get("event_id"),
+        "products": body.get("products", []),
+        "metrics": body.get("metrics", {}),
+    }
+
+    # Read existing ledger
+    ledger = []
+    if os.path.exists(ledger_path):
+        try:
+            with open(ledger_path, "r") as f:
+                ledger = json.load(f)
+        except Exception:
+            ledger = []
+
+    ledger.append(entry)
+    with open(ledger_path, "w") as f:
+        json.dump(ledger, f, indent=2)
+
+    log.info(f"Billing registered: order={entry['order_id']} store={entry['store']} total={entry['total']}")
+    return {"status": "registered", "order_id": entry["order_id"], "ledger_count": len(ledger)}
 
 @app.post("/chat/speak")
 async def proxy_speak(request: Request):
