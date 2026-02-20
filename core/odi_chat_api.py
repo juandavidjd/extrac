@@ -78,6 +78,7 @@ class ChatMessage(BaseModel):
     message: str
     session_id: Optional[str] = None
     usuario_id: Optional[str] = None
+    domain: Optional[str] = None
 
 class ChatResponse(BaseModel):
     response: str
@@ -89,6 +90,8 @@ class ChatResponse(BaseModel):
     modo: str = "AUTOMATICO"
     voice: str = "ramona"
     audio_enabled: bool = True
+    industry: str = "general"
+    company_identity: Optional[dict] = None
 
 # --- Estado de sesiones (memoria — Redis despues) ---
 sessions = {}
@@ -139,6 +142,105 @@ def buscar_chromadb(query: str, n_results: int = 5) -> list:
     except Exception as e:
         log.error("ChromaDB search error: %s", e)
     return []
+
+# --- V19: Deteccion de industria multi-vertical ---
+INDUSTRY_KEYWORDS = {
+    "motos": [
+        "filtro", "bomba", "kit", "banda", "pastilla", "cadena",
+        "aceite", "freno", "moto", "pulsar", "bajaj", "yamaha",
+        "honda", "suzuki", "akt", "tvs", "hero", "precio repuesto",
+        "repuesto", "pieza", "empaque", "tensor", "disco",
+        "clutch", "embrague", "rodamiento", "retenedor", "corona",
+        "llanta", "rin", "manigueta", "cable", "bws", "nmax",
+        "fz", "duke", "dominar", "boxer", "discover", "splendor",
+    ],
+    "salud_dental": [
+        "dental", "diente", "dientes", "muela", "implante", "ortodoncia",
+        "blanqueamiento", "sonrisa", "endodoncia",
+        "periodoncia", "matzu", "odontolog",
+    ],
+    "salud_bruxismo": [
+        "bruxismo", "cubierta", "protector nocturno", "smokover",
+        "rechinar", "cover", "guarda oclusal", "ferula",
+    ],
+    "salud_capilar": [
+        "capilar", "cabello", "calvicie", "pelo", "alopecia",
+        "tratamiento capilar", "cabeza sana", "cabezas sanas",
+        "injerto capilar", "minoxidil",
+    ],
+}
+
+DOMAIN_MAP = {
+    "somosrepuestosmotos.com": "motos",
+    "www.somosrepuestosmotos.com": "motos",
+    "matzudentalaesthetics.com": "salud_dental",
+    "www.matzudentalaesthetics.com": "salud_dental",
+    "mis-cubiertas.com": "salud_bruxismo",
+    "www.mis-cubiertas.com": "salud_bruxismo",
+    "cabezasanas.com": "salud_capilar",
+    "www.cabezasanas.com": "salud_capilar",
+}
+
+
+def detect_industry(message: str, domain: str = None) -> str:
+    """Detecta la industria del usuario por dominio o mensaje."""
+    if domain:
+        d = domain.lower().strip()
+        if d in DOMAIN_MAP:
+            return DOMAIN_MAP[d]
+    msg = message.lower()
+    for industry, keywords in INDUSTRY_KEYWORDS.items():
+        if any(kw in msg for kw in keywords):
+            return industry
+    return "general"
+
+
+# --- V19: Identidades de empresas ---
+LOGO_BASE = "/odi/v1/assets/logo"
+
+COMPANY_IDENTITIES = {
+    "BARA": {"name": "Bara Importaciones", "logo": f"{LOGO_BASE}/Bara.png", "colors": {"primary": "#1e1e1e", "accent": "#666666"}, "industry": "motos"},
+    "DFG": {"name": "DFG Distribuciones", "logo": f"{LOGO_BASE}/DFG.png", "colors": {"primary": "#00aae6", "accent": "#0046a0"}, "industry": "motos"},
+    "YOKOMAR": {"name": "Yokomar", "logo": f"{LOGO_BASE}/Yokomar.png", "colors": {"primary": "#aa6e14", "accent": "#be8232"}, "industry": "motos"},
+    "KAIQI": {"name": "Kaiqi", "logo": f"{LOGO_BASE}/Kaiqi.png", "colors": {"primary": "#b4b4b4", "accent": "#323232"}, "industry": "motos"},
+    "DUNA": {"name": "Duna", "logo": f"{LOGO_BASE}/Duna.png", "colors": {"primary": "#e6e6e6", "accent": "#b4b4b4"}, "industry": "motos"},
+    "IMBRA": {"name": "Imbra", "logo": f"{LOGO_BASE}/Imbra.png", "colors": {"primary": "#f0821e", "accent": "#f08c1e"}, "industry": "motos"},
+    "JAPAN": {"name": "Japan Motos", "logo": f"{LOGO_BASE}/Japan.png", "colors": {"primary": "#c81e1e", "accent": "#c81e28"}, "industry": "motos"},
+    "LEO": {"name": "Leo Repuestos", "logo": f"{LOGO_BASE}/Leo.png", "colors": {"primary": "#fadc00", "accent": "#0046a0"}, "industry": "motos"},
+    "STORE": {"name": "Store Repuestos", "logo": f"{LOGO_BASE}/Store.png", "colors": {"primary": "#3c6432", "accent": "#325a28"}, "industry": "motos"},
+    "VAISAND": {"name": "Vaisand", "logo": f"{LOGO_BASE}/Vaisand.png", "colors": {"primary": "#142850", "accent": "#0a5a96"}, "industry": "motos"},
+    "ARMOTOS": {"name": "Armotos", "logo": f"{LOGO_BASE}/Armotos.png", "colors": {"primary": "#2b2b2b", "accent": "#555555"}, "industry": "motos"},
+    "VITTON": {"name": "Vitton", "logo": f"{LOGO_BASE}/Vitton.png", "colors": {"primary": "#00286e", "accent": "#001e6e"}, "industry": "motos"},
+    "MCLMOTOS": {"name": "MCL Motos", "logo": f"{LOGO_BASE}/mcl.PNG", "colors": {"primary": "#333333", "accent": "#666666"}, "industry": "motos"},
+    "CBI": {"name": "CBI", "logo": f"{LOGO_BASE}/cbi.png", "colors": {"primary": "#333333", "accent": "#666666"}, "industry": "motos"},
+    "OH_IMPORTACIONES": {"name": "OH Importaciones", "logo": f"{LOGO_BASE}/OH1.png", "colors": {"primary": "#333333", "accent": "#666666"}, "industry": "motos"},
+    "MATZU": {"name": "Matzu Dental Aesthetics", "logo": None, "colors": {"primary": "#4a90d9", "accent": "#2c5f8a"}, "industry": "salud_dental"},
+    "COVERS": {"name": "Covers Lab", "logo": None, "colors": {"primary": "#6b4c9a", "accent": "#4a2d73"}, "industry": "salud_bruxismo"},
+    "CABEZAS_SANAS": {"name": "Cabezas Sanas", "logo": None, "colors": {"primary": "#2e8b57", "accent": "#1a5c38"}, "industry": "salud_capilar"},
+}
+
+
+def get_company_identity(productos_formateados: list) -> dict:
+    """Retorna identidad de la empresa dominante en los productos."""
+    if not productos_formateados:
+        return None
+    store_counts = {}
+    for p in productos_formateados:
+        s = p.get("proveedor", "").upper()
+        if s:
+            store_counts[s] = store_counts.get(s, 0) + 1
+    if not store_counts:
+        return None
+    dominant = max(store_counts, key=store_counts.get)
+    identity = COMPANY_IDENTITIES.get(dominant)
+    if identity:
+        return {
+            "name": identity["name"],
+            "logo": identity["logo"],
+            "colors": identity["colors"],
+        }
+    return {"name": dominant, "logo": None, "colors": {"primary": "#333333", "accent": "#666666"}}
+
 
 # --- V18.2: Mapeo tienda -> Shopify URL ---
 STORE_MAP = {
@@ -388,14 +490,12 @@ async def chat(msg: ChatMessage):
     # 3. Buscar productos si el mensaje parece consulta
     productos = []
     mensaje_lower = msg.message.lower()
-    es_busqueda = any(kw in mensaje_lower for kw in [
-        "filtro", "bomba", "kit", "banda", "pastilla", "cadena",
-        "aceite", "freno", "moto", "pulsar", "bajaj", "yamaha",
-        "honda", "suzuki", "akt", "tvs", "hero", "precio",
-        "cuanto", "tiene", "busco", "necesito",
-        "repuesto", "pieza", "empaque", "tensor", "disco",
-        "clutch", "embrague", "rodamiento", "retenedor", "corona",
-        "llanta", "rin", "manigueta", "cable"
+    es_busqueda = any(
+        kw in mensaje_lower
+        for kws in INDUSTRY_KEYWORDS.values()
+        for kw in kws
+    ) or any(kw in mensaje_lower for kw in [
+        "precio", "cuanto", "tiene", "busco", "necesito",
     ])
 
     if es_busqueda:
@@ -439,6 +539,12 @@ async def chat(msg: ChatMessage):
     # 9. V18.2: Formatear productos para frontend
     productos_formateados = formatear_productos_para_frontend(productos)
 
+    # V19: Detectar industria
+    industry = detect_industry(msg.message, msg.domain)
+
+    # V19: Identidad de empresa dominante
+    company_id = get_company_identity(productos_formateados)
+
     return ChatResponse(
         response=respuesta,
         session_id=session["session_id"],
@@ -448,7 +554,9 @@ async def chat(msg: ChatMessage):
         nivel_intimidad=session["nivel_intimidad"],
         modo=modo.get("modo", "AUTOMATICO"),
         voice=voz,
-        audio_enabled=True
+        audio_enabled=True,
+        industry=industry,
+        company_identity=company_id,
     )
 
 @app.get("/odi/chat/health")
