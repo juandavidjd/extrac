@@ -54,6 +54,20 @@ export default function ChatContainer() {
     if (mutePref === "true") setMuted(true);
   }, []);
 
+  // V19: Saludo Ramona al entrar (una vez por sesión)
+  useEffect(() => {
+    const hasGreeted = typeof window !== "undefined" && sessionStorage.getItem("odi_greeted");
+    if (!hasGreeted && !muted) {
+      const timer = setTimeout(() => {
+        speak("Repuestos de motos. 33 mil productos de 15 proveedores. Dime que necesitas.", "ramona");
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("odi_greeted", "true");
+        }
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []);

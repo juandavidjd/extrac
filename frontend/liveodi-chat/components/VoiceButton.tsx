@@ -16,9 +16,9 @@ export default function VoiceButton({
   return (
     <button
       onClick={onToggle}
-      className={`p-3 rounded-xl transition-all ${
+      className={`relative p-3.5 rounded-xl transition-all ${
         isListening
-          ? "bg-red-600 text-white animate-pulse"
+          ? "bg-red-600 text-white animate-pulse scale-105"
           : "bg-neutral-800 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-700"
       }`}
       aria-label={isListening ? "Dejar de escuchar" : "Hablar con ODI"}
@@ -28,7 +28,7 @@ export default function VoiceButton({
         xmlns="http://www.w3.org/2000/svg"
         viewBox="0 0 24 24"
         fill="currentColor"
-        className="w-5 h-5"
+        className="w-6 h-6"
       >
         {isListening ? (
           <path d="M8.25 4.5a3.75 3.75 0 117.5 0v8.25a3.75 3.75 0 11-7.5 0V4.5z" />
