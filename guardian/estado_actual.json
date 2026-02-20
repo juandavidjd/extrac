@@ -1,0 +1,11 @@
+{
+    "estado": "verde",
+    "timestamp": "2026-02-20T00:00:00Z",
+    "reason": "Estado inicial — sistema operativo normal",
+    "last_check": "2026-02-20T00:00:00Z",
+    "metrics": {
+        "risk_level": 0.0,
+        "ethics_lock": true,
+        "active_alerts": 0
+    }
+}
