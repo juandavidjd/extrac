@@ -780,3 +780,14 @@ AccessibilityBar (contraste, tamano, solo texto, simplificado)
 - VIVIR reads guardian state from file on startup
 - Tests: P1-P6 PASS
 - Commit: d14a689
+
+## V18.2 Conversacion con Productos (20 Feb 2026)
+- Chat API devuelve campo productos con objetos estructurados (9 campos)
+- Cada producto: codigo, nombre, precio_cop, proveedor, imagen_url, shopify_url, fitment, disponible, categoria
+- ProductCards se renderizan inline dentro de la conversacion via MessageBubble
+- formatear_productos_para_frontend() extrae metadata de ChromaDB
+- ChromaDB: 33,184 docs, 384-dim default embeddings
+- Voice Tony para respuestas con productos, Ramona para conversacion
+- Tests: C1-C6 PASS
+- Commits: 63afe6a, 4952241
+- Deploy: liveodi.com
