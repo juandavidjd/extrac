@@ -58,3 +58,4 @@ logs/
 
 # Cross-Audit
 audit-report.json
+.aider*
