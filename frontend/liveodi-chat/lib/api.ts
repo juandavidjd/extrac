@@ -5,6 +5,17 @@ export interface ChatResponse {
   session_id: string;
   guardian_color: string;
   productos_encontrados: number;
+  productos: Array<{
+    codigo: string;
+    nombre: string;
+    precio_cop: number;
+    proveedor: string;
+    imagen_url?: string;
+    shopify_url?: string;
+    fitment?: string[];
+    disponible?: boolean;
+    categoria?: string;
+  }>;
   nivel_intimidad: number;
   modo: string;
   voice: string;

@@ -88,7 +88,7 @@ export default function ChatContainer() {
         {
           role: "odi",
           text: res.response,
-          products: (res as any).productos || [],
+          products: res.productos || [],
         },
       ]);
 
