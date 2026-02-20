@@ -772,3 +772,11 @@ AccessibilityBar (contraste, tamano, solo texto, simplificado)
 - Voz Ramona para conversacion general y bienvenidas
 - Tests: F1-F6 PASS
 - Commit: 01fdc39
+
+## V18.1 Panel + Disco + Guardian (20 Feb 2026)
+- Fix: nginx /odi/v1/ location added -> API Gateway port 8815 (EcosystemPanel now receives data)
+- Disco: 87% -> 83% (pip cache 371MB, apt clean, journal vacuum)
+- Guardian: /opt/odi/guardian/estado_actual.json created (verde, ethics_lock=true)
+- VIVIR reads guardian state from file on startup
+- Tests: P1-P6 PASS
+- Commit: d14a689
