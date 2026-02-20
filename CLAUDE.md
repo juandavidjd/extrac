@@ -764,3 +764,11 @@ AccessibilityBar (contraste, tamano, solo texto, simplificado)
 - Simplified mode (oculta ecosystem panel + toasts)
 - Reduce motion (prefers-reduced-motion)
 - Persiste en localStorage
+
+## V18 Ajustes Habitat (19 Feb 2026)
+- Fix 1: VIVIR heartbeat reporta total_products real (33,326) — ya funcionaba, root cause era WebSocket externo
+- Fix 2: WebSocket wss://api.liveodi.com/ws/vivir accesible desde browser (nginx: fixed broken location block + removed backup files from sites-enabled)
+- Fix 3: Voz Tony se activa para consultas tecnicas (products check ANTES de interacciones + 40+ tony_keywords)
+- Voz Ramona para conversacion general y bienvenidas
+- Tests: F1-F6 PASS
+- Commit: 01fdc39
