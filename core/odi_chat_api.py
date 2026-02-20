@@ -65,11 +65,28 @@ CHROMA_HOST = os.getenv("CHROMA_HOST", "127.0.0.1")
 CHROMA_PORT = int(os.getenv("CHROMA_PORT", "8000"))
 CHROMA_COLLECTION = os.getenv("CHROMA_COLLECTION", "odi_ind_motos")
 
+# V18.2: Use OpenAI embeddings to match collection dimension (1536)
+from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
+
+openai_ef = None
+try:
+    _openai_key = os.getenv("OPENAI_API_KEY")
+    if _openai_key:
+        openai_ef = OpenAIEmbeddingFunction(
+            api_key=_openai_key,
+            model_name="text-embedding-ada-002"
+        )
+except Exception:
+    pass
+
 chroma_collection = None
 try:
     chroma_client = chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)
-    chroma_collection = chroma_client.get_collection(CHROMA_COLLECTION)
-    log.info("ChromaDB connected: %d docs in %s", chroma_collection.count(), CHROMA_COLLECTION)
+    if openai_ef:
+        chroma_collection = chroma_client.get_collection(CHROMA_COLLECTION, embedding_function=openai_ef)
+    else:
+        chroma_collection = chroma_client.get_collection(CHROMA_COLLECTION)
+    log.info("ChromaDB connected: %d docs in %s (embeddings: %s)", chroma_collection.count(), CHROMA_COLLECTION, "openai" if openai_ef else "default")
 except Exception as e:
     log.warning("ChromaDB connection failed: %s", e)
 
@@ -84,6 +101,7 @@ class ChatResponse(BaseModel):
     session_id: str
     guardian_color: str = "verde"
     productos_encontrados: int = 0
+    productos: List = []
     nivel_intimidad: int = 0
     modo: str = "AUTOMATICO"
     voice: str = "ramona"
@@ -138,6 +156,32 @@ def buscar_chromadb(query: str, n_results: int = 5) -> list:
     except Exception as e:
         log.error("ChromaDB search error: %s", e)
     return []
+
+# --- V18.2: Formatear productos para frontend ---
+def formatear_productos_para_frontend(resultados_chromadb: list) -> list:
+    """Transforma resultados de ChromaDB en objetos para ProductCards."""
+    productos = []
+    for doc in resultados_chromadb:
+        metadata = doc.get("metadata", {})
+        producto = {
+            "codigo": metadata.get("sku", metadata.get("codigo", "")),
+            "nombre": metadata.get("title", metadata.get("nombre", metadata.get("technicalName", ""))),
+            "precio_cop": metadata.get("price", metadata.get("precio", 0)),
+            "proveedor": metadata.get("store", metadata.get("proveedor", metadata.get("supplier", ""))),
+            "imagen_url": metadata.get("image_url", metadata.get("imagen", "")),
+            "shopify_url": metadata.get("shopify_url", metadata.get("url", "")),
+            "fitment": metadata.get("fitment", metadata.get("compatibilidad", [])),
+            "disponible": metadata.get("available", True),
+            "categoria": metadata.get("category", metadata.get("categoria", ""))
+        }
+        # Precio numerico
+        try:
+            producto["precio_cop"] = int(float(str(producto["precio_cop"]).replace(",", "")))
+        except (ValueError, TypeError):
+            producto["precio_cop"] = 0
+        if producto["nombre"]:
+            productos.append(producto)
+    return productos[:10]
 
 # --- Generador de respuesta con LLM ---
 async def generar_respuesta_odi(
@@ -383,11 +427,16 @@ async def chat(msg: ChatMessage):
     # 8. Seleccionar voz
     voz = seleccionar_voz(msg.message, session, productos)
 
+
+    # 9. V18.2: Formatear productos para frontend
+    productos_formateados = formatear_productos_para_frontend(productos)
+
     return ChatResponse(
         response=respuesta,
         session_id=session["session_id"],
         guardian_color=estado.get("color", "verde"),
         productos_encontrados=len(productos),
+        productos=productos_formateados,
         nivel_intimidad=session["nivel_intimidad"],
         modo=modo.get("modo", "AUTOMATICO"),
         voice=voz,

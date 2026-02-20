@@ -74,7 +74,7 @@ services:
       - CHROMA_SERVER_AUTH_CREDENTIALS=${CHROMA_AUTH_TOKEN}
       - CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER=Authorization
     volumes:
-      - /mnt/volume_sfo3_01/embeddings/chroma_data:/chroma/chroma:rw
+      - /mnt/volume_sfo3_01/embeddings/chroma_data:/data:rw
 
   odi-postgres:
     image: postgres:15
