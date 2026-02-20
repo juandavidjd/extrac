@@ -1,4 +1,4 @@
-# ODI — Organismo Digital Industrial v18.1
+# ODI — Organismo Digital Industrial v19
 
 ## Paradigma
 
@@ -791,3 +791,17 @@ AccessibilityBar (contraste, tamano, solo texto, simplificado)
 - Tests: C1-C6 PASS
 - Commits: 63afe6a, 4952241
 - Deploy: liveodi.com
+
+## V19 Voz Primero (20 Feb 2026)
+- Voz es interfaz PRIMARIA — texto es secundario
+- Fix voice 503: ODI_VOICE_URL → localhost:7777 + remove token mismatch
+- Fix nginx: /odi/chat → port 8813 (frontend chat + speak endpoints)
+- docker-compose: port 7777 expuesto para odi-voice
+- Saludo Ramona al entrar al habitat (una vez por sesión via sessionStorage)
+- MultimodalInput: transcript auto-send via onSendRef (no manual Enter)
+- VoiceButton prominente (p-3.5 w-6 h-6) > botón enviar (p-2.5 w-4 h-4)
+- Cadena completa: browser → api.liveodi.com/odi/chat/speak → Chat API → odi-voice → ElevenLabs → MP3
+- Mute/unmute en PresenceHeader, localStorage persistente
+- prefersTextOnly respetado (muted skip speak)
+- shopify_url: graceful degradation (no URL = no botón "Ver en tienda")
+- Tests V1-V9 PASS
