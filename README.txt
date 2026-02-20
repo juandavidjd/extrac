@@ -72,4 +72,6 @@ GITHUB
 
 Repo: https://github.com/juandavidjd/extrac
 
+Arquitectura Cross-Audit verificada el 20/02/2026
+
 ================================================================================

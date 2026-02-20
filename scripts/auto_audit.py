@@ -21,7 +21,21 @@ import subprocess
 import sys
 import json
 import time
+import os
 from pathlib import Path
+
+# Detectar ruta de gh en Windows
+GH_PATH = "gh"
+if sys.platform == "win32":
+    possible_paths = [
+        r"C:\Program Files\GitHub CLI\gh.exe",
+        r"C:\Program Files (x86)\GitHub CLI\gh.exe",
+        os.path.expanduser(r"~\AppData\Local\Programs\GitHub CLI\gh.exe"),
+    ]
+    for p in possible_paths:
+        if os.path.exists(p):
+            GH_PATH = p
+            break
 
 
 def run_command(cmd: list[str], timeout: int = 300) -> tuple[bool, str, str]:
@@ -62,7 +76,7 @@ def git_push(branch: str) -> bool:
 def get_latest_run_id() -> int | None:
     """Obtiene el ID del workflow más reciente."""
     cmd = [
-        "gh", "run", "list",
+        GH_PATH, "run", "list",
         "--workflow", "cross-audit.yml",
         "--limit", "1",
         "--json", "databaseId,status"
@@ -99,12 +113,12 @@ def wait_for_workflow() -> tuple[bool, str]:
     print(f"    Watching run ID: {run_id}")
 
     # Usar gh run watch para monitoreo en tiempo real
-    cmd = ["gh", "run", "watch", str(run_id), "--exit-status"]
+    cmd = [GH_PATH, "run", "watch", str(run_id), "--exit-status"]
     success, stdout, stderr = run_command(cmd, timeout=600)  # 10 min timeout
 
     # Obtener conclusión
     check_cmd = [
-        "gh", "run", "view", str(run_id),
+        GH_PATH, "run", "view", str(run_id),
         "--json", "conclusion"
     ]
     _, check_out, _ = run_command(check_cmd)
@@ -223,6 +237,8 @@ def main():
 
     # 4. Resumir
     show_summary(project_root, status)
+
+    print("\nAuditoría completada para Juan David. Revisa los resultados.")
 
     return 0 if status == "approved" else 1
 
