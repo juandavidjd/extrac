@@ -230,13 +230,58 @@ Responde con JSON conteniendo:
         logger.info(f"Reporte guardado en: {output_path}")
 
 
+def load_store_data(data_path: str = "/opt/odi/data/orden_maestra_v6/") -> Dict[str, List[Dict]]:
+    """
+    Carga datos de las tiendas desde archivos JSON.
+
+    Args:
+        data_path: Ruta a la carpeta con los JSONs de productos.
+
+    Returns:
+        Diccionario {nombre_tienda: lista_productos}
+    """
+    stores_data = {}
+
+    # Lista de tiendas ODI
+    stores = [
+        "DFG", "ARMOTOS", "OH_IMPORTACIONES", "VITTON", "DUNA",
+        "IMBRA", "YOKOMAR", "BARA", "JAPAN", "MCLMOTOS",
+        "CBI", "KAIQI", "LEO", "STORE", "VAISAND"
+    ]
+
+    for store in stores:
+        json_path = os.path.join(data_path, f"{store}_products.json")
+
+        if os.path.exists(json_path):
+            try:
+                with open(json_path, "r", encoding="utf-8") as f:
+                    products = json.load(f)
+                    # Limitar a 50 productos por tienda para no exceder tokens
+                    stores_data[store] = products[:50]
+                    logger.info(f"Cargados {len(products)} productos de {store} (usando 50)")
+            except Exception as e:
+                logger.warning(f"Error cargando {store}: {e}")
+        else:
+            logger.warning(f"Archivo no encontrado: {json_path}")
+
+    # Si no se encontraron datos, usar datos de prueba
+    if not stores_data:
+        logger.info("Usando datos de prueba (archivos de producción no disponibles)")
+        stores_data = {
+            "DFG": [{"sku": "DFG-001", "title": "Filtro aceite universal", "price": 25000, "vendor": "DFG"}],
+            "ARMOTOS": [{"sku": "ARM-001", "title": "Cadena 428H reforzada", "price": 45000, "vendor": "ARMOTOS"}],
+            "YOKOMAR": [{"sku": "YOK-001", "title": "Kit arrastre completo", "price": 120000, "vendor": "YOKOMAR"}]
+        }
+
+    return stores_data
+
+
 def main():
     """Punto de entrada principal."""
     api_key = os.environ.get("OPENAI_API_KEY")
 
     if not api_key:
         logger.error("OPENAI_API_KEY no configurada")
-        # Generar reporte de error para diagnóstico
         error_report = {
             "total_stores": 0,
             "total_products": 0,
@@ -250,20 +295,17 @@ def main():
             json.dump(error_report, f, ensure_ascii=False, indent=2)
         sys.exit(1)
 
-    # Verificar que la API key tiene formato válido
     logger.info(f"API Key detectada: {api_key[:10]}...{api_key[-4:]}")
 
     try:
         auditor = CrossAuditSystem()
 
-        # Datos de prueba - en producción se cargarían desde /opt/odi/data/orden_maestra_v6/
-        test_data = {
-            "DFG": [{"sku": "DFG-001", "name": "Filtro aceite", "price": 25000}],
-            "ARMOTOS": [{"sku": "ARM-001", "name": "Cadena 428", "price": 45000}],
-            "YOKOMAR": [{"sku": "YOK-001", "name": "Kit arrastre", "price": 120000}]
-        }
+        # Cargar datos de producción o usar datos de prueba
+        stores_data = load_store_data()
 
-        report = auditor.cross_audit(test_data)
+        logger.info(f"Tiendas a auditar: {list(stores_data.keys())}")
+
+        report = auditor.cross_audit(stores_data)
         auditor.save_report(report)
 
         print(f"Cross-Audit completado: {report.total_stores} tiendas, score: {report.overall_health_score:.1f}")
@@ -271,7 +313,6 @@ def main():
 
     except Exception as e:
         logger.error(f"Error durante auditoría: {e}")
-        # Generar reporte de error
         error_report = {
             "total_stores": 0,
             "total_products": 0,
