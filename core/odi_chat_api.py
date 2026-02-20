@@ -237,18 +237,39 @@ async def generar_respuesta_odi(
 def seleccionar_voz(mensaje: str, session: dict, productos: list) -> str:
     """
     Ramona: hospitalidad, bienvenida, emocional, validacion
-    Tony: productos, precios, tecnico, diagnostico, ejecucion
+    Tony: productos, precios, tecnico, fitment, diagnostico, ejecucion
+    V18: productos check ANTES de interacciones (fix tony nunca activo)
     """
-    interacciones = session.get("interacciones", 0)
-    if interacciones <= 1:
-        return "ramona"
+    # Si hay productos en la respuesta -> Tony (tecnico, sin importar interaccion)
     if productos and len(productos) > 0:
         return "tony"
+
+    interacciones = session.get("interacciones", 0)
+
+    # Primer mensaje sin productos -> Ramona (bienvenida)
+    if interacciones <= 1:
+        return "ramona"
+
+    # Keywords tecnicas -> Tony
     msg_lower = mensaje.lower()
-    tony_keywords = ["precio", "cuanto", "stock", "disponible", "envio",
-                     "garantia", "ficha", "especificacion", "sku"]
+    tony_keywords = [
+        "precio", "cuanto", "cuesta", "vale",
+        "stock", "disponible", "hay",
+        "envio", "entrega",
+        "garantia",
+        "ficha", "especificacion", "sku", "codigo", "referencia",
+        "filtro", "aceite", "pastilla", "freno",
+        "kit", "arrastre", "cadena", "pinon",
+        "llanta", "rin", "eje", "rodamiento",
+        "bujia", "cable", "guaya",
+        "pulsar", "bajaj", "yamaha", "honda", "suzuki",
+        "akt", "tvs", "hero", "kawasaki",
+        "fitment", "compatible", "sirve para", "le sirve",
+        "diagnostico", "problema", "falla"
+    ]
     if any(kw in msg_lower for kw in tony_keywords):
         return "tony"
+
     return "ramona"
 
 
