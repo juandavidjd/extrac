@@ -65,28 +65,11 @@ CHROMA_HOST = os.getenv("CHROMA_HOST", "127.0.0.1")
 CHROMA_PORT = int(os.getenv("CHROMA_PORT", "8000"))
 CHROMA_COLLECTION = os.getenv("CHROMA_COLLECTION", "odi_ind_motos")
 
-# V18.2: Use OpenAI embeddings to match collection dimension (1536)
-from chromadb.utils.embedding_functions import OpenAIEmbeddingFunction
-
-openai_ef = None
-try:
-    _openai_key = os.getenv("OPENAI_API_KEY")
-    if _openai_key:
-        openai_ef = OpenAIEmbeddingFunction(
-            api_key=_openai_key,
-            model_name="text-embedding-ada-002"
-        )
-except Exception:
-    pass
-
 chroma_collection = None
 try:
     chroma_client = chromadb.HttpClient(host=CHROMA_HOST, port=CHROMA_PORT)
-    if openai_ef:
-        chroma_collection = chroma_client.get_collection(CHROMA_COLLECTION, embedding_function=openai_ef)
-    else:
-        chroma_collection = chroma_client.get_collection(CHROMA_COLLECTION)
-    log.info("ChromaDB connected: %d docs in %s (embeddings: %s)", chroma_collection.count(), CHROMA_COLLECTION, "openai" if openai_ef else "default")
+    chroma_collection = chroma_client.get_collection(CHROMA_COLLECTION)
+    log.info("ChromaDB connected: %d docs in %s", chroma_collection.count(), CHROMA_COLLECTION)
 except Exception as e:
     log.warning("ChromaDB connection failed: %s", e)
 
