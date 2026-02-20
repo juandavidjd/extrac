@@ -43,7 +43,7 @@ log = logging.getLogger("odi.chat.api")
 app = FastAPI(title="ODI Chat API", version="1.1.0")
 
 # --- V13.1 Voice Config ---
-ODI_VOICE_URL = os.getenv("ODI_VOICE_URL", "http://172.18.0.6:7777")
+ODI_VOICE_URL = os.getenv("ODI_VOICE_URL", "http://127.0.0.1:7777")
 ODI_VOICE_TOKEN = os.getenv("ODI_VOICE_TOKEN", "011ab9e9878f7ebc20b67137b7ac5f40a13bf4c5bc458f7447be0928ad251fdf")
 
 app.add_middleware(
@@ -140,6 +140,25 @@ def buscar_chromadb(query: str, n_results: int = 5) -> list:
         log.error("ChromaDB search error: %s", e)
     return []
 
+# --- V18.2: Mapeo tienda -> Shopify URL ---
+STORE_MAP = {
+    "BARA": "https://4jqcki-jq.myshopify.com",
+    "YOKOMAR": "https://u1zmhk-ts.myshopify.com",
+    "KAIQI": "https://u03tqc-0e.myshopify.com",
+    "DFG": "https://0se1jt-q1.myshopify.com",
+    "DUNA": "https://ygsfhq-fs.myshopify.com",
+    "IMBRA": "https://0i1mdf-gi.myshopify.com",
+    "JAPAN": "https://7cy1zd-qz.myshopify.com",
+    "LEO": "https://h1hywg-pq.myshopify.com",
+    "STORE": "https://0b6umv-11.myshopify.com",
+    "VAISAND": "https://z4fpdj-mz.myshopify.com",
+    "ARMOTOS": "https://znxx5p-10.myshopify.com",
+    "VITTON": "https://hxjebc-it.myshopify.com",
+    "MCLMOTOS": "https://v023qz-8x.myshopify.com",
+    "CBI": "https://yrf6hp-f6.myshopify.com",
+    "OH_IMPORTACIONES": "https://6fbakq-sj.myshopify.com",
+}
+
 # --- V18.2: Formatear productos para frontend ---
 def formatear_productos_para_frontend(resultados_chromadb: list) -> list:
     """Transforma resultados de ChromaDB en objetos para ProductCards."""
@@ -152,7 +171,7 @@ def formatear_productos_para_frontend(resultados_chromadb: list) -> list:
             "precio_cop": metadata.get("price", metadata.get("precio", 0)),
             "proveedor": metadata.get("store", metadata.get("proveedor", metadata.get("supplier", ""))),
             "imagen_url": metadata.get("image_url", metadata.get("imagen", "")),
-            "shopify_url": metadata.get("shopify_url", metadata.get("url", "")),
+            "shopify_url": "",  # Se genera dinámicamente abajo
             "fitment": metadata.get("fitment", metadata.get("compatibilidad", [])),
             "disponible": metadata.get("available", True),
             "categoria": metadata.get("category", metadata.get("categoria", ""))
@@ -162,6 +181,12 @@ def formatear_productos_para_frontend(resultados_chromadb: list) -> list:
             producto["precio_cop"] = int(float(str(producto["precio_cop"]).replace(",", "")))
         except (ValueError, TypeError):
             producto["precio_cop"] = 0
+        # V18.2: Generar shopify_url dinámicamente desde STORE_MAP
+        store_url = STORE_MAP.get(producto["proveedor"].upper(), "")
+        codigo = producto["codigo"]
+        if store_url and codigo:
+            producto["shopify_url"] = f"{store_url}/search?q={codigo}"
+
         if producto["nombre"]:
             productos.append(producto)
     return productos[:10]
@@ -321,7 +346,7 @@ async def speak(request: Request):
         async with httpx.AsyncClient(timeout=15) as client:
             resp = await client.post(
                 f"{ODI_VOICE_URL}/odi/speak",
-                json={"token": ODI_VOICE_TOKEN, "texto": texto, "voice": voz}
+                json={"texto": texto, "voice": voz}
             )
             if resp.status_code == 200:
                 return Response(
