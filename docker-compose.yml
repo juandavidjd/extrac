@@ -23,6 +23,8 @@ services:
     image: odi-odi_voice
     container_name: odi-voice
     restart: always
+    ports:
+      - "7777:7777"
     networks:
       - odi-network
     environment:
