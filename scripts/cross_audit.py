@@ -60,7 +60,9 @@ class CrossAuditSystem:
         Args:
             api_key: OpenAI API key. Si no se proporciona, se lee de OPENAI_API_KEY.
         """
-        self.api_key = api_key or os.environ.get("OPENAI_API_KEY")
+        raw_key = api_key or os.environ.get("OPENAI_API_KEY")
+        # Limpiar whitespace y saltos de línea
+        self.api_key = raw_key.strip() if raw_key else None
         if not self.api_key:
             raise ValueError("OPENAI_API_KEY no encontrada en variables de entorno")
 
