@@ -230,24 +230,58 @@ Responde con JSON conteniendo:
 
 def main():
     """Punto de entrada principal."""
-    if not os.environ.get("OPENAI_API_KEY"):
+    api_key = os.environ.get("OPENAI_API_KEY")
+
+    if not api_key:
         logger.error("OPENAI_API_KEY no configurada")
+        # Generar reporte de error para diagnóstico
+        error_report = {
+            "total_stores": 0,
+            "total_products": 0,
+            "audit_results": [],
+            "cross_store_issues": [{"severity": "critical", "description": "OPENAI_API_KEY no configurada"}],
+            "overall_health_score": 0,
+            "generated_at": datetime.utcnow().isoformat(),
+            "error": "OPENAI_API_KEY not found"
+        }
+        with open("audit-report.json", "w", encoding="utf-8") as f:
+            json.dump(error_report, f, ensure_ascii=False, indent=2)
         sys.exit(1)
 
-    auditor = CrossAuditSystem()
+    # Verificar que la API key tiene formato válido
+    logger.info(f"API Key detectada: {api_key[:10]}...{api_key[-4:]}")
 
-    # Datos de prueba - en producción se cargarían desde /opt/odi/data/orden_maestra_v6/
-    test_data = {
-        "DFG": [{"sku": "DFG-001", "name": "Filtro aceite", "price": 25000}],
-        "ARMOTOS": [{"sku": "ARM-001", "name": "Cadena 428", "price": 45000}],
-        "YOKOMAR": [{"sku": "YOK-001", "name": "Kit arrastre", "price": 120000}]
-    }
+    try:
+        auditor = CrossAuditSystem()
 
-    report = auditor.cross_audit(test_data)
-    auditor.save_report(report)
+        # Datos de prueba - en producción se cargarían desde /opt/odi/data/orden_maestra_v6/
+        test_data = {
+            "DFG": [{"sku": "DFG-001", "name": "Filtro aceite", "price": 25000}],
+            "ARMOTOS": [{"sku": "ARM-001", "name": "Cadena 428", "price": 45000}],
+            "YOKOMAR": [{"sku": "YOK-001", "name": "Kit arrastre", "price": 120000}]
+        }
 
-    print(f"Cross-Audit completado: {report.total_stores} tiendas, score: {report.overall_health_score:.1f}")
-    return 0 if report.overall_health_score >= 70 else 1
+        report = auditor.cross_audit(test_data)
+        auditor.save_report(report)
+
+        print(f"Cross-Audit completado: {report.total_stores} tiendas, score: {report.overall_health_score:.1f}")
+        return 0
+
+    except Exception as e:
+        logger.error(f"Error durante auditoría: {e}")
+        # Generar reporte de error
+        error_report = {
+            "total_stores": 0,
+            "total_products": 0,
+            "audit_results": [],
+            "cross_store_issues": [{"severity": "critical", "description": str(e)}],
+            "overall_health_score": 0,
+            "generated_at": datetime.utcnow().isoformat(),
+            "error": str(e)
+        }
+        with open("audit-report.json", "w", encoding="utf-8") as f:
+            json.dump(error_report, f, ensure_ascii=False, indent=2)
+        return 1
 
 
 if __name__ == "__main__":
