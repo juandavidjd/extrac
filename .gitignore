@@ -55,3 +55,6 @@ logs/
 # Cache
 .cache/
 *.cache
+
+# Cross-Audit
+audit-report.json
