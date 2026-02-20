@@ -8,7 +8,7 @@ Puerto: 8815
 
 from fastapi import FastAPI, Request, Query
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse, Response, FileResponse
 from typing import Optional
 from fastapi import UploadFile, File
 import httpx
@@ -444,8 +444,9 @@ async def proxy_chat(request: Request):
         )
         data = resp.json()
 
-    # Si hay productos mencionados, buscar en ChromaDB para datos estructurados
-    if data.get("productos_encontrados", 0) > 0:
+    # V18.2: Chat API ya devuelve productos formateados — pass-through
+    # Solo buscar en ChromaDB si Chat API no devolvió productos
+    if data.get("productos_encontrados", 0) > 0 and not data.get("productos"):
         try:
             import chromadb
             chroma = chromadb.HttpClient(host=CHROMADB_HOST, port=CHROMADB_PORT)
@@ -461,12 +462,15 @@ async def proxy_chat(request: Request):
             if results["metadatas"]:
                 for meta in results["metadatas"][0]:
                     productos.append({
-                        "sku": meta.get("sku", ""),
+                        "codigo": meta.get("sku", ""),
                         "nombre": meta.get("title", ""),
                         "precio_cop": meta.get("price", 0),
+                        "proveedor": meta.get("store", meta.get("empresa", "")),
                         "imagen_url": meta.get("imagen_url", ""),
-                        "proveedor": meta.get("store", ""),
-                        "fitment": meta.get("compatible_models", "")
+                        "shopify_url": meta.get("shopify_url", ""),
+                        "fitment": meta.get("compatible_models", []),
+                        "disponible": True,
+                        "categoria": meta.get("category", "")
                     })
 
             data["productos"] = productos
@@ -580,3 +584,23 @@ async def proxy_speak(request: Request):
                 media_type="audio/mpeg"
             )
     return JSONResponse(status_code=503, content={"error": "TTS no disponible"})
+
+# --- V19: Logo endpoint for company identities ---
+LOGOS_DIR = "/mnt/volume_sfo3_01/profesion/10 empresas ecosistema ODI/logos_optimized"
+
+@app.get("/assets/logo/{company_id}")
+async def get_company_logo(company_id: str):
+    """Sirve logos de empresas como archivos estaticos."""
+    import mimetypes
+    # Try exact match first, then case variations
+    for fname in [f"{company_id}.png", f"{company_id}.svg", f"{company_id}.PNG"]:
+        fpath = os.path.join(LOGOS_DIR, fname)
+        if os.path.isfile(fpath):
+            mt = mimetypes.guess_type(fpath)[0] or "image/png"
+            return FileResponse(
+                fpath,
+                media_type=mt,
+                headers={"Cache-Control": "public, max-age=86400", "Access-Control-Allow-Origin": "*"},
+            )
+    return JSONResponse(status_code=404, content={"error": f"Logo not found: {company_id}"})
+
