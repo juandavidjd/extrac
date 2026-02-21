@@ -495,23 +495,26 @@ async def chat(msg: ChatMessage):
         None
     )
 
-    # 3. Buscar productos si el mensaje parece consulta
-    productos = []
-    mensaje_lower = msg.message.lower()
-    es_busqueda = any(
-        kw in mensaje_lower
-        for kws in INDUSTRY_KEYWORDS.values()
-        for kw in kws
-    ) or any(kw in mensaje_lower for kw in [
-        "precio", "cuanto", "tiene", "busco", "necesito",
-    ])
+    # V19: detectar industria ANTES de buscar productos
+    detected_industry = detect_industry(msg.message, msg.domain)
+    session["_detected_industry"] = detected_industry
 
-    if es_busqueda:
-        productos = buscar_chromadb(msg.message, n_results=5)
+    # 3. Buscar productos SOLO si la industria tiene datos en ChromaDB
+    productos = []
+    if detected_industry == "motos":
+        mensaje_lower = msg.message.lower()
+        es_busqueda = any(
+            kw in mensaje_lower
+            for kws in INDUSTRY_KEYWORDS.values()
+            for kw in kws
+        ) or any(kw in mensaje_lower for kw in [
+            "precio", "cuanto", "tiene", "busco", "necesito",
+        ])
+        if es_busqueda:
+            productos = buscar_chromadb(msg.message, n_results=5)
+    # salud_dental, salud_bruxismo, salud_capilar, general: sin productos (ChromaDB solo tiene motos)
 
     # 4. Generar respuesta con personalidad
-    # V19: pasar industria detectada a generar_respuesta_odi via session
-    session["_detected_industry"] = detect_industry(msg.message, msg.domain)
 
     respuesta = await generar_respuesta_odi(msg.message, session, productos)
 
