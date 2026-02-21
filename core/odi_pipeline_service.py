@@ -504,19 +504,21 @@ Responde SOLO con el JSON, sin explicaciones."""
                 if not title or not sku:
                     continue
                 
-                # Precio default si no existe
+                # V22 FIX: NUNCA price=1.0, usar status=draft
+                _status = 'active'
                 if price <= 0:
-                    price = 1.0
+                    _status = 'draft'  # No price = not ready to sell
                 
                 compatibility = extract_compat(title)
                 
                 all_products.append({
                     'sku': sku,
                     'title': title[:100],
-                    'price': price,
+                    'price': price if price > 0 else 0,
                     'category': None,
                     'brand': None,
-                    'compatibility': compatibility
+                    'compatibility': compatibility,
+                    'status': _status  # V22: draft if no price
                 })
             
             log.info(f"  Extracted {len(all_products)} products from CSV")
@@ -687,37 +689,20 @@ class ProductNormalizer:
         return f"{empresa[:3].upper()}-{datetime.now().strftime('%H%M%S')}"
 
     def _normalize_title(self, title: str, category: str = None) -> str:
-        """Normaliza título: Empaque {Tipo} {Moto}."""
+        """Normaliza título: usa nombre exacto de Orden Maestra sin prefijos automáticos."""
         import re
         title = title.strip()
         title = re.sub(r"\s+", " ", title)
         
-        CAT_PREFIX = {
-            "clutch": "Empaque Clutch", "cilindro": "Empaque Cilindro",
-            "culata": "Empaque Culata", "culatin": "Empaque Culatin",
-            "transmision": "Empaque Transmision", "kit completo": "Kit Completo",
-            "silenciador": "Conector Mofle", "mofle": "Conector Mofle",
-            "exosto": "Conector Mofle", "volante": "Empaque Volante",
-        }
+        # Formatear correctamente (Title Case si está en mayúsculas)
+        if title.isupper():
+            title = title.title()
         
-        combined = (title + " " + (category or "")).lower()
-        prefix = "Empaque"
-        for key, val in CAT_PREFIX.items():
-            if key in combined:
-                prefix = val
-                break
+        # Limitar longitud
+        if len(title) > 60:
+            title = title[:57].rsplit(" ", 1)[0] + "..."
         
-        if any(title.startswith(p) for p in ["Empaque", "Kit Completo", "Conector Mofle"]):
-            new_title = title
-        else:
-            title = re.sub(r"^Clutch\s+", "", title, flags=re.I)
-            new_title = f"{prefix} {title}"
-        
-        if new_title.isupper():
-            new_title = new_title.title()
-        if len(new_title) > 60:
-            new_title = new_title[:57].rsplit(" ", 1)[0] + "..."
-        return new_title
+        return title
 
     def _normalize_price(self, price: Any) -> Optional[float]:
         if price is None:
@@ -763,22 +748,50 @@ La descripción debe:
 Responde SOLO con la descripción, sin comillas ni formato especial."""
 
     async def enrich(self, products: List[Dict[str, Any]], source_type: str = 'pdf') -> List[Dict[str, Any]]:
-        """Enriquece productos. Template para CSV/Excel, LLM para PDF."""
+        """Enriquece productos. V19: ChromaDB query + category fallback."""
         from ficha_360_template import build_ficha_360
+        from core.chromadb_enrichment import query_chromadb_for_enrichment, get_category_fallback
+        from core.odi_image_generator import AIImageGenerator
+
+        img_gen = AIImageGenerator()
         enriched = []
 
         for p in products:
+            title = p.get('title', '')
+
+            # V19: Get product type and query ChromaDB
+            product_type = img_gen.extract_product_type(title)
+
+            try:
+                enrichment = await query_chromadb_for_enrichment(title, product_type)
+            except Exception as e:
+                log.debug(f"ChromaDB query failed: {e}")
+                enrichment = get_category_fallback(product_type)
+
+            # Build technical context from enrichment
+            technical_context = {}
+            if enrichment.material:
+                technical_context['material'] = enrichment.material
+            if enrichment.specifications:
+                technical_context['especificaciones'] = enrichment.specifications
+            if enrichment.dimensions:
+                technical_context['dimensiones'] = enrichment.dimensions
+            if enrichment.compatibility:
+                technical_context['compatibilidad_verificada'] = enrichment.compatibility
+
             if source_type in ('csv', 'excel', 'json'):
-                # Template-driven, sin LLM
-                compat = ', '.join(p.get('compatibility', [])) or 'Universal'
+                # Template-driven with ChromaDB context
+                compat = ', '.join(p.get('compatibility', [])) or ''  # V22 fix: no Universal default
                 body = build_ficha_360(
-                    title=p.get('title', ''),
+                    title=title,
                     sku=p.get('sku', ''),
                     compatibilidad=compat,
-                    empresa=p.get('brand', p.get('source_empresa', 'ODI'))
+                    empresa=p.get('brand', p.get('source_empresa', 'ODI')),
+                    technical_context=technical_context
                 )
                 p['description'] = body
                 p['body_html'] = body
+                p['_enrichment_source'] = enrichment.source
             elif not p.get("description"):
                 try:
                     response = openai_client.chat.completions.create(
@@ -1328,3 +1341,165 @@ if __name__ == "__main__":
             log.error(f"Image upload error for product {product_id}: {e}")
             return False
 
+
+
+# ============================================
+# V19 PIPELINE VALIDATION TEST
+# ============================================
+async def test_v19_pipeline(store: str, limit: int = 100):
+    """Test V19 pipeline enrichment for a store."""
+    import requests
+    import random
+    import re
+    from core.odi_image_generator import AIImageGenerator
+    from core.chromadb_enrichment import query_chromadb_for_enrichment, get_category_fallback
+    from core.ficha_360_template import build_ficha_360
+    
+    def normalize_title_v2(title: str) -> str:
+        if not title:
+            return title
+        upper_count = sum(1 for c in title if c.isupper())
+        total_alpha = sum(1 for c in title if c.isalpha())
+        if total_alpha > 0 and upper_count / total_alpha > 0.7:
+            lowercase_words = {'de', 'del', 'la', 'el', 'los', 'las', 'para', 'con', 'sin', 'en', 'y', 'o', 'a', 'al', 'por'}
+            words = title.lower().split()
+            result = []
+            for i, word in enumerate(words):
+                if i == 0:
+                    result.append(word.capitalize())
+                elif word in lowercase_words:
+                    result.append(word.lower())
+                else:
+                    result.append(word.capitalize())
+            return ' '.join(result)
+        return title
+    
+    def extract_compatibility(title: str, store: str) -> str:
+        title_lower = title.lower()
+        matches = []
+        brands = {'pulsar': 'Pulsar', 'discover': 'Discover', 'boxer': 'Boxer', 'fz': 'FZ', 
+                  'ybr': 'YBR', 'xtz': 'XTZ', 'akt': 'AKT', 'tvs': 'TVS', 'cb': 'CB'}
+        for key, val in brands.items():
+            if key in title_lower:
+                cc_match = re.search(rf'{key}\s*(\d{{2,3}})', title_lower)
+                if cc_match:
+                    matches.append(f'{val} {cc_match.group(1)}')
+                else:
+                    matches.append(val)
+        if matches:
+            return ', '.join(list(dict.fromkeys(matches))[:4])
+        return f'Motos compatibles - {store}'
+    
+    store = store.upper()
+    config_path = f'/opt/odi/data/brands/{store.lower()}.json'
+    
+    with open(config_path) as f:
+        config = json.load(f)
+    
+    shop = config['shopify']['shop']
+    token = config['shopify']['token']
+    
+    print(f'=== V19 PIPELINE TEST - {store} ===')
+    print(f'Fetching {limit} products from Shopify...')
+    
+    products = []
+    url = f'https://{shop}/admin/api/2024-01/products.json?limit=250&fields=id,title,variants'
+    headers = {'X-Shopify-Access-Token': token}
+    
+    while url and len(products) < limit:
+        r = requests.get(url, headers=headers, timeout=30)
+        r.raise_for_status()
+        for p in r.json().get('products', []):
+            sku = p['variants'][0].get('sku', '') if p.get('variants') else ''
+            products.append({'id': p['id'], 'title': p['title'], 'sku': sku})
+            if len(products) >= limit:
+                break
+        link = r.headers.get('Link', '')
+        url = None
+        if 'rel="next"' in link and len(products) < limit:
+            for part in link.split(','):
+                if 'rel="next"' in part:
+                    url = part.split('<')[1].split('>')[0]
+                    break
+    
+    print(f'Fetched {len(products)} products\n')
+    
+    img_gen = AIImageGenerator()
+    results = []
+    sources = {}
+    types = {}
+    
+    for i, p in enumerate(products):
+        title = p.get('title', '')
+        sku = p.get('sku', '')
+        normalized_title = normalize_title_v2(title)
+        product_type = img_gen.extract_product_type(title)
+        
+        try:
+            enrichment = await query_chromadb_for_enrichment(title, product_type)
+        except Exception:
+            enrichment = get_category_fallback(product_type)
+        
+        compatibility = extract_compatibility(title, store)
+        
+        results.append({
+            'sku': sku,
+            'original_title': title,
+            'normalized_title': normalized_title,
+            'product_type': product_type,
+            'enrichment_source': enrichment.source,
+            'enrichment_score': enrichment.score,
+            'material': enrichment.material,
+            'compatibility': compatibility,
+        })
+        
+        sources[enrichment.source] = sources.get(enrichment.source, 0) + 1
+        types[product_type] = types.get(product_type, 0) + 1
+        
+        if (i + 1) % 50 == 0:
+            print(f'  Processed {i + 1}/{len(products)}...')
+    
+    print('\nESTADISTICAS:')
+    print('  Enrichment sources:')
+    for src, cnt in sorted(sources.items(), key=lambda x: -x[1]):
+        pct = cnt / len(results) * 100
+        print(f'    {src}: {cnt} ({pct:.0f}%)')
+    
+    print(f'\n  Top product types:')
+    for typ, cnt in sorted(types.items(), key=lambda x: -x[1])[:10]:
+        print(f'    {typ}: {cnt}')
+    
+    print('\n' + '='*60)
+    print('VERIFICACION DE CALIDAD')
+    print('='*60)
+    
+    all_caps = sum(1 for r in results if r['normalized_title'].isupper())
+    default_cnt = sources.get('default', 0)
+    
+    print(f'  Titulos ALL CAPS: {all_caps} (debe ser 0)')
+    print(f'  Templates default: {default_cnt}')
+    
+    print('\n' + '='*60)
+    print('RESUMEN')
+    print('='*60)
+    print(f'Total: {len(results)}')
+    print(f'ChromaDB: {sources.get("chromadb", 0)}')
+    print(f'Category: {sources.get("category_template", 0)}')
+    print(f'Default: {sources.get("default", 0)}')
+    
+    return results
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description='ODI Pipeline Service')
+    parser.add_argument('--test', type=str, help='Test V19 pipeline for STORE')
+    parser.add_argument('--limit', type=int, default=100, help='Limit products for test')
+    parser.add_argument('--serve', action='store_true', help='Start API server')
+    args = parser.parse_args()
+    
+    if args.test:
+        asyncio.run(test_v19_pipeline(args.test, args.limit))
+    elif args.serve or len(sys.argv) == 1:
+        import uvicorn
+        uvicorn.run(app, host='0.0.0.0', port=8804)
+    else:
+        parser.print_help()
