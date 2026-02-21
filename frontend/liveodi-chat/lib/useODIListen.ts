@@ -10,6 +10,12 @@ interface UseODIListenReturn {
   error: string | null;
 }
 
+function normalizeTranscript(raw: string): string {
+  return raw
+    .replace(/\b(oye|hoy|o di|guey|g[üu]ey|odie|ody|oh di|o de i|o d)\b/gi, "ODI")
+    .replace(/\bODI\b/gi, "ODI");
+}
+
 export function useODIListen(
   onTranscript?: (text: string) => void
 ): UseODIListenReturn {
@@ -17,6 +23,9 @@ export function useODIListen(
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<any>(null);
+  const manualStopRef = useRef(false);
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingTranscriptRef = useRef("");
 
   const isSupported =
     typeof window !== "undefined" &&
@@ -31,7 +40,7 @@ export function useODIListen(
     const recognition = new SpeechRecognition();
 
     recognition.lang = "es-CO";
-    recognition.continuous = false;
+    recognition.continuous = true;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
 
@@ -48,40 +57,85 @@ export function useODIListen(
       }
 
       const text = finalTranscript || interimTranscript;
-      setTranscript(text);
+      setTranscript(normalizeTranscript(text));
 
-      if (finalTranscript && onTranscript) {
-        onTranscript(finalTranscript);
+      // Silence timer: si hay finalTranscript, esperar 2s sin más input → enviar
+      if (finalTranscript) {
+        pendingTranscriptRef.current = normalizeTranscript(finalTranscript);
+
+        if (silenceTimerRef.current) {
+          clearTimeout(silenceTimerRef.current);
+        }
+        silenceTimerRef.current = setTimeout(() => {
+          if (pendingTranscriptRef.current && onTranscript) {
+            onTranscript(pendingTranscriptRef.current);
+            pendingTranscriptRef.current = "";
+            setTranscript("");
+          }
+        }, 2000);
       }
     };
 
     recognition.onerror = (event: any) => {
+      // "no-speech" and "aborted" are not real errors in continuous mode
+      if (event.error === "no-speech" || event.error === "aborted") return;
       setError(event.error);
       setIsListening(false);
     };
 
     recognition.onend = () => {
-      setIsListening(false);
+      // Auto-restart if not manually stopped
+      if (!manualStopRef.current) {
+        setTimeout(() => {
+          try {
+            recognition.start();
+          } catch {
+            // Already started or other error — ignore
+            setIsListening(false);
+          }
+        }, 300);
+      } else {
+        setIsListening(false);
+      }
     };
 
     recognitionRef.current = recognition;
+
+    return () => {
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+    };
   }, [isSupported]);
 
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
+      manualStopRef.current = false;
+      pendingTranscriptRef.current = "";
       setTranscript("");
       setError(null);
-      recognitionRef.current.start();
-      setIsListening(true);
+      try {
+        recognitionRef.current.start();
+        setIsListening(true);
+      } catch {
+        // Already started
+      }
     }
   }, [isListening]);
 
   const stopListening = useCallback(() => {
     if (recognitionRef.current && isListening) {
+      manualStopRef.current = true;
+      if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
+
+      // Send any pending transcript before stopping
+      if (pendingTranscriptRef.current && onTranscript) {
+        onTranscript(pendingTranscriptRef.current);
+        pendingTranscriptRef.current = "";
+      }
+
       recognitionRef.current.stop();
       setIsListening(false);
     }
-  }, [isListening]);
+  }, [isListening, onTranscript]);
 
   return {
     isListening,

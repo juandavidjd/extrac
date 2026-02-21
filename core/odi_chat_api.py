@@ -182,6 +182,14 @@ DOMAIN_MAP = {
 }
 
 
+INDUSTRY_VERTICAL = {
+    "motos": "P1",
+    "salud_dental": "P2",
+    "salud_bruxismo": "P2",
+    "salud_capilar": "P4",
+    "general": "general",
+}
+
 def detect_industry(message: str, domain: str = None) -> str:
     """Detecta la industria del usuario por dominio o mensaje."""
     if domain:
@@ -310,7 +318,7 @@ async def generar_respuesta_odi(
         usuario_id=session["session_id"],
         mensaje=mensaje,
         perfil_usuario=session.get("perfil_usuario"),
-        vertical="P1",
+        vertical=INDUSTRY_VERTICAL.get(session.get("_detected_industry", "general")) or "general",
         nivel_intimidad=session.get("nivel_intimidad", 0),
         contexto_productos=productos[:3] if productos else None,
         memoria_conversacion=session.get("historial", [])[-10:]
@@ -385,7 +393,7 @@ async def generar_respuesta_odi(
         p = productos[0]
         meta = p.get("metadata", {})
         return f"Tengo {len(productos)} opciones. La mejor: {meta.get('title', 'producto')} a ${meta.get('price', 'consultar')} COP."
-    return "Dame un momento. Que necesitas exactamente para tu moto?"
+    return "Dame un momento. ¿Qué necesitas exactamente?"
 
 # --- V13.1 Voice Selection ---
 def seleccionar_voz(mensaje: str, session: dict, productos: list) -> str:
@@ -441,8 +449,8 @@ async def speak(request: Request):
     if not texto:
         return JSONResponse(status_code=400, content={"error": "text requerido"})
 
-    if len(texto) > 500:
-        texto = texto[:497] + "..."
+    if len(texto) > 2000:
+        texto = texto[:1997] + "..."
 
     try:
         async with httpx.AsyncClient(timeout=15) as client:
@@ -502,6 +510,9 @@ async def chat(msg: ChatMessage):
         productos = buscar_chromadb(msg.message, n_results=5)
 
     # 4. Generar respuesta con personalidad
+    # V19: pasar industria detectada a generar_respuesta_odi via session
+    session["_detected_industry"] = detect_industry(msg.message, msg.domain)
+
     respuesta = await generar_respuesta_odi(msg.message, session, productos)
 
     # 5. Guardar en historial
