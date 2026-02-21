@@ -32,6 +32,9 @@ def is_generic(text):
 def detect_category(title):
     title_lower = title.lower()
     categories = {
+        # 'empaque' removed - V22 fix: only Vitton uses empaque prefix
+        'filtro aceite': 'filtro',  # Specific first
+        'filtro aire': 'filtro',
         'filtro': 'filtro',
         'aceite': 'aceite',
         'freno': 'freno',
@@ -45,7 +48,6 @@ def detect_category(title):
         'faro': 'electrico',
         'direccional': 'electrico',
         'cable': 'cable',
-        'empaque': 'empaque',
         'resorte': 'suspension',
         'palanca': 'control',
         'manigueta': 'control',
@@ -81,13 +83,14 @@ def get_beneficios(category):
         'suspension': ['Absorción de impactos', 'Manejo estable', 'Confort de conducción'],
         'electrico': ['Conexión segura', 'Alta visibilidad', 'Larga vida útil'],
     }
-    return beneficios_map.get(category, ['Durabilidad garantizada', 'Ajuste exacto', 'Fácil instalación'])
+    return beneficios_map.get(category, [])  # V22 fix: no default copypaste benefits
 
-def build_ficha_360(title, sku, compatibilidad, empresa='ODI', extra_info=None):
+def build_ficha_360(title, sku, compatibilidad, empresa='ODI', extra_info=None, technical_context=None, use_empaque_prefix=False):
     """
     Genera HTML de Ficha 360° con 7 secciones estándar
     """
     extra = extra_info or {}
+    tech = technical_context or {}
     
     # Detect category from title
     category = detect_category(title)
@@ -95,14 +98,24 @@ def build_ficha_360(title, sku, compatibilidad, empresa='ODI', extra_info=None):
     # 1. DESCRIPCIÓN
     descripcion = extra.get('descripcion', f'{title}. Repuesto original para motocicleta.')
     
-    # 2. INFO TÉCNICA
-    info_tecnica = extra.get('info_tecnica', get_info_tecnica(title, category))
+    # 2. INFO TECNICA - V19: Use ChromaDB technical context if available
+    if tech.get("material") or tech.get("especificaciones"):
+        parts = []
+        if tech.get("material"):
+            parts.append(f"Material: {tech['material']}")
+        if tech.get("especificaciones"):
+            parts.append(tech['especificaciones'])
+        if tech.get("dimensiones"):
+            parts.append(f"Dimensiones: {tech['dimensiones']}")
+        info_tecnica = ". ".join(parts) + "."
+    else:
+        info_tecnica = extra.get("info_tecnica", get_info_tecnica(title, category))
     
     # 3. COMPATIBILIDAD - NO modificar si viene llena
     if is_generic(compatibilidad):
         compatibilidad = 'Universal'
     
-    # 4. ESPECIFICACIONES
+    # 4. ESPECIFICACIONES - V19: Include ChromaDB verified data
     specs = extra.get('especificaciones', {
         'SKU': sku,
         'Marca': empresa,
@@ -112,6 +125,11 @@ def build_ficha_360(title, sku, compatibilidad, empresa='ODI', extra_info=None):
         specs['SKU'] = sku
     if 'Marca' not in specs:
         specs['Marca'] = empresa
+    # Add ChromaDB verified compatibility if available
+    if tech.get('compatibilidad_verificada'):
+        specs['Compatibilidad Verificada'] = tech['compatibilidad_verificada']
+    if tech.get('material') and 'Material' not in specs:
+        specs['Material'] = tech['material']
     
     # 5. BENEFICIOS
     beneficios = extra.get('beneficios', get_beneficios(category))

@@ -1,0 +1,576 @@
+#!/usr/bin/env python3
+"""
+ODI AI Image Generator V18.2
+Generates product images using Freepik (primary) and DALL-E (fallback).
+FIXED: Part as protagonist, workshop/studio context allowed, no forced white bg.
+"""
+import os
+import re
+import json
+import glob
+import time
+import base64
+import logging
+import requests
+from typing import Dict, List, Optional, Tuple
+from dataclasses import dataclass
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+@dataclass
+class GenerationResult:
+    product_id: int
+    product_title: str
+    success: bool
+    provider: str
+    image_url: Optional[str] = None
+    error: Optional[str] = None
+
+class AIImageGenerator:
+    """
+    Generates product images using AI APIs.
+    V18.1: Fixed prompt to generate isolated spare parts, not motorcycles.
+    """
+
+    # Product type mappings Spanish -> English for better AI understanding
+    PRODUCT_TYPES = {
+        'filtro de aceite': 'oil filter',
+        'filtro aceite': 'oil filter',
+        'filtro de aire': 'air filter',
+        'filtro aire': 'air filter',
+        'filtro gasolina': 'fuel filter',
+        'pastilla': 'brake pad',
+        'pastillas': 'brake pads',
+        'disco freno': 'brake disc',
+        'disco de freno': 'brake disc',
+        'kit cadena': 'chain and sprocket kit',
+        'cadena': 'motorcycle chain',
+        'piñon': 'sprocket',
+        'pinon': 'sprocket',
+        'catalina': 'rear sprocket',
+        'aceite': 'motor oil bottle',
+        'bujia': 'spark plug',
+        'bujías': 'spark plugs',
+        'espejo': 'motorcycle mirror',
+        'retrovisor': 'motorcycle mirror',
+        'manigueta': 'handlebar lever',
+        'palanca': 'lever',
+        'cable': 'cable',
+        'freno': 'brake',
+        'embrague': 'clutch',
+        'clutch': 'clutch',
+        'rodamiento': 'bearing',
+        'balinera': 'bearing',
+        'kit biela': 'connecting rod kit',
+        'piston': 'piston',
+        'pistón': 'piston',
+        'empaque': 'gasket',
+        'junta': 'gasket',
+        'valvula': 'valve',
+        'válvula': 'valve',
+        'retenedor': 'oil seal',
+        'reten': 'oil seal',
+        'bomba': 'pump',
+        'carburador': 'carburetor',
+        'inyector': 'fuel injector',
+        'bobina': 'ignition coil',
+        'cdi': 'CDI unit',
+        'regulador': 'voltage regulator',
+        'rectificador': 'rectifier',
+        'estator': 'stator',
+        'rotor': 'rotor',
+        'llanta': 'tire',
+        'rin': 'wheel rim',
+        'guardabarro': 'fender',
+        'guardafango': 'fender',
+        'carenaje': 'fairing',
+        'tanque': 'fuel tank',
+        'sillin': 'seat',
+        'asiento': 'seat',
+        'amortiguador': 'shock absorber',
+        'suspension': 'suspension',
+        'faro': 'headlight',
+        'direccional': 'turn signal',
+        'stop': 'tail light',
+        'farola': 'headlight assembly',
+        'tacometro': 'tachometer',
+        'velocimetro': 'speedometer',
+        'tablero': 'instrument cluster',
+        'manubrio': 'handlebar',
+        'tensor': 'chain tensioner',
+        'balancin': 'rocker arm',
+        'arbol de levas': 'camshaft',
+        'cigueñal': 'crankshaft',
+        'kit clutch': 'clutch kit',
+        'discos clutch': 'clutch plates',
+        'resorte': 'spring',
+        'tornillo': 'bolt',
+        'tuerca': 'nut',
+        'arandela': 'washer',
+        'manguera': 'hose',
+        'radiador': 'radiator',
+        'ventilador': 'cooling fan',
+        'termostato': 'thermostat',
+        'bateria': 'battery',
+        'relay': 'relay',
+        'fusible': 'fuse',
+        'interruptor': 'switch',
+        'llave': 'key switch',
+        'kickstarter': 'kick starter lever',
+        'pedal': 'pedal',
+        'estribo': 'footpeg',
+        'defensa': 'crash bar',
+        'parrilla': 'luggage rack',
+        'baul': 'top case',
+        'casco': 'helmet',        'guante': 'gloves',
+        # V19 FIX - Added missing types
+        'anillo': 'piston ring',
+        'anillos': 'piston rings',
+        'anillos de piston': 'piston rings',
+        'arbol': 'shaft',
+        'arbol primario': 'primary shaft',
+        'arbol secundario': 'countershaft',
+        'babero': 'front apron fairing',
+        'barra': 'handlebar bar',
+        'barra direccion': 'steering bar',
+        'biela': 'connecting rod',
+        'bombillo': 'light bulb',
+        'bombillo faro': 'headlight bulb',
+        'bombillo led': 'LED bulb',
+        'bombillo stop': 'tail light bulb',
+        'brida': 'flange',
+        'buje': 'bushing',
+        'bujes': 'bushings',
+        'cadenilla': 'timing chain',
+        'cadenilla tiempo': 'timing chain',
+        'caja': 'gearbox housing',
+        'caja filtro': 'air filter box',
+        'caja velocidades': 'transmission case',
+        'camisa': 'cylinder sleeve liner',
+        'campana': 'clutch bell housing',
+        'campana clutch': 'clutch bell',
+        'campana embrague': 'clutch bell',
+        'carretel': 'throttle tube',
+        'carretel acelerador': 'throttle grip tube',
+        'caucho': 'rubber bushing',
+        'caucho manubrio': 'handlebar grip',
+        'caucho reposapie': 'footpeg rubber',
+        'chicote': 'cable wire',
+        'cilindro': 'cylinder',
+        'cola': 'tail section fairing',
+        'colaera': 'tail fairing',
+        'collarin': 'clutch release bearing',
+        'comando': 'handlebar switch assembly',
+        'comando derecho': 'right handlebar switch',
+        'comando izquierdo': 'left handlebar switch',
+        'comando luces': 'light switch',
+        'corona': 'crown gear sprocket',
+        'cruceta': 'universal joint cross',
+        'culata': 'cylinder head',
+        'cuna': 'steering bearing race',
+        'cuna direccion': 'steering bearing race',
+        'eje': 'axle shaft',
+        'eje balancin': 'rocker shaft',
+        'eje delantero': 'front axle',
+        'eje trasero': 'rear axle',
+        'escobilla': 'carbon brush',
+        'escobilla arranque': 'starter motor brush',
+        'escobillas': 'carbon brushes',
+        'espiga': 'stud bolt',
+        'flasher direccional': 'turn signal flasher relay',
+        'gato': 'center stand',
+        'guaya': 'control cable',
+        'guaya acelerador': 'throttle cable',
+        'guaya clutch': 'clutch cable',
+        'guaya embrague': 'clutch cable',
+        'guaya freno': 'brake cable',
+        'guaya de freno': 'brake cable',
+        'guaya de freno de mano': 'handbrake cable',
+        'guaya de velocimetro': 'speedometer cable',
+        'guaya velocidad': 'speedometer cable',
+        'guaya velocimetro': 'speedometer cable',
+        'instalacion': 'wiring harness',
+        'instalacion electrica': 'electrical wiring harness',
+        'kit completo': 'complete gasket kit',
+        'kit empaque': 'gasket kit',
+        'kit piston': 'piston kit',
+        'leva': 'brake cam lever',
+        'manilla': 'grab handle',
+        'mordaza': 'brake caliper',
+        'muelle': 'spring',
+        'multiple': 'intake manifold',
+        'o-ring': 'O-ring seal',
+        'oring': 'O-ring seal',
+        'orring': 'O-ring seal',
+        'pasador': 'pin',
+        'pata': 'side stand',
+        'pata lateral': 'side kickstand',
+        'perno': 'bolt stud',
+        'piola': 'cable',
+        'piñon arranque': 'starter pinion',
+        'plato': 'stator plate',
+        'rache': 'ratchet pawl',
+        'seguro': 'circlip retainer',
+        'tapa': 'cover cap',
+        'tapa culata': 'cylinder head cover',
+        'tapon': 'cap plug',
+        'zuncho': 'exhaust clamp',
+    }
+
+    PROMPT_TEMPLATE = "Motorcycle spare part: {product_type}, close-up product photo, the part must be clearly visible and centered as the main subject, studio or workshop setting, no text, no logos, no watermarks, high detail, e-commerce catalog style"
+
+    def __init__(self, brands_dir: str = '/opt/odi/data/brands'):
+        self.brands_dir = brands_dir
+        self.freepik_key = os.getenv('FREEPIK_API_KEY')
+        self.openai_key = os.getenv('OPENAI_API_KEY')
+
+        if not self.freepik_key:
+            logger.warning("FREEPIK_API_KEY not set")
+        if not self.openai_key:
+            logger.warning("OPENAI_API_KEY not set")
+
+    def _load_credentials(self, store: str):
+        """Load Shopify credentials for a store"""
+        store = store.upper()
+        config_path = os.path.join(self.brands_dir, f'{store.lower()}.json')
+
+        if not os.path.exists(config_path):
+            for f in glob.glob(f'{self.brands_dir}/*.json'):
+                with open(f) as fp:
+                    data = json.load(fp)
+                name = data.get('name', '').upper().replace(' MOTOS', '').replace(' ', '_')
+                if name == store:
+                    config_path = f
+                    break
+
+        if os.path.exists(config_path):
+            with open(config_path) as f:
+                data = json.load(f)
+            return data.get('shopify', {}).get('shop'), data.get('shopify', {}).get('token')
+
+        raise ValueError(f'No config for {store}')
+
+    def extract_product_type(self, title: str) -> str:
+        """
+        Extract product type from Spanish title and translate to English.
+        Returns English product type for better AI image generation.
+        """
+        title_lower = title.lower()
+
+        # Try to match known product types (longer matches first)
+        sorted_types = sorted(self.PRODUCT_TYPES.keys(), key=len, reverse=True)
+        for spanish_type in sorted_types:
+            if spanish_type in title_lower:
+                return self.PRODUCT_TYPES[spanish_type]
+
+        # If no match, clean title and use as-is
+        # Remove brand names and model numbers
+        cleaned = re.sub(r'\b(pulsar|ns|rs|as|fz|mt|r15|duke|ktm|honda|yamaha|suzuki|bajaj|tvs|hero|akt|auteco)\b', '', title_lower, flags=re.IGNORECASE)
+        cleaned = re.sub(r'\b\d+\s*(cc|ns|rs)?\b', '', cleaned)
+        cleaned = re.sub(r'[^a-záéíóúñ\s]', ' ', cleaned)
+        cleaned = ' '.join(cleaned.split())
+
+        if len(cleaned) > 3:
+            return f"motorcycle {cleaned} part"
+
+        return "motorcycle spare part"
+
+    def build_prompt(self, product_title: str) -> str:
+        """Build generation prompt from product title"""
+        product_type = self.extract_product_type(product_title)
+        prompt = self.PROMPT_TEMPLATE.format(product_type=product_type)
+        logger.debug(f"Title: {product_title} -> Type: {product_type}")
+        return prompt
+
+    def generate_with_freepik(self, prompt: str) -> Optional[str]:
+        """Generate image with Freepik API. Returns base64 image data or None."""
+        if not self.freepik_key:
+            return None
+
+        try:
+            r = requests.post(
+                'https://api.freepik.com/v1/ai/text-to-image',
+                headers={
+                    'x-freepik-api-key': self.freepik_key,
+                    'Content-Type': 'application/json'
+                },
+                json={
+                    'prompt': prompt,
+                    'num_images': 1,
+                    'image': {'size': 'square_1_1'}
+                },
+                timeout=60
+            )
+
+            if r.status_code == 200:
+                data = r.json()
+                if 'data' in data and len(data['data']) > 0:
+                    img_data = data['data'][0]
+                    if 'base64' in img_data:
+                        return img_data['base64']
+                    elif 'url' in img_data:
+                        img_r = requests.get(img_data['url'], timeout=30)
+                        if img_r.status_code == 200:
+                            return base64.b64encode(img_r.content).decode()
+            else:
+                logger.warning(f"Freepik error {r.status_code}: {r.text[:200]}")
+
+            return None
+        except Exception as e:
+            logger.warning(f"Freepik exception: {e}")
+            return None
+
+    def generate_with_dalle(self, prompt: str) -> Optional[str]:
+        """Generate image with DALL-E 3. Returns base64 image data or None."""
+        if not self.openai_key:
+            return None
+
+        try:
+            r = requests.post(
+                'https://api.openai.com/v1/images/generations',
+                headers={
+                    'Authorization': f'Bearer {self.openai_key}',
+                    'Content-Type': 'application/json'
+                },
+                json={
+                    'model': 'dall-e-3',
+                    'prompt': prompt,
+                    'n': 1,
+                    'size': '1024x1024',
+                    'quality': 'standard'
+                },
+                timeout=60
+            )
+
+            if r.status_code == 200:
+                data = r.json()
+                if 'data' in data and len(data['data']) > 0:
+                    url = data['data'][0].get('url')
+                    if url:
+                        img_r = requests.get(url, timeout=30)
+                        if img_r.status_code == 200:
+                            return base64.b64encode(img_r.content).decode()
+            else:
+                logger.warning(f"DALL-E error {r.status_code}: {r.text[:200]}")
+
+            return None
+        except Exception as e:
+            logger.warning(f"DALL-E exception: {e}")
+            return None
+
+    def generate_image(self, prompt: str) -> tuple:
+        """
+        Generate image using DALL-E 3 (primary) or Freepik (fallback).
+        V18.3: DALL-E 3 as primary for emergency batch.
+        Returns (base64_data, provider) or (None, None).
+        """
+        # Try DALL-E 3 first (primary)
+        img_data = self.generate_with_dalle(prompt)
+        if img_data:
+            return img_data, 'dalle'
+
+        # Fallback to Freepik
+        logger.info("DALL-E failed, trying Freepik fallback")
+        img_data = self.generate_with_freepik(prompt)
+        if img_data:
+            return img_data, 'freepik'
+
+        return None, None
+
+    def upload_to_shopify(self, shop: str, token: str, product_id: int,
+                          image_data: str, filename: str = 'ai_generated.jpg') -> bool:
+        """Upload base64 image to Shopify product"""
+        try:
+            url = f'https://{shop}/admin/api/2024-01/products/{product_id}/images.json'
+            headers = {
+                'X-Shopify-Access-Token': token,
+                'Content-Type': 'application/json'
+            }
+            payload = {
+                'image': {
+                    'attachment': image_data,
+                    'filename': filename
+                }
+            }
+
+            r = requests.post(url, headers=headers, json=payload, timeout=60)
+            return r.status_code in [200, 201]
+        except Exception as e:
+            logger.warning(f"Upload error: {e}")
+            return False
+
+    def fetch_products_without_images(self, shop: str, token: str, limit: int = 0) -> List[dict]:
+        """Fetch products without images from Shopify"""
+        products = []
+        url = f'https://{shop}/admin/api/2024-01/products.json?limit=250&fields=id,title,images'
+        headers = {'X-Shopify-Access-Token': token}
+
+        while url:
+            r = requests.get(url, headers=headers, timeout=30)
+            r.raise_for_status()
+            time.sleep(0.6)
+
+            for p in r.json().get('products', []):
+                if not p.get('images'):
+                    products.append({'id': p['id'], 'title': p['title']})
+                    if limit > 0 and len(products) >= limit:
+                        return products
+
+            if limit > 0 and len(products) >= limit:
+                break
+
+            link = r.headers.get('Link', '')
+            url = None
+            if 'rel="next"' in link:
+                for part in link.split(','):
+                    if 'rel="next"' in part:
+                        url = part.split('<')[1].split('>')[0]
+                        break
+
+        return products
+
+    def fill_store(self, store: str, limit: int = 0, delay: float = 1.5) -> Dict:
+        """
+        Generate and upload images for all products without images in a store.
+
+        Args:
+            store: Store name (e.g., 'DFG')
+            limit: Max products to process (0 = all)
+            delay: Seconds between API calls
+
+        Returns:
+            Stats dict with success/failed counts
+        """
+        store = store.upper()
+        shop, token = self._load_credentials(store)
+
+        logger.info(f"Starting AI generation for {store}")
+
+        # Fetch products
+        products = self.fetch_products_without_images(shop, token, limit)
+        logger.info(f"Found {len(products)} products without images")
+
+        stats = {
+            'store': store,
+            'total': len(products),
+            'success': 0,
+            'failed': 0,
+            'freepik': 0,
+            'dalle': 0,
+            'results': []
+        }
+
+        for i, product in enumerate(products):
+            pid = product['id']
+            title = product['title']
+
+            # Build prompt with product type extraction
+            prompt = self.build_prompt(title)
+            logger.info(f"[{i+1}/{len(products)}] {title[:50]} -> {self.extract_product_type(title)}")
+
+            # Generate image
+            img_data, provider = self.generate_image(prompt)
+
+            if img_data:
+                # Upload to Shopify
+                filename = f"ai_{pid}.jpg"
+                success = self.upload_to_shopify(shop, token, pid, img_data, filename)
+
+                if success:
+                    stats['success'] += 1
+                    stats[provider] += 1
+                    result = GenerationResult(pid, title, True, provider)
+                else:
+                    stats['failed'] += 1
+                    result = GenerationResult(pid, title, False, provider, error='Upload failed')
+            else:
+                stats['failed'] += 1
+                result = GenerationResult(pid, title, False, 'none', error='Generation failed')
+
+            stats['results'].append(result)
+
+            # Progress
+            if (i + 1) % 10 == 0:
+                logger.info(f"Progress: {i+1}/{len(products)} | Success: {stats['success']} | Failed: {stats['failed']}")
+
+            time.sleep(delay)
+
+        logger.info(f"Completed: {stats['success']}/{stats['total']} successful")
+        return stats
+
+    def test_generation(self, store: str, count: int = 5) -> Dict:
+        """Test generation with a small number of products"""
+        logger.info(f"Testing AI generation with {count} products from {store}")
+        return self.fill_store(store, limit=count, delay=2.0)
+
+    def test_prompt(self, titles: List[str]) -> None:
+        """Test prompt generation for a list of titles (no API calls)"""
+        print("\n=== PROMPT TEST ===")
+        for title in titles:
+            product_type = self.extract_product_type(title)
+            prompt = self.build_prompt(title)
+            print(f"\nTitle: {title}")
+            print(f"Type:  {product_type}")
+            print(f"Prompt: {prompt[:80]}...")
+
+
+if __name__ == '__main__':
+    import sys
+
+    # Load env vars
+    env_path = '/opt/odi/.env'
+    if os.path.exists(env_path):
+        with open(env_path) as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith('#') and '=' in line:
+                    key, value = line.split('=', 1)
+                    os.environ[key] = value
+
+    if len(sys.argv) < 2:
+        print('Usage: python odi_image_generator.py <STORE> [--test] [--limit N] [--prompt-test]')
+        print('  --test        : Only generate 5 images for testing')
+        print('  --limit N     : Limit to N images')
+        print('  --prompt-test : Test prompt extraction without API calls')
+        sys.exit(1)
+
+    store = sys.argv[1].upper()
+    test_mode = '--test' in sys.argv
+    prompt_test = '--prompt-test' in sys.argv
+
+    limit = 0
+    if '--limit' in sys.argv:
+        idx = sys.argv.index('--limit')
+        if idx + 1 < len(sys.argv):
+            limit = int(sys.argv[idx + 1])
+
+    if test_mode:
+        limit = 5
+
+    generator = AIImageGenerator()
+
+    if prompt_test:
+        # Test prompt extraction
+        test_titles = [
+            "Filtro De Aceite Pulsar 200 NS",
+            "Kit Cadena Transmisión FZ25 428H",
+            "Pastilla Freno Delantera Ninja 400",
+            "Aceite 20W-50 4T Motul 1L",
+            "Espejo Retrovisor Izquierdo MT-03",
+            "Empaque Tapa Válvulas CBR 250",
+            "Bujía NGK CR8E",
+            "Amortiguador Trasero Pulsar NS200",
+        ]
+        generator.test_prompt(test_titles)
+        sys.exit(0)
+
+    if test_mode:
+        stats = generator.test_generation(store, count=5)
+    else:
+        stats = generator.fill_store(store, limit=limit)
+
+    print(f"\n=== {store} AI Generation Results ===")
+    print(f"Total: {stats['total']}")
+    print(f"Success: {stats['success']} (Freepik: {stats['freepik']}, DALL-E: {stats['dalle']})")
+    print(f"Failed: {stats['failed']}")
