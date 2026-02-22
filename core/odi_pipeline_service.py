@@ -559,7 +559,7 @@ Responde SOLO con el JSON, sin explicaciones."""
                 products.append({
                     'sku': str(sku).strip() if sku else f'SKU-{len(products)+1}',
                     'title': str(title).strip(),
-                    'price': float(price) if price else 1.0,
+                    'price': float(price) if price else 0,  # V22: 0 not 1.0
                     'compatibility': compat_list,
                     'empresa': empresa,
                     'source_type': 'json',
