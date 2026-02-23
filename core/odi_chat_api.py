@@ -144,6 +144,69 @@ def buscar_chromadb(query: str, n_results: int = 5) -> list:
         log.error("ChromaDB search error: %s", e)
     return []
 
+# --- V23.3: Blindaje Cognitivo - Filtro ACTIVE ---
+GATEWAY_URL = "http://localhost:8815"
+GOVERNED_STORES = {"DFG", "ARMOTOS", "VITTON", "IMBRA", "BARA", "KAIQI", "MCLMOTOS"}
+
+def filtrar_productos_activos(productos: list) -> list:
+    """V23.3: Filtra productos que no estan activos en Shopify."""
+    import time as _time
+    import requests
+    
+    if not productos:
+        return []
+    
+    start_time = _time.time()
+    filtered = []
+    filtered_out = 0
+    
+    for p in productos:
+        meta = p.get("metadata", {})
+        store = str(meta.get("store", "")).upper()
+        sku = str(meta.get("sku", ""))
+        
+        # Fast path: governed stores are trusted
+        if store in GOVERNED_STORES:
+            filtered.append(p)
+            continue
+        
+        # Legacy store check via Gateway
+        try:
+            resp = requests.get(
+                f"{GATEWAY_URL}/sku/status",
+                params={"store": store, "sku": sku},
+                timeout=3
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("active", False):
+                    filtered.append(p)
+                else:
+                    filtered_out += 1
+                    log.debug(f"[FILTER] Descartado: {store}:{sku} (governed={data.get('governed')})")
+            else:
+                # Gateway error - include with unverified flag
+                p["unverified"] = True
+                filtered.append(p)
+                log.warning(f"[FILTER] gateway_error store={store} sku={sku} status={resp.status_code}")
+        except requests.exceptions.Timeout:
+            # Timeout - include with unverified flag
+            p["unverified"] = True
+            filtered.append(p)
+            log.warning(f"[FILTER] gateway_timeout store={store} sku={sku}")
+        except Exception as e:
+            # Other error - include with unverified flag
+            p["unverified"] = True
+            filtered.append(p)
+            log.warning(f"[FILTER] gateway_exception store={store} sku={sku} error={e}")
+    
+    latency_ms = int((_time.time() - start_time) * 1000)
+    log.info(f"[FILTER] chroma={len(productos)} filtered={filtered_out} final={len(filtered)} latency={latency_ms}ms")
+    
+    return filtered
+
+
+
 # --- V19: Deteccion de industria multi-vertical ---
 INDUSTRY_KEYWORDS = {
     "motos": [
@@ -533,6 +596,8 @@ async def chat(msg: ChatMessage):
         ])
         if es_busqueda:
             productos = buscar_chromadb(msg.message, n_results=5)
+            # V23.3: Filtrar productos no activos
+            productos = filtrar_productos_activos(productos)
     # salud_dental, salud_bruxismo, salud_capilar, general: sin productos (ChromaDB solo tiene motos)
 
     # 4. Generar respuesta con personalidad
