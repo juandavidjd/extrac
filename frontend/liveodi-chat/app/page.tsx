@@ -35,7 +35,7 @@ export default function Home() {
       <div
         className={`flex flex-col items-center gap-8 max-w-md transition-opacity duration-700 ${mounted ? "opacity-100" : "opacity-0"}`}
       >
-        {/* Llama viva */}
+        {/* Flame */}
         <FlameIndicator
           guardianColor={guardianState as any}
           isThinking={false}
@@ -43,7 +43,7 @@ export default function Home() {
           size={120}
         />
 
-        {/* Identidad */}
+        {/* Identity */}
         <div>
           <h1 className="text-3xl font-serif font-semibold tracking-tight text-neutral-100">
             Soy ODI.
@@ -53,8 +53,8 @@ export default function Home() {
           </p>
         </div>
 
-        {/* Stats reales */}
-        <div className="bg-neutral-900/50 rounded-xl px-5 py-2.5 text-sm text-neutral-400">
+        {/* Stats - dynamic from Gateway */}
+        <div className="text-sm text-neutral-500">
           {ecosystemStats.total_products > 0 ? (
             <>
               {ecosystemStats.total_stores} tiendas &middot;{" "}
@@ -65,30 +65,34 @@ export default function Home() {
                   isConnected ? "text-emerald-400" : "text-neutral-600"
                 }
               >
-                {isConnected ? "vivo" : "conectando..."}
+                {isConnected ? "vivo" : "..."}
               </span>
             </>
           ) : (
-            <>15 tiendas &middot; conectando...</>
+            <span className={isConnected ? "text-emerald-400/60" : "text-neutral-600"}>
+              {isConnected ? "vivo" : "..."}
+            </span>
           )}
         </div>
 
-        {/* Input directo */}
+        {/* Subtle entry */}
         <div className="w-full max-w-sm">
-          <div className="flex items-center gap-2 bg-neutral-900 border border-neutral-800 rounded-xl px-4 py-3 focus-within:border-emerald-500/40 transition-colors">
+          <div
+            className="flex items-center gap-2 border-b border-neutral-800/50 px-2 py-3 focus-within:border-neutral-600 transition-colors cursor-pointer"
+            onClick={() => !inputText.trim() && handleGo()}
+          >
             <input
               type="text"
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Escribeme o hablame..."
-              className="flex-1 bg-transparent text-neutral-200 placeholder-neutral-600 text-sm focus:outline-none"
-              autoFocus
+              placeholder="..."
+              className="flex-1 bg-transparent text-neutral-300 placeholder-neutral-700 text-sm focus:outline-none"
             />
             <button
               onClick={handleGo}
-              className="p-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
-              aria-label="Ir al habitat"
+              className="p-1 text-neutral-600 hover:text-neutral-400 transition-colors"
+              aria-label="Entrar"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -104,15 +108,6 @@ export default function Home() {
               </svg>
             </button>
           </div>
-        </div>
-
-        {/* Capacidades */}
-        <div className="flex gap-4 text-xs text-neutral-600">
-          <span>Puedo hablar</span>
-          <span>&middot;</span>
-          <span>Puedo escuchar</span>
-          <span>&middot;</span>
-          <span>Me adapto a ti</span>
         </div>
 
         {/* Mantra */}
