@@ -144,65 +144,113 @@ def buscar_chromadb(query: str, n_results: int = 5) -> list:
         log.error("ChromaDB search error: %s", e)
     return []
 
-# --- V23.3: Blindaje Cognitivo - Filtro ACTIVE ---
+# --- V23.4: Blindaje Cognitivo + Enriquecimiento Shopify GraphQL ---
 GATEWAY_URL = "http://localhost:8815"
 GOVERNED_STORES = {"DFG", "ARMOTOS", "VITTON", "IMBRA", "BARA", "KAIQI", "MCLMOTOS"}
 
-def filtrar_productos_activos(productos: list) -> list:
-    """V23.3: Filtra productos que no estan activos en Shopify."""
+def filtrar_y_enriquecer_productos(productos: list) -> tuple:
     import time as _time
     import requests
     
     if not productos:
-        return []
+        return [], []
     
     start_time = _time.time()
     filtered = []
+    productos_estructurados = []
     filtered_out = 0
+    enriched_count = 0
     
     for p in productos:
         meta = p.get("metadata", {})
         store = str(meta.get("store", "")).upper()
         sku = str(meta.get("sku", ""))
         
-        # Fast path: governed stores are trusted
-        if store in GOVERNED_STORES:
-            filtered.append(p)
+        if not sku:
+            filtered_out += 1
             continue
         
-        # Legacy store check via Gateway
         try:
             resp = requests.get(
                 f"{GATEWAY_URL}/sku/status",
                 params={"store": store, "sku": sku},
-                timeout=3
+                timeout=5
             )
             if resp.status_code == 200:
                 data = resp.json()
+                
                 if data.get("active", False):
                     filtered.append(p)
+                    
+                    if data.get("product"):
+                        prod = data["product"]
+                        productos_estructurados.append({
+                            "sku": sku,
+                            "title": prod.get("title", ""),
+                            "price": prod.get("price"),
+                            "image": prod.get("image"),
+                            "url": prod.get("url"),
+                            "store": store,
+                            "vendor": prod.get("vendor", store)
+                        })
+                        enriched_count += 1
+                    elif data.get("unverified"):
+                        productos_estructurados.append({
+                            "sku": sku,
+                            "title": meta.get("title", f"Producto {sku}"),
+                            "price": meta.get("price"),
+                            "image": None,
+                            "url": None,
+                            "store": store,
+                            "vendor": store,
+                            "unverified": True
+                        })
                 else:
                     filtered_out += 1
-                    log.debug(f"[FILTER] Descartado: {store}:{sku} (governed={data.get('governed')})")
+                    reason = data.get("reason", "unknown")
+                    log.debug(f"[FILTER] Descartado: {store}:{sku} reason={reason}")
             else:
-                # Gateway error - include with unverified flag
                 p["unverified"] = True
                 filtered.append(p)
-                log.warning(f"[FILTER] gateway_error store={store} sku={sku} status={resp.status_code}")
+                productos_estructurados.append({
+                    "sku": sku,
+                    "title": f"Producto {sku}",
+                    "price": meta.get("price"),
+                    "image": None,
+                    "url": None,
+                    "store": store,
+                    "vendor": store,
+                    "unverified": True
+                })
+                log.warning(f"[FILTER] gateway_error store={store} sku={sku}")
+                
         except requests.exceptions.Timeout:
-            # Timeout - include with unverified flag
             p["unverified"] = True
             filtered.append(p)
+            productos_estructurados.append({
+                "sku": sku,
+                "title": f"Producto {sku}",
+                "price": meta.get("price"),
+                "image": None,
+                "url": None,
+                "store": store,
+                "vendor": store,
+                "unverified": True
+            })
             log.warning(f"[FILTER] gateway_timeout store={store} sku={sku}")
         except Exception as e:
-            # Other error - include with unverified flag
             p["unverified"] = True
             filtered.append(p)
             log.warning(f"[FILTER] gateway_exception store={store} sku={sku} error={e}")
     
     latency_ms = int((_time.time() - start_time) * 1000)
     log.info(f"[FILTER] chroma={len(productos)} filtered={filtered_out} final={len(filtered)} latency={latency_ms}ms")
+    log.info(f"[ENRICH] total={len(productos_estructurados)} enriched={enriched_count} latency={latency_ms}ms")
     
+    return filtered, productos_estructurados
+
+def filtrar_productos_activos(productos: list) -> list:
+    filtered, _ = filtrar_y_enriquecer_productos(productos)
     return filtered
 
 
@@ -597,7 +645,8 @@ async def chat(msg: ChatMessage):
         if es_busqueda:
             productos = buscar_chromadb(msg.message, n_results=5)
             # V23.3: Filtrar productos no activos
-            productos = filtrar_productos_activos(productos)
+            productos, productos_estructurados = filtrar_y_enriquecer_productos(productos)
+    productos_estructurados = productos_estructurados if "productos_estructurados" in dir() else []
     # salud_dental, salud_bruxismo, salud_capilar, general: sin productos (ChromaDB solo tiene motos)
 
     # 4. Generar respuesta con personalidad
@@ -637,7 +686,11 @@ async def chat(msg: ChatMessage):
 
 
     # 9. V18.2: Formatear productos para frontend
-    productos_formateados = formatear_productos_para_frontend(productos)
+    # V23.4: Use enriched products if available, else format from ChromaDB
+    if productos_estructurados:
+        productos_formateados = productos_estructurados
+    else:
+        productos_formateados = formatear_productos_para_frontend(productos)
 
     # V19: Detectar industria
     industry = detect_industry(msg.message, msg.domain)
@@ -647,12 +700,18 @@ async def chat(msg: ChatMessage):
 
     narrative = generar_narrative_tts(respuesta, productos_formateados)
 
+    # V23.4: Build filter log
+    filter_log = {
+        "chroma_total": len(productos) if productos else 0,
+        "enriched": len(productos_estructurados) if productos_estructurados else 0
+    }
+    
     return ChatResponse(
         response=respuesta,
         narrative=narrative,
         session_id=session["session_id"],
         guardian_color=estado.get("color", "verde"),
-        productos_encontrados=len(productos),
+        productos_encontrados=len(productos_estructurados) if productos_estructurados else len(productos),
         productos=productos_formateados,
         nivel_intimidad=session["nivel_intimidad"],
         modo=modo.get("modo", "AUTOMATICO"),

@@ -702,7 +702,7 @@ SKU_CACHE_TTL = 300  # 5 minutos
 
 @app.get("/sku/status")
 async def get_sku_status(store: str = Query(...), sku: str = Query(...)):
-    """V23.3: Verificar si un SKU esta activo en Shopify."""
+    """V23.4: Verificar SKU + enriquecer con datos Shopify GraphQL."""
     import time as _time
     
     store_upper = store.upper()
@@ -732,20 +732,147 @@ async def get_sku_status(store: str = Query(...), sku: str = Query(...)):
         result = {"active": False, "store": store_upper, "governed": True, "reason": "no_token"}
         return result
     
-    # Query Shopify for product by SKU
-    try:
-        import requests
-        headers = {"X-Shopify-Access-Token": token}
-        # Search by SKU in variants
-        url = f"https://{shop}/admin/api/2024-10/products.json?limit=1&fields=id,status,variants"
-        # Note: Shopify doesn't have direct SKU filter, so we check if store is active
-        # For performance, we trust that governed stores have active products
-        # A product from a governed store is considered active by default
-        result = {"active": True, "store": store_upper, "governed": True}
+    # V23.4: Query Shopify GraphQL for full product data
+    graphql_result = shopify_graphql_product(shop, token, sku)
+    
+    if graphql_result is None:
+        # GraphQL failed completely - fallback to assume active
+        result = {"active": True, "store": store_upper, "governed": True, "reason": "graphql_error", "unverified": True}
         _sku_status_cache[cache_key] = {"data": result, "ts": now}
         return result
-    except Exception as e:
-        log.warning(f"SKU status error for {store_upper}:{sku}: {e}")
-        # Fallback: assume active for governed stores
-        result = {"active": True, "store": store_upper, "governed": True, "reason": "fallback"}
+    
+    if "error" in graphql_result:
+        # Product not found or variant mismatch
+        reason = graphql_result["error"]
+        result = {"active": False, "store": store_upper, "governed": True, "reason": reason}
+        _sku_status_cache[cache_key] = {"data": result, "ts": now}
+        log.info(f"[ENRICH] sku={sku} store={store_upper} enriched=false reason={reason}")
         return result
+    
+    # Success - return enriched product
+    result = {
+        "active": True,
+        "store": store_upper,
+        "governed": True,
+        "product": {
+            "sku": sku,
+            "title": graphql_result.get("title", ""),
+            "price": graphql_result.get("price"),
+            "image": graphql_result.get("image"),
+            "url": graphql_result.get("url"),
+            "vendor": graphql_result.get("vendor", store_upper)
+        }
+    }
+    _sku_status_cache[cache_key] = {"data": result, "ts": now}
+    log.info(f"[ENRICH] sku={sku} store={store_upper} enriched=true title={graphql_result.get('title','')[:50]}")
+    return result
+
+
+# ============================================================
+# V23.4 — SHOPIFY GRAPHQL PRODUCT ENRICHMENT
+# ============================================================
+
+def shopify_graphql_product(shop, token, sku):
+    """V23.4: Busca producto por SKU usando Shopify Admin GraphQL"""
+    import requests
+    
+    # Escape SKU for GraphQL query
+    sku_escaped = sku.replace('"', '\\"').replace("'", "\'")
+    
+    query = '''
+    {
+      products(first: 1, query: "sku:%s") {
+        edges {
+          node {
+            title
+            handle
+            vendor
+            status
+            images(first: 1) {
+              edges {
+                node {
+                  url
+                }
+              }
+            }
+            variants(first: 10) {
+              edges {
+                node {
+                  sku
+                  price
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    ''' % sku_escaped
+    
+    try:
+        response = requests.post(
+            f"https://{shop}/admin/api/2024-10/graphql.json",
+            headers={
+                "X-Shopify-Access-Token": token,
+                "Content-Type": "application/json"
+            },
+            json={"query": query},
+            timeout=5
+        )
+        
+        if response.status_code != 200:
+            log.warning(f"GraphQL error: status={response.status_code}")
+            return None
+        
+        data = response.json()
+        
+        # Check for GraphQL errors
+        if "errors" in data:
+            log.warning(f"GraphQL errors: {data['errors']}")
+            return None
+        
+        edges = data.get("data", {}).get("products", {}).get("edges", [])
+        
+        if not edges:
+            return {"error": "not_found_in_shopify"}
+        
+        node = edges[0]["node"]
+        
+        # Check product status
+        if node.get("status") != "ACTIVE":
+            return {"error": "product_not_active", "status": node.get("status")}
+        
+        # VARIANT MATCHING: iterate to find exact SKU match
+        variant_price = None
+        for v in node.get("variants", {}).get("edges", []):
+            if v["node"]["sku"] == sku:
+                variant_price = v["node"]["price"]
+                break
+        
+        if variant_price is None:
+            return {"error": "sku_variant_not_found"}
+        
+        # IMAGE: optional
+        image = None
+        image_edges = node.get("images", {}).get("edges", [])
+        if image_edges:
+            image = image_edges[0]["node"]["url"]
+        
+        handle = node.get("handle", "")
+        url = f"https://{shop}/products/{handle}" if handle else None
+        
+        return {
+            "title": node.get("title", ""),
+            "price": variant_price,
+            "image": image,
+            "url": url,
+            "vendor": node.get("vendor", ""),
+            "handle": handle
+        }
+        
+    except requests.exceptions.Timeout:
+        log.warning(f"GraphQL timeout for SKU {sku}")
+        return {"error": "timeout"}
+    except Exception as e:
+        log.error(f"GraphQL exception: {e}")
+        return None
