@@ -35,6 +35,56 @@ CHAT_API = "http://localhost:8813"
 CHROMADB_HOST = "localhost"
 CHROMADB_PORT = 8000
 FITMENT_URL = "http://172.18.0.5:8802"  # Docker network, no port-published
+# ============================================================
+# GOVERNANCE — V21.2 Enforcement Classification
+# ============================================================
+GOVERNED_STORES = {"DFG", "ARMOTOS", "VITTON", "IMBRA", "BARA", "KAIQI", "MCLMOTOS"}
+LEGACY_STORES = {"YOKOMAR", "JAPAN", "CBI", "LEO", "STORE", "VAISAND"}
+ECOSYSTEM_CACHE_TTL_SECONDS = 300
+
+# Extractors por tienda
+STORE_EXTRACTORS = {
+    "DFG": "CSV", "ARMOTOS": "PDF_Tabular", "VITTON": "Excel",
+    "IMBRA": "CSV", "BARA": "CSV", "KAIQI": "CSV", "MCLMOTOS": "PDF_Grid",
+    "YOKOMAR": "Legacy", "JAPAN": "Legacy", "CBI": "Legacy",
+    "LEO": "Legacy", "STORE": "Legacy", "VAISAND": "Legacy",
+    "DUNA": "CSV", "OH_IMPORTACIONES": "CSV"
+}
+
+# Cache para ecosystem stores (Shopify API)
+_ecosystem_cache = {"data": None, "ts": 0}
+
+def _load_shopify_token(store_id):
+    """Load Shopify token from brand config."""
+    import json
+    path = f"/opt/odi/data/brands/{store_id.lower()}.json"
+    try:
+        with open(path) as f:
+            return json.load(f).get("shopify", {})
+    except:
+        return {}
+
+def _get_shopify_counts(shop, token):
+    """Get active/draft counts from Shopify API."""
+    import requests
+    headers = {"X-Shopify-Access-Token": token}
+    active, draft = 0, 0
+    try:
+        url = f"https://{shop}/admin/api/2024-10/products/count.json?published_status=published"
+        r = requests.get(url, headers=headers, timeout=10)
+        if r.status_code == 200:
+            active = r.json().get("count", 0)
+        
+        url = f"https://{shop}/admin/api/2024-10/products/count.json?published_status=unpublished"
+        r = requests.get(url, headers=headers, timeout=10)
+        if r.status_code == 200:
+            draft = r.json().get("count", 0)
+    except:
+        pass
+    return active, draft
+
+
+FITMENT_URL = "http://172.18.0.5:8802"  # Docker network, no port-published
 
 # ============================================================
 # HEALTH
@@ -184,36 +234,73 @@ def _get_store_counts():
 
 @app.get("/ecosystem/stores")
 async def get_ecosystem():
-    """Devuelve las 15 tiendas con conteos de productos de ChromaDB."""
-    store_counts = _get_store_counts()
-
+    """V21.2: Devuelve 15 tiendas con Shopify counts + governance classification."""
+    from datetime import datetime
+    import time as _time
+    
+    now = _time.time()
+    
+    # Check cache
+    if _ecosystem_cache["data"] and (now - _ecosystem_cache["ts"]) < ECOSYSTEM_CACHE_TTL_SECONDS:
+        return _ecosystem_cache["data"]
+    
     stores = []
+    verified_active = 0
+    legacy_active = 0
+    draft_total = 0
+    
     for store_id, config in STORES_CONFIG.items():
+        store_upper = store_id.upper()
+        governed = store_upper in GOVERNED_STORES
+        
+        # Get Shopify counts
+        brand_cfg = _load_shopify_token(store_id)
+        shop = brand_cfg.get("shop", config.get("shopify", ""))
+        token = brand_cfg.get("token", "")
+        
+        if token:
+            active, draft = _get_shopify_counts(shop, token)
+        else:
+            active, draft = 0, 0
+        
+        total = active + draft
+        
         stores.append({
-            "id": store_id,
-            "name": config["name"],
-            "type": config["type"],
-            "palette": config["palette"],
-            "shopify_url": f"https://{config['shopify']}",
-            "landing": f"/{store_id}",
-            "products_count": store_counts.get(store_id, 0),
-            "status": "active" if store_counts.get(store_id, 0) > 0 else "pending"
+            "name": store_upper,
+            "active": active,
+            "draft": draft,
+            "total": total,
+            "governed": governed,
+            "extractor": STORE_EXTRACTORS.get(store_upper, "Unknown"),
+            "shopify_url": f"https://{shop}",
+            "palette": config["palette"]
         })
-
-    categories = {}
-    for s in stores:
-        t = s["type"]
-        if t not in categories:
-            categories[t] = {"count": 0, "stores": []}
-        categories[t]["count"] += 1
-        categories[t]["stores"].append(s["id"])
-
-    return {
-        "total_stores": len(stores),
-        "total_products": sum(s["products_count"] for s in stores),
+        
+        if governed:
+            verified_active += active
+        else:
+            legacy_active += active
+        draft_total += draft
+    
+    # Sort by active desc
+    stores.sort(key=lambda x: x["active"], reverse=True)
+    
+    result = {
+        "verified_active": verified_active,
+        "verified_stores": len(GOVERNED_STORES),
+        "legacy_stores": len(LEGACY_STORES),
+        "legacy_active": legacy_active,
+        "draft_total": draft_total,
+        "total_products": verified_active + legacy_active + draft_total,
         "stores": stores,
-        "categories": categories
+        "updated_at": datetime.utcnow().isoformat() + "Z"
     }
+    
+    # Update cache
+    _ecosystem_cache["data"] = result
+    _ecosystem_cache["ts"] = now
+    
+    return result
 
 
 @app.get("/stores/{store_id}/summary")
