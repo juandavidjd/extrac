@@ -9,12 +9,10 @@ export function useODIVoice() {
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   const speak = useCallback(async (text: string, voice: string = "ramona", narrative?: string): Promise<void> => {
-    // GUARD: useRef prevents re-render interruption
     if (isPlayingRef.current) return;
     isPlayingRef.current = true;
     setIsSpeaking(true);
 
-    // V21: Use narrative for TTS if available, otherwise truncate text
     const ttsText = narrative || (text.length > 200 ? text.substring(0, 197) + "..." : text);
     const truncated = ttsText.length > 300 ? ttsText.substring(0, 297) + "..." : ttsText;
 
@@ -41,32 +39,28 @@ export function useODIVoice() {
       audio.volume = 0.85;
       audioRef.current = audio;
 
-      return new Promise<void>((resolve, reject) => {
-        audio.onended = () => {
-          isPlayingRef.current = false;
-          setIsSpeaking(false);
-          URL.revokeObjectURL(url);
-          audioRef.current = null;
-          resolve();
-        };
+      // Revoke blob ONLY when playback ends or errors — never before
+      audio.onended = () => {
+        URL.revokeObjectURL(url);
+        isPlayingRef.current = false;
+        setIsSpeaking(false);
+        audioRef.current = null;
+      };
 
-        audio.onerror = () => {
-          isPlayingRef.current = false;
-          setIsSpeaking(false);
-          URL.revokeObjectURL(url);
-          audioRef.current = null;
-          reject(new Error("audio playback error"));
-        };
+      audio.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        isPlayingRef.current = false;
+        setIsSpeaking(false);
+        audioRef.current = null;
+        console.error("Voice playback error:", e);
+      };
 
-        audio.play().catch((err) => {
-          isPlayingRef.current = false;
-          setIsSpeaking(false);
-          URL.revokeObjectURL(url);
-          audioRef.current = null;
-          reject(err);
-        });
-      });
+      await audio.play();
     } catch (err) {
+      if (audioRef.current) {
+        URL.revokeObjectURL(audioRef.current.src);
+        audioRef.current = null;
+      }
       isPlayingRef.current = false;
       setIsSpeaking(false);
       throw err;
@@ -76,6 +70,7 @@ export function useODIVoice() {
   const stop = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
+      URL.revokeObjectURL(audioRef.current.src);
       audioRef.current = null;
     }
     isPlayingRef.current = false;
