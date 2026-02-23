@@ -403,15 +403,15 @@ def seleccionar_voz(mensaje: str, session: dict, productos: list) -> str:
     Tony: productos, precios, tecnico, fitment, diagnostico, ejecucion
     V18: productos check ANTES de interacciones (fix tony nunca activo)
     """
-    # Si hay productos en la respuesta -> Tony (tecnico, sin importar interaccion)
-    if productos and len(productos) > 0:
-        return "tony"
-
     interacciones = session.get("interacciones", 0)
 
     # Primer mensaje sin productos -> Ramona (bienvenida)
     if interacciones <= 1:
         return "ramona"
+
+    # Si hay productos en la respuesta -> Tony (tecnico)
+    if productos and len(productos) > 0:
+        return "tony"
 
     # Keywords tecnicas -> Tony
     msg_lower = mensaje.lower()

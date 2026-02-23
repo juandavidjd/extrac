@@ -66,9 +66,9 @@ export default function HabitatView() {
 
     const greeting: ODIMessage = {
       role: "odi",
-      content: "Bienvenido a ODI. Lo que necesites para tu moto, solo hablame o escribeme.",
+      content: "Bienvenido a ODI.",
       timestamp: Date.now(),
-      narrative: "Bienvenido a ODI. Lo que necesites, solo hablame.",
+      narrative: "Bienvenido a ODI.",
       voice: "ramona",
     };
     addMessage(greeting);
@@ -87,7 +87,7 @@ export default function HabitatView() {
   const handleFirstInteraction = useCallback(() => {
     if (!needsInteraction) return;
     setNeedsInteraction(false);
-    speak("Bienvenido a ODI. Lo que necesites, solo hablame.", "ramona")
+    speak("Bienvenido a ODI.", "ramona")
       .catch(() => {});
   }, [needsInteraction, speak]);
 
