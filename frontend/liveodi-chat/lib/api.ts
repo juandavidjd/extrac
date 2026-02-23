@@ -2,6 +2,7 @@ const API_URL = process.env.NEXT_PUBLIC_ODI_API_URL || "https://api.liveodi.com"
 
 export interface ChatResponse {
   response: string;
+  narrative: string;
   session_id: string;
   guardian_color: string;
   productos_encontrados: number;
@@ -20,11 +21,18 @@ export interface ChatResponse {
   modo: string;
   voice: string;
   audio_enabled: boolean;
+  industry: string;
+  company_identity: {
+    name: string;
+    logo: string | null;
+    colors: { primary: string; accent: string };
+  } | null;
 }
 
 export async function sendMessage(
   message: string,
-  sessionId?: string
+  sessionId?: string,
+  domain?: string
 ): Promise<ChatResponse> {
   const res = await fetch(`${API_URL}/odi/chat`, {
     method: "POST",
@@ -32,6 +40,7 @@ export async function sendMessage(
     body: JSON.stringify({
       message,
       session_id: sessionId || undefined,
+      domain: domain || undefined,
     }),
   });
 

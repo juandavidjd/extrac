@@ -10,27 +10,51 @@ interface UseODIListenReturn {
   error: string | null;
 }
 
-function normalizeTranscript(raw: string): string {
+// B3: Corrected ODI normalization with spaced letters
+function normalizeODITranscript(raw: string): string {
   return raw
-    .replace(/\b(oye|hoy|o di|guey|g[üu]ey|odie|ody|oh di|o de i|o d)\b/gi, "ODI")
-    .replace(/\bODI\b/gi, "ODI");
+    .replace(/\bo\s*d\s*i\b/gi, "ODI")
+    .replace(/\b(oye|hoy|odi+|ody|oh di|od i|odie|o de i|guey|g[u\u00fc]ey)\b/gi, "ODI")
+    .replace(/^(oye|hoy|ody)\s/i, "ODI ")
+    .trim();
 }
 
 export function useODIListen(
-  onTranscript?: (text: string) => void
+  onTranscript?: (text: string) => void,
+  autoListen: boolean = false,
+  isTTSActive: boolean = false
 ): UseODIListenReturn {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [isSupported, setIsSupported] = useState(false);
   const recognitionRef = useRef<any>(null);
   const manualStopRef = useRef(false);
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingTranscriptRef = useRef("");
 
-  const isSupported =
-    typeof window !== "undefined" &&
-    ("SpeechRecognition" in window || "webkitSpeechRecognition" in window);
+  // Check support on mount
+  useEffect(() => {
+    if (typeof window !== "undefined" &&
+        ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)) {
+      setIsSupported(true);
+    }
+  }, []);
 
+  // B1: Auto-request mic permission on mount
+  useEffect(() => {
+    if (typeof window !== "undefined" && navigator.mediaDevices) {
+      navigator.mediaDevices.getUserMedia({ audio: true })
+        .then((stream) => {
+          stream.getTracks().forEach(track => track.stop());
+        })
+        .catch((err) => {
+          console.warn("[ODI Listen] Mic permission denied:", err.message);
+        });
+    }
+  }, []);
+
+  // Initialize SpeechRecognition
   useEffect(() => {
     if (!isSupported) return;
 
@@ -57,11 +81,10 @@ export function useODIListen(
       }
 
       const text = finalTranscript || interimTranscript;
-      setTranscript(normalizeTranscript(text));
+      setTranscript(normalizeODITranscript(text));
 
-      // Silence timer: si hay finalTranscript, esperar 2s sin más input → enviar
       if (finalTranscript) {
-        pendingTranscriptRef.current = normalizeTranscript(finalTranscript);
+        pendingTranscriptRef.current = normalizeODITranscript(finalTranscript);
 
         if (silenceTimerRef.current) {
           clearTimeout(silenceTimerRef.current);
@@ -77,20 +100,17 @@ export function useODIListen(
     };
 
     recognition.onerror = (event: any) => {
-      // "no-speech" and "aborted" are not real errors in continuous mode
       if (event.error === "no-speech" || event.error === "aborted") return;
       setError(event.error);
       setIsListening(false);
     };
 
     recognition.onend = () => {
-      // Auto-restart if not manually stopped
       if (!manualStopRef.current) {
         setTimeout(() => {
           try {
             recognition.start();
           } catch {
-            // Already started or other error — ignore
             setIsListening(false);
           }
         }, 300);
@@ -106,6 +126,23 @@ export function useODIListen(
     };
   }, [isSupported]);
 
+  // B2: Auto-listen when not TTS active
+  useEffect(() => {
+    if (!autoListen || !isSupported) return;
+    if (isTTSActive && isListening) {
+      manualStopRef.current = true;
+      try { recognitionRef.current?.stop(); } catch {}
+      setIsListening(false);
+    }
+    if (!isTTSActive && !isListening && autoListen) {
+      manualStopRef.current = false;
+      try {
+        recognitionRef.current?.start();
+        setIsListening(true);
+      } catch {}
+    }
+  }, [autoListen, isTTSActive, isSupported]);
+
   const startListening = useCallback(() => {
     if (recognitionRef.current && !isListening) {
       manualStopRef.current = false;
@@ -115,9 +152,7 @@ export function useODIListen(
       try {
         recognitionRef.current.start();
         setIsListening(true);
-      } catch {
-        // Already started
-      }
+      } catch {}
     }
   }, [isListening]);
 
@@ -126,7 +161,6 @@ export function useODIListen(
       manualStopRef.current = true;
       if (silenceTimerRef.current) clearTimeout(silenceTimerRef.current);
 
-      // Send any pending transcript before stopping
       if (pendingTranscriptRef.current && onTranscript) {
         onTranscript(pendingTranscriptRef.current);
         pendingTranscriptRef.current = "";

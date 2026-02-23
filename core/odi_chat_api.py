@@ -82,6 +82,7 @@ class ChatMessage(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+    narrative: str = ""
     session_id: str
     guardian_color: str = "verde"
     productos_encontrados: int = 0
@@ -435,6 +436,26 @@ def seleccionar_voz(mensaje: str, session: dict, productos: list) -> str:
     return "ramona"
 
 
+
+# --- V21: Narrative TTS generator ---
+def generar_narrative_tts(response_full: str, productos: list) -> str:
+    """Genera resumen corto para TTS. Max 200 chars."""
+    if len(response_full) <= 200:
+        return response_full
+    if productos and len(productos) > 0:
+        count = len(productos)
+        if count == 1:
+            nombre = "producto"
+            if isinstance(productos[0], dict):
+                nombre = productos[0].get("title", productos[0].get("nombre", "producto"))
+            return f"Encontre {nombre}. Te muestro los detalles en pantalla."
+        else:
+            return f"Encontre {count} opciones. Te las muestro en pantalla para que compares."
+    primera = response_full.split(".")[0] + "."
+    if len(primera) <= 200:
+        return primera
+    return primera[:197] + "..."
+
 # --- V13.1 TTS Endpoint ---
 @app.post("/odi/chat/speak")
 async def speak(request: Request):
@@ -443,7 +464,7 @@ async def speak(request: Request):
     Ramona: conversacion. Tony: productos/tecnico.
     """
     body = await request.json()
-    texto = body.get("text", "")
+    texto = body.get("narrative") or body.get("text", "")
     voz = body.get("voice", "ramona")
 
     if not texto:
@@ -559,8 +580,11 @@ async def chat(msg: ChatMessage):
     # V19: Identidad de empresa dominante
     company_id = get_company_identity(productos_formateados)
 
+    narrative = generar_narrative_tts(respuesta, productos_formateados)
+
     return ChatResponse(
         response=respuesta,
+        narrative=narrative,
         session_id=session["session_id"],
         guardian_color=estado.get("color", "verde"),
         productos_encontrados=len(productos),

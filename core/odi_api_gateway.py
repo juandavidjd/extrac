@@ -508,7 +508,8 @@ async def transcribe_speech(audio: UploadFile = File(...)):
             transcript = client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
-                language="es"
+                language="es",
+                prompt="El asistente se llama ODI, escrito O D I. ODI es un organismo digital industrial."
             )
         
         os.unlink(tmp_path)
