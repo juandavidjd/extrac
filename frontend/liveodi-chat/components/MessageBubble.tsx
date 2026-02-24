@@ -1,6 +1,6 @@
 "use client";
 
-import ProductCard from "./ProductCard";
+import { ProductCard } from "./ProductCard";
 
 interface Product {
   sku?: string;
@@ -34,7 +34,7 @@ export default function MessageBubble({ role, text, products }: Props) {
         <div className="px-4 py-3 whitespace-pre-wrap">{text}</div>
         {isOdi && products && products.length > 0 && (
           <div className="px-3 pb-3">
-            <ProductCard products={products} />
+            <div className="grid grid-cols-2 gap-2 mt-2">{products.map((p, i) => <ProductCard key={i} product={p as any} />)}</div>
           </div>
         )}
       </div>

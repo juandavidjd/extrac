@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
-import { gateway } from "./odi-gateway";
+import { fetchEcosystemStats } from "./odi-gateway";
 
 interface Store {
   id: string;
@@ -17,11 +17,11 @@ export function useEcosystem() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    gateway
-      .getEcosystem()
+    fetchEcosystemStats()
       .then((data) => {
-        setStores(data.stores || []);
-        setTotalProducts(data.total_products || 0);
+        if (data) {
+          setTotalProducts(data.products || 0);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));

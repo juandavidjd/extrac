@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import ProductCard from "./ProductCard";
+import { ProductCard } from "./ProductCard";
 
 interface Product {
   sku?: string;
@@ -82,7 +82,7 @@ export default function ConversationLayer({ messages, loading }: Props) {
                     )}
                   </p>
                   {msg.products && msg.products.length > 0 && (
-                    <ProductCard products={msg.products} />
+                    <div className="grid grid-cols-2 gap-2 mt-2">{msg.products.map((p, i) => <ProductCard key={i} product={p as any} />)}</div>
                   )}
                 </div>
               ) : (
