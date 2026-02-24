@@ -1,8 +1,8 @@
 "use client";
 
 const GATEWAY_API = process.env.NEXT_PUBLIC_ODI_GATEWAY || "https://api.liveodi.com/odi/v1";
-const CHAT_API = process.env.NEXT_PUBLIC_ODI_CHAT || "https://chat.liveodi.com";
-const SPEAK_API = process.env.NEXT_PUBLIC_ODI_SPEAK || "https://chat.liveodi.com/odi/chat/speak";
+const CHAT_API = process.env.NEXT_PUBLIC_ODI_CHAT || "https://api.liveodi.com";
+const SPEAK_API = process.env.NEXT_PUBLIC_ODI_SPEAK || "https://api.liveodi.com/odi/chat/speak";
 
 const GOVERNED_STORES = new Set([
   "DFG", "ARMOTOS", "VITTON", "IMBRA", "BARA", "KAIQI", "MCLMOTOS"
