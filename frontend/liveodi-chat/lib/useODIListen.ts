@@ -10,13 +10,23 @@ interface UseODIListenReturn {
   error: string | null;
 }
 
-// B3: Corrected ODI normalization with spaced letters
 function normalizeODITranscript(raw: string): string {
   return raw
     .replace(/\bo\s*d\s*i\b/gi, "ODI")
     .replace(/\b(oye|hoy|odi+|ody|oh di|od i|odie|o de i|guey|g[u\u00fc]ey)\b/gi, "ODI")
     .replace(/^(oye|hoy|ody)\s/i, "ODI ")
     .trim();
+}
+
+// V24: On-demand mic request — never auto-invoked
+export async function requestMicrophone(): Promise<MediaStream | null> {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    return stream;
+  } catch (err) {
+    console.warn("[ODI Listen] Mic permission denied:", err);
+    return null;
+  }
 }
 
 export function useODIListen(
@@ -33,7 +43,6 @@ export function useODIListen(
   const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingTranscriptRef = useRef("");
 
-  // Check support on mount
   useEffect(() => {
     if (typeof window !== "undefined" &&
         ("SpeechRecognition" in window || "webkitSpeechRecognition" in window)) {
@@ -41,20 +50,8 @@ export function useODIListen(
     }
   }, []);
 
-  // B1: Auto-request mic permission on mount
-  useEffect(() => {
-    if (typeof window !== "undefined" && navigator.mediaDevices) {
-      navigator.mediaDevices.getUserMedia({ audio: true })
-        .then((stream) => {
-          stream.getTracks().forEach(track => track.stop());
-        })
-        .catch((err) => {
-          console.warn("[ODI Listen] Mic permission denied:", err.message);
-        });
-    }
-  }, []);
+  // V24: NO auto getUserMedia — removed B1 auto-request
 
-  // Initialize SpeechRecognition
   useEffect(() => {
     if (!isSupported) return;
 
@@ -126,7 +123,6 @@ export function useODIListen(
     };
   }, [isSupported]);
 
-  // B2: Auto-listen when not TTS active
   useEffect(() => {
     if (!autoListen || !isSupported) return;
     if (isTTSActive && isListening) {

@@ -468,9 +468,9 @@ async def generar_respuesta_odi(
         f"{contexto_productos}\n"
         f"{historial_texto}\n\n"
         f"MENSAJE DEL USUARIO: {mensaje}\n\n"
-        "Responde como ODI. No como chatbot. Con criterio, calidez y precision.\n"
-        "NUNCA uses frases como 'En que puedo ayudarte?', 'Gracias por tu compra', 'Te contactaremos pronto'.\n"
-        "Se directo, funcional, y natural."
+        "REGLAS V24: Maximo 2 oraciones. Si tienes productos di cuantos. NUNCA ensayos ni explicaciones largas.\n"
+        "NUNCA menciones tejido conectivo, ecosistema productivo, ni jerga. Si preguntan que eres: Conecto industrias con soluciones.\n"
+        "Eres directo, calido, util. Si saludan: responde y pregunta en que ayudar. UNA linea."
     )
 
     # Llamar a OpenAI GPT-4o
@@ -488,8 +488,8 @@ async def generar_respuesta_odi(
                         {"role": "system", "content": prompt_completo},
                         {"role": "user", "content": mensaje}
                     ],
-                    "temperature": 0.7,
-                    "max_tokens": 500
+                    "temperature": 0.4,
+                    "max_tokens": 200
                 }
             )
             if resp.status_code == 200:
