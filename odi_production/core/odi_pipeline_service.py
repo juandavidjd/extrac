@@ -48,6 +48,37 @@ sys.path.insert(0, "/opt/odi/core")
 from odi_rate_limiter import RateLimitMiddleware
 import httpx
 
+# ============================================
+# VALIDACIONES ENTRE PASOS
+# ============================================
+def validate_extraction(products: list) -> tuple:
+    if not products:
+        return False, "0 productos extraidos"
+    sin_sku = [p for p in products if not p.get("sku")]
+    if len(sin_sku) > len(products) * 0.1:
+        return False, f"{len(sin_sku)} productos sin SKU (>10%)"
+    return True, f"{len(products)} productos OK"
+
+def validate_normalization(products: list) -> tuple:
+    issues = []
+    long_titles = [p for p in products if len(p.get("title", "")) > 60]
+    if long_titles:
+        issues.append(f"{len(long_titles)} titulos >60 chars")
+    no_prefix = [p for p in products if not any(p.get("title", "").startswith(x) for x in ["Empaque", "Kit", "Conector"])]
+    if no_prefix and len(no_prefix) > len(products) * 0.05:
+        issues.append(f"{len(no_prefix)} sin prefijo tipo")
+    if issues:
+        return False, "; ".join(issues)
+    return True, "Titulos OK"
+
+def validate_enrichment(products: list) -> tuple:
+    defaults = [p for p in products if "Default" in str(p.get("description", ""))]
+    if defaults and len(defaults) > len(products) * 0.1:
+        return False, f"{len(defaults)} con descripcion generica"
+    return True, "Enriquecimiento OK"
+
+
+
 # OpenAI for Vision
 from openai import OpenAI
 
@@ -325,6 +356,64 @@ Responde SOLO con el JSON, sin explicaciones."""
             log.error(f"Vision extraction error: {e}")
             return []
 
+
+    async def extract_from_excel(self, excel_path: str) -> List[Dict[str, Any]]:
+        """Extrae productos de un Excel de lista de precios."""
+        import pandas as pd
+        
+        all_products = []
+        
+        try:
+            df = pd.read_excel(excel_path, sheet_name=0, header=None)
+            log.info(f"  Excel loaded: {len(df)} rows")
+            
+            categoria_actual = None
+            
+            for idx, row in df.iterrows():
+                if idx < 2:
+                    continue
+                
+                col0 = row[0] if len(row) > 0 else None
+                col1 = row[1] if len(row) > 1 else None
+                col2 = row[2] if len(row) > 2 else None
+                col3 = row[3] if len(row) > 3 else None
+                
+                if pd.notna(col1) and str(col1).strip().upper() == "CODIGO":
+                    continue
+                
+                if pd.isna(col1) or not str(col1).strip():
+                    if pd.notna(col0) and str(col0).strip():
+                        categoria_actual = str(col0).strip()
+                    continue
+                
+                codigo = str(col1).strip()
+                descripcion = str(col2).strip() if pd.notna(col2) else ""
+                marca = str(col0).strip() if pd.notna(col0) else ""
+                
+                try:
+                    precio = float(col3) if pd.notna(col3) else 0
+                except:
+                    precio = 0
+                
+                if not descripcion or precio <= 0:
+                    continue
+                
+                all_products.append({
+                    "sku": codigo,
+                    "title": descripcion,
+                    "price": precio,
+                    "category": categoria_actual,
+                    "brand": marca,
+                    "compatibility": []
+                })
+            
+            log.info(f"  Extracted {len(all_products)} products from Excel")
+            
+        except Exception as e:
+            log.error(f"Excel extraction error: {e}")
+        
+        return all_products
+
     async def extract_images_from_pdf(self, pdf_path: str, store_name: str, pages: List[int] = None) -> Dict[str, Any]:
         """Extrae imagenes de productos del PDF usando Vision AI."""
         if not VISION_DETECTOR_AVAILABLE:
@@ -344,30 +433,50 @@ Responde SOLO con el JSON, sin explicaciones."""
             total_pages = info.get("Pages", 0)
             
             if pages is None:
-                pages = list(range(1, min(total_pages + 1, 51)))  # Max 50 pages
+                pages = list(range(1, total_pages + 1))  # ALL pages
             
             stats = {"images_extracted": 0, "products": []}
             
-            for page_num in pages:
-                log.info(f"  Extracting images from page {page_num}")
-                try:
-                    images = convert_from_path(pdf_path, dpi=300, first_page=page_num, last_page=page_num)
-                    if not images:
-                        continue
-                    
-                    temp_path = f"/tmp/page_{store_name}_{page_num}.png"
-                    images[0].save(temp_path, "PNG")
-                    
-                    products = detector.detect(temp_path)
-                    if products:
-                        saved = detector.crop_products(temp_path, products, output_dir, store_name, page_num)
-                        stats["images_extracted"] += len(saved)
-                        stats["products"].extend(saved)
-                        log.info(f"    {len(saved)} product images extracted")
-                    
-                    os.remove(temp_path)
-                except Exception as e:
-                    log.error(f"    Error on page {page_num}: {e}")
+            import time as _time
+            BATCH_SIZE = 10
+            total_pages_count = len(pages)
+            
+            for batch_idx in range(0, len(pages), BATCH_SIZE):
+                batch = pages[batch_idx:batch_idx + BATCH_SIZE]
+                log.info(f"  Batch {batch_idx//BATCH_SIZE + 1}: pages {batch[0]}-{batch[-1]} of {total_pages_count}")
+                
+                for page_num in batch:
+                    retries = 3
+                    success = False
+                    while retries > 0 and not success:
+                        try:
+                            images = convert_from_path(pdf_path, dpi=200, first_page=page_num, last_page=page_num)
+                            if not images:
+                                break
+                            
+                            temp_path = f"/tmp/page_{store_name}_{page_num}.png"
+                            images[0].save(temp_path, "PNG")
+                            
+                            products = detector.detect(temp_path)
+                            if products:
+                                saved = detector.crop_products(temp_path, products, output_dir, store_name, page_num)
+                                stats["images_extracted"] += len(saved)
+                                stats["products"].extend(saved)
+                            
+                            if os.path.exists(temp_path):
+                                os.remove(temp_path)
+                            success = True
+                        except Exception as e:
+                            retries -= 1
+                            if retries > 0:
+                                log.warning(f"    Retry page {page_num}: {e}")
+                                _time.sleep(2)
+                            else:
+                                log.error(f"    Failed page {page_num} after 3 retries: {e}")
+                    _time.sleep(0.5)
+                
+                _time.sleep(2)
+                log.info(f"    Batch complete: {stats['images_extracted']} images total")
             
             return stats
         except Exception as e:
@@ -399,7 +508,7 @@ class ProductNormalizer:
             try:
                 norm = {
                     "sku": self._normalize_sku(p.get("sku"), empresa),
-                    "title": self._normalize_title(p.get("title", "")),
+                    "title": self._normalize_title(p.get("title", ""), p.get("category")),
                     "description": p.get("description", ""),
                     "price": self._normalize_price(p.get("price")),
                     "category": self._detect_category(p.get("title", ""), p.get("category")),
@@ -419,12 +528,38 @@ class ProductNormalizer:
             return f"{empresa[:3].upper()}-{sku}".replace(" ", "-")
         return f"{empresa[:3].upper()}-{datetime.now().strftime('%H%M%S')}"
 
-    def _normalize_title(self, title: str) -> str:
-        # Capitalizar correctamente
+    def _normalize_title(self, title: str, category: str = None) -> str:
+        """Normaliza título: Empaque {Tipo} {Moto}."""
+        import re
         title = title.strip()
-        if title.isupper():
-            title = title.title()
-        return title
+        title = re.sub(r"\s+", " ", title)
+        
+        CAT_PREFIX = {
+            "clutch": "Empaque Clutch", "cilindro": "Empaque Cilindro",
+            "culata": "Empaque Culata", "culatin": "Empaque Culatin",
+            "transmision": "Empaque Transmision", "kit completo": "Kit Completo",
+            "silenciador": "Conector Mofle", "mofle": "Conector Mofle",
+            "exosto": "Conector Mofle", "volante": "Empaque Volante",
+        }
+        
+        combined = f"{title} {category or ""}".lower()
+        prefix = "Empaque"
+        for key, val in CAT_PREFIX.items():
+            if key in combined:
+                prefix = val
+                break
+        
+        if any(title.startswith(p) for p in ["Empaque", "Kit Completo", "Conector Mofle"]):
+            new_title = title
+        else:
+            title = re.sub(r"^Clutch\s+", "", title, flags=re.I)
+            new_title = f"{prefix} {title}"
+        
+        if new_title.isupper():
+            new_title = new_title.title()
+        if len(new_title) > 60:
+            new_title = new_title[:57].rsplit(" ", 1)[0] + "..."
+        return new_title
 
     def _normalize_price(self, price: Any) -> Optional[float]:
         if price is None:
@@ -510,7 +645,7 @@ class ShopifyUploader:
     def __init__(self, shop: str, token: str):
         self.shop = shop
         self.token = token
-        self.base_url = f"https://{shop}/admin/api/2024-01"
+        self.base_url = f"https://{shop}/admin/api/2025-07"
         self.headers = {
             "X-Shopify-Access-Token": token,
             "Content-Type": "application/json"
@@ -572,6 +707,19 @@ class ShopifyUploader:
                 ]
             }
         }
+
+
+        # Agregar imagen si existe (FIX 3)
+        import base64 as _b64
+        img_path = product.get("image_path") or product.get("image")
+        if img_path and os.path.exists(str(img_path)):
+            try:
+                with open(img_path, "rb") as _imgf:
+                    _img_b64 = _b64.b64encode(_imgf.read()).decode("utf-8")
+                _sku = product.get("sku", "product")
+                shopify_product["product"]["images"] = [{"attachment": _img_b64, "filename": f"{_sku}.png"}]
+            except Exception as _ierr:
+                log.warning(f"Could not attach image: {_ierr}")
 
         response = await client.post(
             f"{self.base_url}/products.json",
@@ -648,7 +796,12 @@ class PipelineExecutor:
             job.stage = PipelineStage.EXTRACTING.value
             self._save_job(job)
 
-            products = await self.extractor.extract_from_pdf(request.source_file)
+            # Detectar tipo de archivo y usar extractor adecuado
+            source_lower = request.source_file.lower()
+            if source_lower.endswith((".xlsx", ".xls")):
+                products = await self.extractor.extract_from_excel(request.source_file)
+            else:
+                products = await self.extractor.extract_from_pdf(request.source_file)
             log.info(f"[{job.job_id}] Extracted {len(products)} products")
 
             # Extract product images from PDF
@@ -657,14 +810,17 @@ class PipelineExecutor:
                 img_stats = await self.extractor.extract_images_from_pdf(
                     request.source_file, request.empresa
                 )
-                log.info(f"[{job.job_id}] Extracted {img_stats.get(images_extracted, 0)} product images")
-                job.metadata["images_extracted"] = img_stats.get("images_extracted", 0)
+                log.info(f"[{job.job_id}] Extracted {img_stats.get('images_extracted', 0)} product images")
+                job.metadata["images_extracted"] = img_stats.get('images_extracted', 0)
 
-            if not products:
+            valid, msg = validate_extraction(products)
+            if not valid:
                 job.stage = PipelineStage.FAILED.value
-                job.errors.append("No products extracted")
+                job.errors.append(f"Validacion extraccion: {msg}")
                 self._save_job(job)
+                log.error(f"[{job.job_id}] FAIL: {msg}")
                 return job
+            log.info(f"[{job.job_id}] Validacion extraccion: {msg}")
 
             # 2. NORMALIZAR
             log.info(f"[{job.job_id}] Stage 2: NORMALIZING")
@@ -672,6 +828,12 @@ class PipelineExecutor:
             self._save_job(job)
 
             products = self.normalizer.normalize(products, request.empresa)
+            
+            # Validar normalización
+            valid, msg = validate_normalization(products)
+            log.info(f"[{job.job_id}] Validacion normalizacion: {msg}")
+            if not valid:
+                log.warning(f"[{job.job_id}] Normalizacion con issues: {msg}")
 
             # 3. ENRIQUECER
             log.info(f"[{job.job_id}] Stage 3: ENRICHING")
@@ -679,6 +841,10 @@ class PipelineExecutor:
             self._save_job(job)
 
             products = await self.enricher.enrich(products)
+            
+            # Validar enriquecimiento
+            valid, msg = validate_enrichment(products)
+            log.info(f"[{job.job_id}] Validacion enriquecimiento: {msg}")
 
             # 4. FITMENT (simplificado por ahora)
             log.info(f"[{job.job_id}] Stage 4: FITTING")
@@ -855,3 +1021,33 @@ async def upload_with_image_matching(request: UploadRequest, background_tasks: B
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8804)
+
+    async def upload_image_to_product(self, client: httpx.AsyncClient, product_id: int, image_path: str) -> bool:
+        """Sube imagen a producto existente via POST /products/{id}/images.json"""
+        import base64 as _b64
+        
+        if not os.path.exists(image_path):
+            return False
+        
+        try:
+            with open(image_path, "rb") as f:
+                img_b64 = _b64.b64encode(f.read()).decode("utf-8")
+            
+            payload = {
+                "image": {
+                    "attachment": img_b64,
+                    "filename": os.path.basename(image_path)
+                }
+            }
+            
+            response = await client.post(
+                f"{self.base_url}/products/{product_id}/images.json",
+                headers=self.headers,
+                json=payload
+            )
+            
+            return response.status_code in [200, 201]
+        except Exception as e:
+            log.error(f"Image upload error for product {product_id}: {e}")
+            return False
+

@@ -1,0 +1,315 @@
+{
+  "total_stores": 15,
+  "total_products": 750,
+  "audit_results": [
+    {
+      "store_name": "DFG",
+      "product_count": 50,
+      "issues_found": [
+        "Duplicated products: Multiple products have the same price and similar titles, indicating potential duplicates. Examples include products with SKUs 'HK010201', '11627', '1054062', '1054050', and '1054059'.",
+        "Inconsistent pricing: Products with similar descriptions have different prices, such as 'BALINERA 6302 2RS' with SKUs 'HK011640', '1054016', '1054048', and '11626'.",
+        "Image inconsistency: Several products share the same image but have different SKUs and titles, suggesting potential mislabeling or duplication. Examples include products with SKUs 'HK010201' and '1054062'.",
+        "Image source quality: The 'image_source' values indicate varying levels of image quality, with some products having low fuzzy scores (e.g., 0.37, 0.39), which might affect visual appeal."
+      ],
+      "recommendations": [
+        "Review and consolidate duplicated products to ensure each SKU is unique and accurately represents a distinct product.",
+        "Standardize pricing for products with similar specifications to avoid customer confusion and ensure competitive pricing.",
+        "Verify and update product images to ensure each product has a unique and accurate visual representation.",
+        "Improve image quality for products with low 'image_source' scores to enhance the overall presentation and customer experience."
+      ],
+      "score": 65,
+      "timestamp": "2026-02-20T08:58:59.913797"
+    },
+    {
+      "store_name": "ARMOTOS",
+      "product_count": 50,
+      "issues_found": [
+        "Duplicated titles with different SKUs: 'Banco de Trabajo Semiautomático' with SKUs 03860 and 03858.",
+        "Price inconsistency for 'Banco de Trabajo Semiautomático': 203805 vs 170017.",
+        "Duplicated titles with different SKUs: 'Guardabarro Delantero Universal' with SKUs 04402, 04239, 04240, and 04241.",
+        "Price inconsistency for 'Guardabarro Delantero Universal': 11525 vs 11690.",
+        "Duplicated titles with different SKUs: 'Soporte para Casco' with SKUs 05450, 05451, 05452, and 05453.",
+        "Missing descriptions for products with SKUs: 04419, 04420, 04421, 04459, 04422."
+      ],
+      "recommendations": [
+        "Ensure unique titles for products with different SKUs to avoid confusion.",
+        "Standardize pricing for products with the same title to maintain consistency.",
+        "Provide complete descriptions for all products to enhance customer understanding.",
+        "Review and update the catalog regularly to ensure data accuracy and completeness."
+      ],
+      "score": 72,
+      "timestamp": "2026-02-20T08:59:03.804045"
+    },
+    {
+      "store_name": "OH_IMPORTACIONES",
+      "product_count": 50,
+      "issues_found": [
+        "Duplicated titles with different SKUs and prices: 'MOTOR COMPLETO AY250ZH-2/3' and 'MOTOR COMPLETO AY250ZH-2/3 CON RADIADOR', 'CULATA AY200ZH REF*AIRE' and 'CULATA AY200ZH REF*AIRE', 'KIT CILINDRO 3W180 AKT' appears multiple times with different SKUs and prices.",
+        "Inconsistent pricing for similar products: 'MOTOR COMPLETO AY200 REF*AIRE,AKT200,DB200VAISAND' and 'MOTOR COMPLETO AY200 REF*AIRE,AKT200,DB200VAISAND' have different prices.",
+        "Image source is marked as 'placeholder' for all products, indicating potential missing or incorrect image data."
+      ],
+      "recommendations": [
+        "Review and consolidate products with similar titles but different SKUs to ensure consistency and avoid customer confusion.",
+        "Verify the pricing strategy for products with similar descriptions to ensure they reflect the intended value and market positioning.",
+        "Update product images with actual photos to enhance the visual appeal and trustworthiness of the catalog.",
+        "Ensure all product data fields are consistently filled and accurate to improve catalog quality and searchability."
+      ],
+      "score": 70,
+      "timestamp": "2026-02-20T08:59:09.330476"
+    },
+    {
+      "store_name": "VITTON",
+      "product_count": 50,
+      "issues_found": [
+        "Duplicated SKUs: '1', '2', '3', '4'",
+        "SKUs with 'No disponible'",
+        "Products with price 0.0: 'VIT-00001', '4', 'VIT-00027', 'VIT-00042', 'VIT-00045'",
+        "Inconsistent pricing: 'EMPAQUE EXOSTO REFORSADO' (25000.0) vs 'EMPAQUE EXOSTO MOFLE REFORZADO' (3000.0)",
+        "Placeholder images used"
+      ],
+      "recommendations": [
+        "Ensure all products have unique SKUs.",
+        "Replace 'No disponible' with valid SKUs.",
+        "Review and update products with a price of 0.0 to reflect actual pricing.",
+        "Verify and correct inconsistent pricing for similar products.",
+        "Update placeholder images with actual product images."
+      ],
+      "score": 65,
+      "timestamp": "2026-02-20T08:59:12.476975"
+    },
+    {
+      "store_name": "DUNA",
+      "product_count": 50,
+      "issues_found": [
+        "All products have a price of 0, which may indicate missing or incorrect pricing information.",
+        "No duplicate SKUs found, but multiple products have similar titles indicating potential duplicates or variations.",
+        "Some images have a low fuzzy match score (e.g., AH0700 with fuzzy_0.65), which may indicate poor image quality or incorrect image association."
+      ],
+      "recommendations": [
+        "Review and update the pricing information for all products to ensure accurate and competitive pricing.",
+        "Verify the product titles and SKUs to ensure there are no unintentional duplicates or mislabeling.",
+        "Improve image quality and ensure correct image association for products with low fuzzy match scores.",
+        "Consider adding more detailed product descriptions to enhance customer understanding and SEO."
+      ],
+      "score": 40,
+      "timestamp": "2026-02-20T08:59:15.366535"
+    },
+    {
+      "store_name": "IMBRA",
+      "product_count": 50,
+      "issues_found": [
+        {
+          "type": "duplicate_price",
+          "description": "Multiple products have the same price of 1340387.44 and 4332790.0, which could indicate duplicates or a pricing error.",
+          "skus": [
+            "207153B",
+            "207109B",
+            "207107B",
+            "207102NAB",
+            "207102RB"
+          ]
+        },
+        {
+          "type": "placeholder_image",
+          "description": "Product with SKU 20X0 has a placeholder image.",
+          "sku": "20X0"
+        },
+        {
+          "type": "inconsistent_pricing",
+          "description": "Product with SKU 20X0 has an unusually low price of 92.0 compared to similar products.",
+          "sku": "20X0"
+        }
+      ],
+      "recommendations": [
+        "Review products with duplicate prices to ensure they are not duplicates and verify their pricing.",
+        "Replace the placeholder image for the product with SKU 20X0 with an actual product image.",
+        "Verify the pricing of the product with SKU 20X0 to ensure it is correct and consistent with similar products."
+      ],
+      "score": 85,
+      "timestamp": "2026-02-20T08:59:19.763736"
+    },
+    {
+      "store_name": "YOKOMAR",
+      "product_count": 50,
+      "issues_found": [
+        "Multiple products have a price of 0, indicating missing or incorrect pricing information.",
+        "No duplicate SKUs found in the provided sample, but further checks are recommended for the entire catalog.",
+        "All products have images, but the consistency and quality of images should be verified."
+      ],
+      "recommendations": [
+        "Review and update the pricing for products with a price of 0 to ensure accurate representation in the store.",
+        "Conduct a full audit of the entire catalog to check for duplicate SKUs and ensure unique identifiers.",
+        "Ensure all product images are of high quality and consistent in size and style to enhance the visual appeal of the store."
+      ],
+      "score": 65,
+      "timestamp": "2026-02-20T08:59:23.220517"
+    },
+    {
+      "store_name": "BARA",
+      "product_count": 50,
+      "issues_found": [
+        "Duplicated SKUs: None found.",
+        "Price inconsistencies: None found.",
+        "Missing data: None found."
+      ],
+      "recommendations": [
+        "Ensure consistent pricing across similar products to avoid customer confusion.",
+        "Regularly review image quality and update any low-quality images to maintain a professional appearance.",
+        "Maintain a consistent naming convention for product titles to improve searchability and organization."
+      ],
+      "score": 95,
+      "timestamp": "2026-02-20T08:59:26.816992"
+    },
+    {
+      "store_name": "JAPAN",
+      "product_count": 50,
+      "issues_found": [
+        "All products have a price of 0, which is likely incorrect.",
+        "Several products have placeholder images instead of actual product images.",
+        "Some products have duplicate or very similar titles, which may indicate duplicates or insufficient differentiation.",
+        "Many images have low fuzzy matching scores, suggesting potential mismatches or incorrect images."
+      ],
+      "recommendations": [
+        "Review and update the pricing for all products to reflect accurate values.",
+        "Replace placeholder images with actual product images to improve the visual appeal and accuracy of the catalog.",
+        "Ensure each product has a unique and descriptive title to avoid confusion and potential duplicates.",
+        "Verify the accuracy of images with low fuzzy matching scores and replace them if necessary."
+      ],
+      "score": 40,
+      "timestamp": "2026-02-20T08:59:30.522216"
+    },
+    {
+      "store_name": "MCLMOTOS",
+      "product_count": 50,
+      "issues_found": [
+        "Multiple products have a price of 0, which is likely incorrect.",
+        "All products have a placeholder image, indicating missing or incorrect image data.",
+        "Duplicate product titles with different SKUs and prices (e.g., 'Cigüeñal Motocarro' with SKUs 'MCAY-100' and 'MCAY-100-1').",
+        "Inconsistent pricing for duplicate products (e.g., 'Cigüeñal Motocarro' with prices 160000.0 and 150000.0)."
+      ],
+      "recommendations": [
+        "Review and update the pricing for products currently listed with a price of 0.",
+        "Replace placeholder images with actual product images to improve catalog quality.",
+        "Resolve duplicate product entries by consolidating them or clearly differentiating their features.",
+        "Ensure consistent pricing for products with the same title to avoid customer confusion."
+      ],
+      "score": 40,
+      "timestamp": "2026-02-20T08:59:39.007926"
+    },
+    {
+      "store_name": "CBI",
+      "product_count": 50,
+      "issues_found": [
+        "All products have a price of 0, indicating missing or incorrect pricing information.",
+        "Many products use placeholder images, which may not accurately represent the actual product.",
+        "Some products have generic titles (e.g., 'BPS004', 'BPS005') that do not provide clear product descriptions.",
+        "There are no duplicate SKUs, but there is a lack of detailed information in product descriptions."
+      ],
+      "recommendations": [
+        "Update all product prices to reflect the actual selling price.",
+        "Replace placeholder images with actual product images to improve customer trust and product representation.",
+        "Enhance product titles and descriptions to provide more detailed information about each product.",
+        "Conduct a thorough review of the catalog to ensure all necessary product information is complete and accurate."
+      ],
+      "score": 30,
+      "timestamp": "2026-02-20T08:59:43.123082"
+    },
+    {
+      "store_name": "KAIQI",
+      "product_count": 50,
+      "issues_found": [
+        {
+          "type": "duplicate_sku",
+          "details": "The SKU '7,70E+12' appears more than once in the catalog."
+        },
+        {
+          "type": "inconsistent_pricing",
+          "details": "Product with SKU 'DALU044' and 'HLK101833' have similar titles but significantly different prices."
+        },
+        {
+          "type": "missing_price",
+          "details": "Several products have a price of 0, which is likely incorrect: '827920', 'E09300201', 'KAY102121', 'DALU021', '1271', '7,70E+12', '100618', 'DALU014'."
+        }
+      ],
+      "recommendations": [
+        "Ensure that each SKU is unique to avoid confusion and inventory issues.",
+        "Review pricing for products with similar titles to ensure consistency and accuracy.",
+        "Verify and update the prices for products currently listed with a price of 0 to reflect their true value."
+      ],
+      "score": 65,
+      "timestamp": "2026-02-20T08:59:46.952761"
+    },
+    {
+      "store_name": "LEO",
+      "product_count": 50,
+      "issues_found": [
+        "All products have a price of 0, which is likely incorrect or indicates missing pricing data.",
+        "No duplicate SKUs were found, but the uniformity in pricing suggests a systemic issue.",
+        "No missing data fields were identified, but the price field is consistently zero across all products."
+      ],
+      "recommendations": [
+        "Review and update the pricing information for all products to ensure they reflect accurate market values.",
+        "Implement a validation check to prevent products from being listed with a zero price unless it's intentional (e.g., for promotional purposes).",
+        "Consider conducting a manual audit of the product catalog to ensure all data fields are correctly populated and reflect accurate information.",
+        "Enhance the system to flag or alert when products are added with a price of zero to avoid similar issues in the future."
+      ],
+      "score": 40,
+      "timestamp": "2026-02-20T08:59:51.719402"
+    },
+    {
+      "store_name": "STORE",
+      "product_count": 50,
+      "issues_found": [
+        "All products have a price of 0, which is inconsistent and likely incorrect.",
+        "Duplicate products found: 'Kit de cilindro con pistón y juntas' appears multiple times (STORE-17, STORE-40, STORE-41).",
+        "Several products have placeholder images, indicating missing or incorrect image data (e.g., STORE-10, STORE-13, STORE-19, STORE-24, STORE-28).",
+        "Many products have low image quality scores (fuzzy score below 0.6), which may affect the visual appeal of the catalog."
+      ],
+      "recommendations": [
+        "Review and update the pricing information for all products to ensure they reflect accurate and competitive prices.",
+        "Remove or consolidate duplicate product entries to avoid confusion and redundancy.",
+        "Replace placeholder images with high-quality, accurate images to improve product presentation.",
+        "Improve image quality by sourcing higher resolution images or using image enhancement techniques."
+      ],
+      "score": 40,
+      "timestamp": "2026-02-20T08:59:55.260241"
+    },
+    {
+      "store_name": "VAISAND",
+      "product_count": 50,
+      "issues_found": [
+        "All products have a price of 0, which is likely incorrect and indicates missing pricing information.",
+        "No duplicate SKUs were found in the provided sample, but this should be verified for the entire catalog.",
+        "All products have an image and image source, which is positive, but the image source 'fuzzy_1.00' may indicate low quality or placeholder images."
+      ],
+      "recommendations": [
+        "Update the pricing information for all products to reflect their actual market value.",
+        "Verify the entire catalog for any duplicate SKUs or product entries to ensure data consistency.",
+        "Review and update product images to ensure they are of high quality and accurately represent the products.",
+        "Consider adding additional product details such as descriptions, specifications, and benefits to enhance product listings."
+      ],
+      "score": 30,
+      "timestamp": "2026-02-20T08:59:59.282756"
+    }
+  ],
+  "cross_store_issues": [
+    {
+      "issue": "No duplicate SKUs found across stores.",
+      "severity": "low"
+    },
+    {
+      "issue": "No price inconsistencies found for the same SKU across stores.",
+      "severity": "low"
+    },
+    {
+      "issue": "Limited opportunities for cross-store optimization due to unique SKU sets.",
+      "severity": "medium"
+    },
+    {
+      "issue": "No shared inventory issues detected as there are no duplicate SKUs.",
+      "severity": "low"
+    }
+  ],
+  "overall_health_score": 56.13333333333333,
+  "generated_at": "2026-02-20T09:00:01.166118"
+}

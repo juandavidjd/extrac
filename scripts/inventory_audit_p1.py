@@ -40,7 +40,7 @@ log = logging.getLogger("odi.audit.p1")
 # ══════════════════════════════════════════════════════════════════════════════
 
 REPORTS_DIR = Path("/opt/odi/data/reports")
-SHOPIFY_API_VERSION = os.getenv("SHOPIFY_API_VERSION", "2024-10")
+SHOPIFY_API_VERSION = os.getenv("SHOPIFY_API_VERSION", "2025-07")
 
 # Known store env var patterns: {NAME}_SHOP, {NAME}_TOKEN
 # Auto-detected from /opt/odi/config/.env

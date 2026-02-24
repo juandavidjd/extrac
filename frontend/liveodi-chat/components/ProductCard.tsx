@@ -1,66 +1,44 @@
 "use client";
 
-interface Product {
-  sku?: string;
-  nombre?: string;
-  title?: string;
-  precio_cop?: number;
-  price?: string | number;
-  imagen_url?: string;
-  fitment_summary?: string;
-  proveedor?: string;
-  store?: string;
-  shopify_url?: string;
-}
+import type { ChatProduct } from "@/lib/odi-gateway";
 
 interface Props {
-  products: Product[];
-  onView360?: (sku: string) => void;
+  product: ChatProduct;
 }
 
-export default function ProductCard({ products, onView360 }: Props) {
-  if (!products || products.length === 0) return null;
-
+export function ProductCard({ product }: Props) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 mt-2 -mx-1 px-1">
-      {products.slice(0, 5).map((p, i) => {
-        const name = p.nombre || p.title || "Producto";
-        const price = p.precio_cop || Number(p.price) || 0;
-        const store = p.proveedor || p.store || "";
-        const sku = p.sku || "";
-
-        return (
-          <div
-            key={i}
-            className="flex-shrink-0 w-44 bg-neutral-900/60 backdrop-blur border border-neutral-700/50 rounded-lg p-3 transition-all hover:border-emerald-500/30 hover:scale-[1.02] cursor-pointer"
-            onClick={() => sku && onView360?.(sku)}
-          >
-            {p.imagen_url && (
-              <div className="w-full h-24 rounded-md bg-neutral-800 mb-2 overflow-hidden">
-                <img
-                  src={p.imagen_url}
-                  alt={name}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-            )}
-            <div className="text-xs font-medium text-neutral-200 line-clamp-2 leading-tight">
-              {name}
-            </div>
-            <div className="flex items-center justify-between mt-1.5">
-              <span className="text-sm font-semibold text-emerald-400">
-                ${price.toLocaleString("es-CO")}
-              </span>
-            </div>
-            {store && (
-              <span className="text-[10px] text-neutral-500 mt-0.5 block">
-                {store}
-              </span>
-            )}
-          </div>
-        );
-      })}
-    </div>
+    <article className="border border-[#294468] bg-[rgba(7,18,33,0.6)] rounded-[10px] p-2.5">
+      {product.image && (
+        <img
+          src={product.image}
+          alt={product.title}
+          loading="lazy"
+          className="w-full h-[90px] object-cover rounded-md"
+        />
+      )}
+      <h3 className="mt-1.5 mb-0 text-sm font-medium">{product.title}</h3>
+      {product.sku && (
+        <p className="text-[#8ca0c6] text-xs m-0">{product.sku}</p>
+      )}
+      {product.price != null && (
+        <p className="text-[#b6e5ff] text-sm my-0.5">
+          ${product.price.toLocaleString("es-CO")}
+        </p>
+      )}
+      {product.store && (
+        <p className="text-[#8ca0c6] text-xs m-0">{product.store}</p>
+      )}
+      {product.url && (
+        <a
+          href={product.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[#9fd4ff] text-sm no-underline"
+        >
+          Ver
+        </a>
+      )}
+    </article>
   );
 }

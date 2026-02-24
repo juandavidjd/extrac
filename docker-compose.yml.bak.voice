@@ -1,0 +1,119 @@
+version: "3.8"
+
+networks:
+  odi-network:
+    external: true
+
+services:
+  odi-n8n:
+    image: n8nio/n8n:latest
+    container_name: odi-n8n
+    hostname: odi-server
+    network_mode: host
+    restart: always
+    environment:
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_SECURE_COOKIE=false
+      - WEBHOOK_URL=http://64.23.170.118:5678/
+    volumes:
+      - /opt/odi/n8n/data:/home/node/.n8n
+
+  odi-voice:
+    image: odi-odi_voice
+    container_name: odi-voice
+    restart: always
+    networks:
+      - odi-network
+    environment:
+      - ODI_SECURE_TOKEN=${ODI_SECURE_TOKEN}
+      - DEEPL_API_KEY=${DEEPL_API_KEY}
+      - ELEVENLABS_VOICE_ID=qpjUiwx7YUVAavnmh2sF
+      - ELEVEN_API_KEY=sk_6203aeb6289021c8cdc94e85e4fb3bc4bc2653e9b67c5a2f
+      - M62_FITMENT_URL=http://odi-m62-fitment:8802/fitment/query
+      - FLASK_ENV=production
+      - TZ=America/Bogota
+    volumes:
+      - /opt/odi/data/voice:/app/data:rw
+      - /opt/odi/logs/voice:/app/logs:rw
+    command: python odi_voice_assistant.py
+
+  odi-m62-fitment:
+    image: odi-odi_m62_fitment
+    container_name: odi-m62-fitment
+    restart: always
+    networks:
+      - odi-network
+    environment:
+      - IND_MOTOS_DATA_DIR=/app/data
+      - ELEVEN_API_KEY=sk_6203aeb6289021c8cdc94e85e4fb3bc4bc2653e9b67c5a2f
+      - ELEVENLABS_VOICE_ID=qpjUiwx7YUVAavnmh2sF
+      - FITMENT_PATH=/app/data/fitment_master_v1.json
+      - TAXONOMY_PATH=/app/data/taxonomy_motos_v1.json
+      - M62_MAX_RESULTS=10
+      - TZ=America/Bogota
+      - M62_FITMENT_URL=http://odi-m62-fitment:8802/fitment/query
+      - DEEPL_API_KEY=${DEEPL_API_KEY}
+    volumes:
+      - /opt/odi/data/ind_motos:/app/data:ro
+    command: python fitment_engine.py
+
+  odi-chromadb:
+    image: chromadb/chroma:latest
+    container_name: odi-chromadb
+    restart: always
+    networks:
+      - odi-network
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+      - TZ=America/Bogota
+      - CHROMA_SERVER_AUTH_PROVIDER=chromadb.auth.token.TokenAuthServerProvider
+      - CHROMA_SERVER_AUTH_CREDENTIALS=${CHROMA_AUTH_TOKEN}
+      - CHROMA_SERVER_AUTH_TOKEN_TRANSPORT_HEADER=Authorization
+    volumes:
+      - /mnt/volume_sfo3_01/embeddings/chroma_data:/data:rw
+
+  odi-postgres:
+    image: postgres:15
+    container_name: odi-postgres
+    restart: always
+    networks:
+      - odi-network
+    environment:
+      - POSTGRES_USER=odi_user
+      - POSTGRES_PASSWORD=odi_secure_password
+      - POSTGRES_DB=odi
+    volumes:
+      - /opt/odi/data/postgres:/var/lib/postgresql/data
+
+  odi-redis:
+    image: redis:alpine
+    container_name: odi-redis
+    restart: always
+    networks:
+      - odi-network
+    command: redis-server
+
+  odi-prometheus:
+    image: prom/prometheus
+    container_name: odi-prometheus
+    restart: always
+    networks:
+      - odi-network
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+    volumes:
+      - /opt/odi/data/prometheus:/prometheus
+
+  odi-grafana:
+    image: grafana/grafana
+    container_name: odi-grafana
+    restart: always
+    networks:
+      - odi-network
+    volumes:
+      - /opt/odi/data/grafana:/var/lib/grafana

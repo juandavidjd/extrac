@@ -1,370 +1,321 @@
 #!/usr/bin/env python3
 """
-ODI Shopify Branding Manager - Aplica identidad corporativa a tiendas Shopify.
-
-Configura para cada tienda:
-  - Locale del shop (espanol)
-  - Logo en el header
-  - Colores corporativos
-  - Announcement bar (barra superior)
-  - Footer en espanol
-
-Uso:
-  manager = ShopifyBrandingManager()
-  manager.apply_branding("BARA")    # Una tienda
-  manager.apply_all()               # Todas las tiendas
+ODI V22.2 Shopify Branding Module
+Applies corporate branding to Shopify stores:
+- Locale: es (Spanish)
+- Corporate colors via metafields
+- Announcement bar
+- Spanish footer
 """
-
-import os
 import json
-import time
-import base64
-import logging
+import os
 import requests
-from pathlib import Path
-from typing import Optional
+import time
+from typing import Dict, Optional, List
 
-logger = logging.getLogger("odi.branding")
-
-# Paleta de colores por empresa
-COLORES_EMPRESAS = {
-    "ARMOTOS":  {"primario": "#E53E3E", "secundario": "#2D3748", "acento": "#ED8936", "fondo": "#FFFFFF"},
-    "BARA":     {"primario": "#1B3A5C", "secundario": "#FFFFFF", "acento": "#E8A530", "fondo": "#F5F5F5"},
-    "CBI":      {"primario": "#2B6CB0", "secundario": "#EBF8FF", "acento": "#3182CE", "fondo": "#FFFFFF"},
-    "DFG":      {"primario": "#276749", "secundario": "#F0FFF4", "acento": "#38A169", "fondo": "#FFFFFF"},
-    "DUNA":     {"primario": "#744210", "secundario": "#FFFFF0", "acento": "#D69E2E", "fondo": "#FFFFFF"},
-    "IMBRA":    {"primario": "#1A365D", "secundario": "#EBF8FF", "acento": "#2B6CB0", "fondo": "#FFFFFF"},
-    "JAPAN":    {"primario": "#9B2C2C", "secundario": "#FFF5F5", "acento": "#E53E3E", "fondo": "#FFFFFF"},
-    "KAIQI":    {"primario": "#22543D", "secundario": "#F0FFF4", "acento": "#48BB78", "fondo": "#FFFFFF"},
-    "LEO":      {"primario": "#553C9A", "secundario": "#FAF5FF", "acento": "#805AD5", "fondo": "#FFFFFF"},
-    "MCLMOTOS": {"primario": "#2A4365", "secundario": "#EBF8FF", "acento": "#4299E1", "fondo": "#FFFFFF"},
-    "OH_IMPORTACIONES": {"primario": "#702459", "secundario": "#FFF5F7", "acento": "#D53F8C", "fondo": "#FFFFFF"},
-    "STORE":    {"primario": "#1A202C", "secundario": "#F7FAFC", "acento": "#4A5568", "fondo": "#FFFFFF"},
-    "VAISAND":  {"primario": "#234E52", "secundario": "#E6FFFA", "acento": "#38B2AC", "fondo": "#FFFFFF"},
-    "VITTON":   {"primario": "#1A365D", "secundario": "#FFFFFF", "acento": "#2B6CB0", "fondo": "#FFFFFF"},
-    "YOKOMAR":  {"primario": "#7B341E", "secundario": "#FFFAF0", "acento": "#DD6B20", "fondo": "#FFFFFF"},
-}
-
-NOMBRES_EMPRESAS = {
-    "ARMOTOS": "Armotos - Repuestos de Motos",
-    "BARA": "Bara Importaciones - Repuestos de Motos",
-    "CBI": "CBI Importaciones",
-    "DFG": "DFG Motos Colombia",
-    "DUNA": "Duna Importaciones",
-    "IMBRA": "Imbra - Repuestos de Motos",
-    "JAPAN": "Industrias Japan",
-    "KAIQI": "Kaiqi Colombia",
-    "LEO": "Industrias Leo",
-    "MCLMOTOS": "MCL Motos",
-    "OH_IMPORTACIONES": "OH Importaciones",
-    "STORE": "Store Repuestos",
-    "VAISAND": "Vaisand",
-    "VITTON": "Industrias Vitton",
-    "YOKOMAR": "Yokomar - Repuestos de Motos",
-}
+BRANDS_DIR = "/opt/odi/data/brands"
+IDENTIDAD_DIR = "/opt/odi/data/identidad"
 
 
-class ShopifyBrandingManager:
-    """Aplica branding corporativo a tiendas Shopify."""
+def get_shop_config(empresa: str) -> Optional[Dict]:
+    """Get Shopify credentials for a store."""
+    path = os.path.join(BRANDS_DIR, f"{empresa.lower()}.json")
+    if not os.path.exists(path):
+        return None
+    with open(path) as f:
+        data = json.load(f)
+        return data.get("shopify", data)
 
-    LOGOS_DIR = "/mnt/volume_sfo3_01/profesion/10 empresas ecosistema ODI/logos_optimized"
-    BRANDS_DIR = "/opt/odi/data/brands"
 
-    def __init__(self):
-        self.stats = {"success": 0, "failed": 0, "skipped": 0}
+def get_brand_identity(empresa: str) -> Optional[Dict]:
+    """Get brand identity (colors, logo, etc)."""
+    path = os.path.join(IDENTIDAD_DIR, empresa.upper(), "brand.json")
+    if not os.path.exists(path):
+        return None
+    with open(path) as f:
+        return json.load(f)
 
-    def apply_branding(self, empresa_codigo: str) -> dict:
-        """
-        Aplica branding completo a UNA tienda.
-        """
-        empresa = empresa_codigo.upper()
-        result = {"empresa": empresa, "steps": {}}
 
-        # 1. Cargar configuracion
-        brand = self._load_brand(empresa)
-        if not brand:
-            logger.error(f"X {empresa}: brand.json no encontrado")
-            self.stats["failed"] += 1
-            result["error"] = "brand.json not found"
-            return result
+def shopify_request(config: Dict, method: str, endpoint: str, data: Dict = None) -> Dict:
+    """Make a Shopify API request."""
+    shop = config["shop"]
+    if not shop.endswith(".myshopify.com"):
+        shop = f"{shop}.myshopify.com"
 
-        shop_url = brand.get("shopify", {}).get("shop")
-        token = brand.get("shopify", {}).get("token")
+    url = f"https://{shop}/admin/api/2024-01/{endpoint}"
+    headers = {
+        "X-Shopify-Access-Token": config["token"],
+        "Content-Type": "application/json"
+    }
 
-        if not shop_url or not token:
-            logger.error(f"X {empresa}: credenciales Shopify no encontradas")
-            self.stats["failed"] += 1
-            result["error"] = "Shopify credentials missing"
-            return result
+    if method == "GET":
+        resp = requests.get(url, headers=headers, timeout=30)
+    elif method == "PUT":
+        resp = requests.put(url, headers=headers, json=data, timeout=30)
+    elif method == "POST":
+        resp = requests.post(url, headers=headers, json=data, timeout=30)
+    else:
+        raise ValueError(f"Unknown method: {method}")
 
-        headers = {"X-Shopify-Access-Token": token, "Content-Type": "application/json"}
-        base_url = f"https://{shop_url}/admin/api/2024-01"
+    return {"status": resp.status_code, "data": resp.json() if resp.text else {}}
 
-        print(f"\n=== {empresa} ===")
-        print(f"Shop: {shop_url}")
 
-        # 2. Configurar locale
-        result["steps"]["locale"] = self._set_locale(base_url, headers, empresa)
-        time.sleep(0.5)
+def get_shop_info(config: Dict) -> Dict:
+    """Get current shop information."""
+    result = shopify_request(config, "GET", "shop.json")
+    return result.get("data", {}).get("shop", {})
 
-        # 3. Obtener theme activo
-        theme_id = self._get_active_theme(base_url, headers)
-        if not theme_id:
-            logger.error(f"X {empresa}: no se encontro theme activo")
-            result["error"] = "No active theme"
-            return result
-        result["steps"]["theme_id"] = theme_id
-        print(f"Theme ID: {theme_id}")
 
-        # 4. Subir logo
-        result["steps"]["logo"] = self._upload_logo(base_url, headers, theme_id, empresa)
-        time.sleep(0.5)
+def update_shop_locale(config: Dict) -> Dict:
+    """Update shop to Spanish locale."""
+    # Note: Primary locale is set in shop settings, but we can set metafields
+    result = shopify_request(config, "PUT", "shop.json", {
+        "shop": {
+            "primary_locale": "es"
+        }
+    })
+    return result
 
-        # 5. Modificar settings del theme
-        result["steps"]["settings"] = self._apply_theme_settings(
-            base_url, headers, theme_id, empresa)
-        time.sleep(0.5)
 
-        # 6. Verificar traducciones
-        result["steps"]["translations"] = self._check_translations(
-            base_url, headers, theme_id)
+def set_shop_metafield(config: Dict, namespace: str, key: str, value: str, value_type: str = "single_line_text_field") -> Dict:
+    """Set a shop-level metafield."""
+    result = shopify_request(config, "POST", "metafields.json", {
+        "metafield": {
+            "namespace": namespace,
+            "key": key,
+            "value": value,
+            "type": value_type,
+            "owner_resource": "shop"
+        }
+    })
+    return result
 
-        self.stats["success"] += 1
-        print(f"OK {empresa}: branding aplicado")
-        return result
 
-    def apply_all(self) -> dict:
-        """Aplica branding a TODAS las empresas con brand.json."""
-        results = {}
-        empresas = self._list_empresas()
+def get_themes(config: Dict) -> List[Dict]:
+    """Get all themes."""
+    result = shopify_request(config, "GET", "themes.json")
+    return result.get("data", {}).get("themes", [])
 
-        print(f"Aplicando branding a {len(empresas)} tiendas...")
 
-        for empresa in empresas:
-            results[empresa] = self.apply_branding(empresa)
-            time.sleep(1)
+def get_main_theme(config: Dict) -> Optional[Dict]:
+    """Get the main/active theme."""
+    themes = get_themes(config)
+    for theme in themes:
+        if theme.get("role") == "main":
+            return theme
+    return themes[0] if themes else None
 
-        print(f"\nBranding completado: {self.stats['success']} OK, "
-              f"{self.stats['failed']} fallidas, {self.stats['skipped']} omitidas")
+
+def update_theme_settings(config: Dict, theme_id: int, settings: Dict) -> Dict:
+    """Update theme settings via settings_data.json asset."""
+    # First get current settings
+    result = shopify_request(config, "GET", f"themes/{theme_id}/assets.json?asset[key]=config/settings_data.json")
+
+    if result["status"] != 200:
+        return {"error": "Could not get theme settings", "status": result["status"]}
+
+    try:
+        current_settings = json.loads(result["data"]["asset"]["value"])
+    except:
+        current_settings = {"current": {}}
+
+    # Merge new settings
+    if "current" not in current_settings:
+        current_settings["current"] = {}
+
+    current_settings["current"].update(settings)
+
+    # Update settings
+    result = shopify_request(config, "PUT", f"themes/{theme_id}/assets.json", {
+        "asset": {
+            "key": "config/settings_data.json",
+            "value": json.dumps(current_settings, ensure_ascii=False)
+        }
+    })
+
+    return result
+
+
+def create_announcement_bar_content(brand: Dict) -> str:
+    """Create Spanish announcement bar text."""
+    nombre = brand.get("nombre_comercial", brand.get("nombre", ""))
+    return f"Bienvenido a {nombre} - Envios a toda Colombia - WhatsApp para pedidos"
+
+
+def create_footer_content(brand: Dict) -> Dict:
+    """Create Spanish footer content."""
+    nombre = brand.get("nombre_comercial", brand.get("nombre", ""))
+    return {
+        "footer_copyright": f"© 2026 {nombre}. Todos los derechos reservados.",
+        "footer_payment_text": "Pagos seguros con todas las tarjetas",
+        "footer_shipping_text": "Envios a toda Colombia"
+    }
+
+
+def apply_branding(empresa: str, dry_run: bool = False) -> Dict:
+    """Apply full branding to a Shopify store."""
+    results = {
+        "empresa": empresa,
+        "steps": [],
+        "success": True
+    }
+
+    # Get configs
+    config = get_shop_config(empresa)
+    if not config:
+        return {"empresa": empresa, "error": "Shopify config not found", "success": False}
+
+    brand = get_brand_identity(empresa)
+    if not brand:
+        return {"empresa": empresa, "error": "Brand identity not found", "success": False}
+
+    # 1. Get shop info
+    shop_info = get_shop_info(config)
+    results["shop_name"] = shop_info.get("name", "Unknown")
+    results["current_locale"] = shop_info.get("primary_locale", "unknown")
+
+    if dry_run:
+        results["dry_run"] = True
+        results["would_apply"] = {
+            "locale": "es",
+            "colors": brand.get("colores", {}),
+            "announcement": create_announcement_bar_content(brand),
+            "footer": create_footer_content(brand)
+        }
         return results
 
-    def _set_locale(self, base_url, headers, empresa) -> str:
-        """Configurar locale del shop a espanol."""
-        try:
-            resp = requests.get(f"{base_url}/shop.json", headers=headers)
-            if resp.status_code != 200:
-                return f"X Error {resp.status_code}"
+    # 2. Set metafields for branding
+    colores = brand.get("colores", {})
 
-            shop = resp.json().get("shop", {})
-            current_locale = shop.get("primary_locale", "?")
+    # Color primario
+    if colores.get("primario"):
+        r = set_shop_metafield(config, "branding", "color_primario", colores["primario"])
+        results["steps"].append({
+            "action": "metafield_color_primario",
+            "status": r["status"],
+            "value": colores["primario"]
+        })
+        time.sleep(0.5)
 
-            if current_locale == "es":
-                print(f"  Locale: ya en espanol")
-                return "OK ya en es"
+    # Color secundario
+    if colores.get("secundario"):
+        r = set_shop_metafield(config, "branding", "color_secundario", colores["secundario"])
+        results["steps"].append({
+            "action": "metafield_color_secundario",
+            "status": r["status"],
+            "value": colores["secundario"]
+        })
+        time.sleep(0.5)
 
-            resp = requests.put(
-                f"{base_url}/shop.json",
-                headers=headers,
-                json={"shop": {"primary_locale": "es"}}
-            )
+    # Color acento
+    if colores.get("acento"):
+        r = set_shop_metafield(config, "branding", "color_acento", colores["acento"])
+        results["steps"].append({
+            "action": "metafield_color_acento",
+            "status": r["status"],
+            "value": colores["acento"]
+        })
+        time.sleep(0.5)
 
-            if resp.status_code == 200:
-                print(f"  Locale: {current_locale} -> es")
-                return f"OK {current_locale} -> es"
-            else:
-                return f"WARN HTTP {resp.status_code}"
+    # 3. Announcement bar text
+    announcement = create_announcement_bar_content(brand)
+    r = set_shop_metafield(config, "branding", "announcement_text", announcement)
+    results["steps"].append({
+        "action": "metafield_announcement",
+        "status": r["status"],
+        "value": announcement[:50] + "..."
+    })
+    time.sleep(0.5)
 
-        except Exception as e:
-            return f"X {e}"
+    # 4. Footer content
+    footer = create_footer_content(brand)
+    for key, value in footer.items():
+        r = set_shop_metafield(config, "branding", key, value)
+        results["steps"].append({
+            "action": f"metafield_{key}",
+            "status": r["status"]
+        })
+        time.sleep(0.3)
 
-    def _get_active_theme(self, base_url, headers) -> Optional[int]:
-        """Obtener ID del theme activo."""
-        try:
-            resp = requests.get(f"{base_url}/themes.json", headers=headers)
-            if resp.status_code == 200:
-                themes = resp.json().get("themes", [])
-                for theme in themes:
-                    if theme.get("role") == "main":
-                        return theme["id"]
-        except Exception as e:
-            logger.error(f"Error obteniendo themes: {e}")
-        return None
+    # 5. Try to update theme settings
+    theme = get_main_theme(config)
+    if theme:
+        results["theme"] = theme.get("name", "Unknown")
+        results["theme_id"] = theme.get("id")
 
-    def _upload_logo(self, base_url, headers, theme_id, empresa) -> str:
-        """Subir logo como asset del theme."""
-        logo_candidates = [
-            f"{self.LOGOS_DIR}/{empresa}.png",
-            f"{self.LOGOS_DIR}/{empresa.title()}.png",
-            f"{self.LOGOS_DIR}/{empresa.lower()}.png",
-            f"{self.LOGOS_DIR}/{empresa}_logo.png",
-        ]
+        # Try to update color scheme in theme
+        theme_settings = {}
+        if colores.get("primario"):
+            theme_settings["colors_accent_1"] = colores["primario"]
+        if colores.get("secundario"):
+            theme_settings["colors_accent_2"] = colores["secundario"]
 
-        logo_path = None
-        for candidate in logo_candidates:
-            if os.path.exists(candidate):
-                logo_path = candidate
-                break
+        if theme_settings:
+            r = update_theme_settings(config, theme["id"], theme_settings)
+            results["steps"].append({
+                "action": "theme_colors",
+                "status": r.get("status", "attempted")
+            })
 
-        if not logo_path:
-            print(f"  Logo: no encontrado (usando nombre texto)")
-            return "WARN logo no encontrado"
+    # Check overall success
+    errors = [s for s in results["steps"] if s.get("status", 200) >= 400]
+    results["success"] = len(errors) == 0
+    results["errors"] = len(errors)
 
-        try:
-            with open(logo_path, "rb") as f:
-                logo_data = base64.b64encode(f.read()).decode("utf-8")
+    return results
 
-            asset_key = "assets/logo.png"
-            resp = requests.put(
-                f"{base_url}/themes/{theme_id}/assets.json",
-                headers=headers,
-                json={"asset": {"key": asset_key, "attachment": logo_data}}
-            )
 
-            if resp.status_code == 200:
-                print(f"  Logo: subido ({os.path.basename(logo_path)})")
-                return f"OK {os.path.basename(logo_path)}"
-            else:
-                return f"WARN HTTP {resp.status_code}"
+def apply_branding_all(dry_run: bool = False) -> Dict:
+    """Apply branding to all 15 stores."""
+    empresas = [
+        "ARMOTOS", "BARA", "CBI", "DFG", "DUNA", "IMBRA", "JAPAN",
+        "KAIQI", "LEO", "MCLMOTOS", "OH_IMPORTACIONES", "STORE",
+        "VAISAND", "VITTON", "YOKOMAR"
+    ]
 
-        except Exception as e:
-            return f"X {e}"
+    results = {"stores": {}, "success": 0, "failed": 0}
 
-    def _apply_theme_settings(self, base_url, headers, theme_id, empresa) -> str:
-        """Modificar settings del theme para colores y textos."""
-        try:
-            # Leer settings actuales
-            resp = requests.get(
-                f"{base_url}/themes/{theme_id}/assets.json",
-                headers=headers,
-                params={"asset[key]": "config/settings_data.json"}
-            )
+    for empresa in empresas:
+        print(f"Processing {empresa}...")
+        r = apply_branding(empresa, dry_run)
+        results["stores"][empresa] = r
 
-            if resp.status_code != 200:
-                return f"WARN HTTP {resp.status_code} leyendo settings"
+        if r.get("success"):
+            results["success"] += 1
+        else:
+            results["failed"] += 1
 
-            asset = resp.json().get("asset", {})
-            settings_raw = asset.get("value", "{}")
-            settings = json.loads(settings_raw)
+        time.sleep(1)  # Rate limit between stores
 
-            current = settings.get("current", settings)
-
-            colores = COLORES_EMPRESAS.get(empresa, COLORES_EMPRESAS["BARA"])
-            nombre = NOMBRES_EMPRESAS.get(empresa, empresa)
-            announcement = f"Bienvenidos a {nombre}"
-
-            # Colores (Dawn theme keys)
-            color_updates = {
-                "colors_solid_button_labels": "#FFFFFF",
-                "colors_accent_1": colores.get("acento", "#E8A530"),
-                "colors_accent_2": colores.get("primario", "#1B3A5C"),
-                "colors_text": "#1A1A1A",
-                "colors_outline_button_labels": colores.get("primario", "#1B3A5C"),
-                "colors_background_1": colores.get("fondo", "#FFFFFF"),
-                "colors_background_2": colores.get("secundario", "#F5F5F5"),
-            }
-
-            for key, value in color_updates.items():
-                if key in current:
-                    current[key] = value
-
-            # Announcement bar
-            sections = current.get("sections", {})
-            for section_id, section in sections.items():
-                if section.get("type") == "announcement-bar":
-                    blocks = section.get("blocks", {})
-                    for block_id, block in blocks.items():
-                        if block.get("type") == "announcement":
-                            block.setdefault("settings", {})
-                            block["settings"]["text"] = announcement
-                    break
-
-            # Footer en espanol
-            for section_id, section in sections.items():
-                if section.get("type") == "footer":
-                    section.setdefault("settings", {})
-                    section["settings"]["newsletter_heading"] = "Suscribete a nuestro boletin"
-                    section["settings"]["newsletter_text"] = "Recibe ofertas exclusivas y novedades en repuestos."
-                    break
-
-            # Guardar settings
-            settings_str = json.dumps(settings, ensure_ascii=False)
-
-            resp = requests.put(
-                f"{base_url}/themes/{theme_id}/assets.json",
-                headers=headers,
-                json={"asset": {"key": "config/settings_data.json", "value": settings_str}}
-            )
-
-            if resp.status_code == 200:
-                print(f"  Settings: colores + announcement + footer OK")
-                return "OK"
-            else:
-                return f"WARN HTTP {resp.status_code}"
-
-        except Exception as e:
-            return f"X {e}"
-
-    def _check_translations(self, base_url, headers, theme_id) -> str:
-        """Verificar locale espanol en theme."""
-        try:
-            resp = requests.get(
-                f"{base_url}/themes/{theme_id}/assets.json",
-                headers=headers,
-                params={"asset[key]": "locales/es.default.json"}
-            )
-
-            if resp.status_code == 200:
-                return "OK locale es existe"
-
-            resp = requests.get(
-                f"{base_url}/themes/{theme_id}/assets.json",
-                headers=headers,
-                params={"asset[key]": "locales/es.json"}
-            )
-
-            if resp.status_code == 200:
-                return "OK locale es.json existe"
-
-            return "WARN locale file no encontrado"
-
-        except Exception as e:
-            return f"X {e}"
-
-    def _load_brand(self, empresa: str) -> Optional[dict]:
-        """Cargar brand.json de una empresa."""
-        paths = [
-            Path(f"{self.BRANDS_DIR}/{empresa.lower()}.json"),
-            Path(f"{self.BRANDS_DIR}/{empresa}.json"),
-        ]
-        for path in paths:
-            if path.exists():
-                with open(path) as f:
-                    return json.load(f)
-        return None
-
-    def _list_empresas(self) -> list:
-        """Listar empresas con brand.json."""
-        empresas = []
-        brands_path = Path(self.BRANDS_DIR)
-        if brands_path.exists():
-            for f in brands_path.glob("*.json"):
-                empresas.append(f.stem.upper())
-        return sorted(empresas)
+    return results
 
 
 if __name__ == "__main__":
     import sys
-    logging.basicConfig(level=logging.INFO)
 
-    manager = ShopifyBrandingManager()
+    if len(sys.argv) < 2:
+        print("Usage:")
+        print("  python3 odi_shopify_branding.py test EMPRESA     # Dry run")
+        print("  python3 odi_shopify_branding.py apply EMPRESA    # Apply to one")
+        print("  python3 odi_shopify_branding.py apply-all        # Apply to all 15")
+        sys.exit(1)
 
-    if len(sys.argv) > 1:
-        empresa = sys.argv[1].upper()
-        if empresa == "ALL":
-            manager.apply_all()
-        else:
-            result = manager.apply_branding(empresa)
-            print(json.dumps(result, indent=2, ensure_ascii=False))
+    cmd = sys.argv[1]
+
+    if cmd == "test" and len(sys.argv) > 2:
+        empresa = sys.argv[2].upper()
+        result = apply_branding(empresa, dry_run=True)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+
+    elif cmd == "apply" and len(sys.argv) > 2:
+        empresa = sys.argv[2].upper()
+        result = apply_branding(empresa, dry_run=False)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+
+    elif cmd == "apply-all":
+        result = apply_branding_all(dry_run=False)
+        print(json.dumps(result, indent=2, ensure_ascii=False))
+
     else:
-        print("Usage: python odi_shopify_branding.py <EMPRESA|ALL>")
-        print("Available:", manager._list_empresas())
+        print(f"Unknown command: {cmd}")
+        sys.exit(1)

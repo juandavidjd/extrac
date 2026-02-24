@@ -201,3 +201,159 @@ if __name__ == '__main__':
         print(f'Found: {product["title"]}')
     else:
         print('Product not found')
+
+    def create_product(
+        self,
+        title: str,
+        handle: str,
+        body_html: str,
+        price: float,
+        sku: str,
+        image_path: Optional[str] = None,
+        status: str = "active"
+    ) -> Optional[Dict]:
+        """
+        Create a new product in Shopify.
+        
+        Args:
+            title: Product title (max 60 chars)
+            handle: URL-friendly handle
+            body_html: HTML description (Ficha 360)
+            price: Product price in COP
+            sku: Product SKU code
+            image_path: Optional path to image file
+            status: Product status (active/draft)
+        
+        Returns:
+            Created product dict if successful
+        """
+        url = f"{self.base_url}/products.json"
+        
+        # Build product payload
+        product_data = {
+            "title": title[:60],
+            "handle": handle,
+            "body_html": body_html,
+            "status": status,
+            "variants": [{
+                "price": str(price),
+                "sku": sku,
+                "inventory_management": None,
+                "inventory_policy": "continue"
+            }]
+        }
+        
+        # Add image if provided
+        if image_path and os.path.exists(image_path):
+            with open(image_path, "rb") as f:
+                image_data = base64.b64encode(f.read()).decode("utf-8")
+            product_data["images"] = [{
+                "attachment": image_data,
+                "alt": title[:60]
+            }]
+        
+        payload = {"product": product_data}
+        
+        try:
+            resp = httpx.post(url, headers=self.headers, json=payload, timeout=120)
+            resp.raise_for_status()
+            return resp.json().get("product")
+        except httpx.HTTPStatusError as e:
+            print(f"HTTP Error creating {sku}: {e.response.status_code} - {e.response.text[:200]}")
+            return None
+        except Exception as e:
+            print(f"Error creating {sku}: {e}")
+            return None
+    
+    def bulk_create_from_json(
+        self,
+        json_path: str,
+        images_dir: str,
+        start_idx: int = 0,
+        limit: int = None,
+        delay: float = 0.5
+    ) -> Dict:
+        """
+        Bulk create products from corrected JSON file.
+        
+        Args:
+            json_path: Path to corrected products JSON
+            images_dir: Directory with smart film images
+            start_idx: Starting index (for resume)
+            limit: Max products to create (None = all)
+            delay: Delay between API calls in seconds
+        
+        Returns:
+            Stats dict with created, failed, skipped counts
+        """
+        import time
+        import glob
+        
+        # Load products
+        with open(json_path, "r", encoding="utf-8") as f:
+            products = json.load(f)
+        
+        # Build SKU to image mapping
+        sku_to_image = {}
+        for img_file in glob.glob(os.path.join(images_dir, "*.png")):
+            filename = os.path.basename(img_file)
+            # Format: page_XXX_sku_YYYYY.png or sku_YYYYY.png
+            if "_sku_" in filename:
+                sku = filename.split("_sku_")[1].replace(".png", "")
+                sku_to_image[sku] = img_file
+        
+        stats = {"created": 0, "failed": 0, "skipped": 0, "errors": []}
+        
+        end_idx = len(products) if limit is None else min(start_idx + limit, len(products))
+        
+        print(f"Uploading products {start_idx+1} to {end_idx} of {len(products)}")
+        print(f"Images mapped: {len(sku_to_image)}")
+        print("=" * 50)
+        
+        for i, prod in enumerate(products[start_idx:end_idx], start=start_idx):
+            # Extract SKU (handle list or string)
+            sku = prod.get("codigo", "")
+            if isinstance(sku, list):
+                sku = sku[0] if sku else ""
+            sku = str(sku).strip()
+            
+            title = prod.get("titulo", prod.get("title", ""))
+            handle = prod.get("handle", "")
+            body_html = prod.get("body_html", "")
+            price = prod.get("precio", prod.get("price", 0))
+            
+            # Find image
+            image_path = sku_to_image.get(sku)
+            
+            # Skip if missing critical data
+            if not title or not sku:
+                stats["skipped"] += 1
+                continue
+            
+            # Create product
+            result = self.create_product(
+                title=title,
+                handle=handle,
+                body_html=body_html,
+                price=float(price) if price else 0,
+                sku=sku,
+                image_path=image_path,
+                status="active"
+            )
+            
+            if result:
+                stats["created"] += 1
+            else:
+                stats["failed"] += 1
+                stats["errors"].append({"idx": i, "sku": sku, "title": title[:30]})
+            
+            # Progress report every 100
+            if (i + 1) % 100 == 0:
+                print(f"  Progreso: {i+1}/{end_idx} ({stats['created']} ok, {stats['failed']} err)")
+            
+            time.sleep(delay)
+        
+        print("=" * 50)
+        print(f"RESULTADO: {stats['created']} creados, {stats['failed']} fallidos, {stats['skipped']} saltados")
+        
+        return stats

@@ -23,5 +23,14 @@
     "event_id": null,
     "products": [],
     "metrics": {}
+  },
+  {
+    "timestamp": "2026-02-20T00:33:16.608850Z",
+    "order_id": "AUDIT-TEST",
+    "store": "test",
+    "total": 0,
+    "event_id": null,
+    "products": [],
+    "metrics": {}
   }
 ]

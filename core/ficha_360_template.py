@@ -32,8 +32,27 @@ def is_generic(text):
 def detect_category(title):
     title_lower = title.lower()
     categories = {
-        # 'empaque' removed - V22 fix: only Vitton uses empaque prefix
-        'filtro aceite': 'filtro',  # Specific first
+        # V22: Workshop categories (detect BEFORE moto parts)
+        'mesa elevadora': 'equipo_taller',
+        'elevadora': 'equipo_taller',
+        'gato hidraulico': 'equipo_taller',
+        'compresor': 'equipo_taller',
+        'banco de trabajo': 'equipo_taller',
+        'herramienta': 'herramienta',
+        'llave': 'herramienta',
+        'torquimetro': 'herramienta',
+        'extractor': 'herramienta',
+        'destornillador': 'herramienta',
+        'aceite': 'insumo',  # Antes era moto part
+        'grasa': 'insumo',
+        'limpiador': 'insumo',
+        'desengrasante': 'insumo',
+        'casco': 'accesorio',
+        'guantes': 'accesorio',
+        'chaleco': 'accesorio',
+        'gafas': 'accesorio',
+        # Moto parts (original)
+        'filtro aceite': 'filtro',
         'filtro aire': 'filtro',
         'filtro': 'filtro',
         'aceite': 'aceite',
@@ -59,6 +78,12 @@ def detect_category(title):
 
 def get_info_tecnica(title, category):
     info_map = {
+        # V22: Workshop equipment templates
+        'equipo_taller': 'Equipo profesional de taller. Especificaciones técnicas según modelo.',
+        'herramienta': 'Herramienta profesional de alta durabilidad. Acero de alta resistencia con acabado anticorrosivo.',
+        'insumo': 'Insumo de calidad certificada. Consultar especificaciones técnicas del producto.',
+        'accesorio': 'Accesorio con certificación de seguridad. Cumple normativas vigentes.',
+        # Moto parts templates
         'filtro': 'Filtro de alta eficiencia para protección del motor.',
         'aceite': 'Lubricante de grado automotriz para máximo rendimiento.',
         'freno': 'Sistema de frenado certificado para uso en motocicletas.',
@@ -77,6 +102,12 @@ def get_info_tecnica(title, category):
 
 def get_beneficios(category):
     beneficios_map = {
+        # V22: Workshop equipment benefits
+        'equipo_taller': ['Capacidad profesional', 'Diseño robusto', 'Fácil mantenimiento'],
+        'herramienta': ['Alta resistencia', 'Acabado anticorrosivo', 'Ergonomía optimizada'],
+        'insumo': ['Alta calidad', 'Rendimiento superior', 'Compatibilidad garantizada'],
+        'accesorio': ['Protección certificada', 'Comodidad de uso', 'Durabilidad garantizada'],
+        # Moto parts benefits
         'filtro': ['Filtra impurezas efectivamente', 'Prolonga vida del motor', 'Fácil reemplazo'],
         'freno': ['Frenado seguro y eficiente', 'Resistente al desgaste', 'Instalación directa'],
         'cadena': ['Alta resistencia a la tracción', 'Transmisión suave', 'Larga durabilidad'],
