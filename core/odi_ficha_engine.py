@@ -13,6 +13,12 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 from pathlib import Path
 
+# V25: Middleware
+try:
+    from odi_organismo_middleware import get_middleware
+    _MW = get_middleware()
+except:
+    _MW = None
 BRANDS_DIR = Path("/opt/odi/data/brands")
 PROFILES_DIR = Path("/opt/odi/data/profiles")
 REPORTS_DIR = Path("/opt/odi/data/reports")
@@ -203,6 +209,11 @@ class FichaEngine:
             return False, str(e)
 
     def apply_fichas(self, domain=None, token=None, limit=None, dry_run=False):
+# V25 Middleware PRE
+        if _MW:
+            pre = _MW.pre_operacion({"operacion": "ficha", "empresa": self.empresa, "tipo": "ficha"})
+            if not pre.get("permitido", True):
+                return {"blocked": True, "reason": pre.get("motivo")}
         shop_config = self.brand_config.get("shopify", {})
         shop = domain or shop_config.get("shop")
         token = token or shop_config.get("token")

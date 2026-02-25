@@ -9,6 +9,14 @@ import requests
 import time
 from pathlib import Path
 
+# V25: Middleware
+try:
+    import sys
+    sys.path.insert(0, "/opt/odi/core")
+    from odi_organismo_middleware import get_middleware
+    _MW = get_middleware()
+except:
+    _MW = None
 BRANDS_DIR = Path("/opt/odi/data/brands")
 
 
@@ -21,6 +29,11 @@ def load_brand_config(empresa: str):
 
 
 def clean_all_images(empresa: str, domain: str = None, token: str = None, dry_run: bool = True):
+    # V25 Middleware PRE
+    if _MW:
+        pre = _MW.pre_operacion({"operacion": "image_clean", "empresa": empresa, "tipo": "image_clean"})
+        if not pre.get("permitido", True):
+            return {"blocked": True, "reason": pre.get("motivo")}
     """Elimina todas las imagenes de productos activos."""
     config = load_brand_config(empresa)
     shop_config = config.get("shopify", {})

@@ -10,6 +10,12 @@ from datetime import datetime
 from typing import Dict
 from pathlib import Path
 
+# V25: Middleware
+try:
+    from odi_organismo_middleware import get_middleware
+    _MW = get_middleware()
+except:
+    _MW = None
 BRANDS_DIR = Path("/opt/odi/data/brands")
 PROFILES_DIR = Path("/opt/odi/data/profiles")
 REPORTS_DIR = Path("/opt/odi/data/reports")
@@ -135,7 +141,7 @@ class MergeEngine:
                 d["draft"].append(sku)
             if not m["has_image"] and (m["local_image"] or m["gdrive"]):
                 d["needs_image"].append(sku)
-        print(f"[DECIDE] Activate:{len(d[activate])} Draft:{len(d[draft])} Gaps:{len(d[gaps])}")
+        print(f"[DECIDE] Activate:{len(d['activate'])} Draft:{len(d['draft'])} Gaps:{len(d['gaps'])}")
         return d
 
     def execute(self, master, decisions, dry_run=True) -> Dict:
@@ -162,6 +168,11 @@ class MergeEngine:
         return results
 
     def run_merge(self, dry_run=True) -> Dict:
+# V25 Middleware PRE
+        if _MW:
+            pre = _MW.pre_operacion({"operacion": "merge", "empresa": self.empresa, "tipo": "merge"})
+            if not pre.get("permitido", True):
+                return {"blocked": True, "reason": pre.get("motivo", "Guardian")}
         print(f"[MERGE] {self.empresa}")
         shopify = self.collect_shopify()
         prices = self.collect_excel_prices()
@@ -174,6 +185,9 @@ class MergeEngine:
                   "master": len(master), "decisions": {k: len(v) for k, v in decisions.items()}, "results": results}
         with open(REPORTS_DIR / f"{self.empresa.lower()}_merge_report.json", "w") as f:
             json.dump(report, f, indent=2)
+# V25 Middleware POST
+        if _MW:
+            _MW.post_operacion({"operacion": "merge", "empresa": self.empresa, "resultado": "ok", "productos_procesados": len(master)})
         return report
 
 
