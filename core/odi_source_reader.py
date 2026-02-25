@@ -606,7 +606,7 @@ class SourceReader:
         with open(Path(REPORTS_DIR) / "ecosystem_source_scan.json", "w") as f:
             json.dump(results, f, indent=2, ensure_ascii=False, default=str)
         
-        log.info(f"[SCAN_ALL] {results[summary][total]} empresas escaneadas")
+        log.info(f"[SCAN_ALL] {results['summary']['total']} empresas escaneadas")
         return results
 
 
