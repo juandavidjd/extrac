@@ -230,7 +230,7 @@ ODI_KERNEL_URL=http://localhost:3000
 
 # Shopify (per client)
 KAIQI_SHOP=u03tqc-0e.myshopify.com
-KAIQI_TOKEN=***REMOVED***...
+KAIQI_TOKEN=shpat_...
 # ... more clients
 
 # Image Server

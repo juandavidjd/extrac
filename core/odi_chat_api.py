@@ -81,6 +81,9 @@ class ChatMessage(BaseModel):
     domain: Optional[str] = None
 
 class ChatResponse(BaseModel):
+    # V25: campos para interfaz
+    mode: str = "build"  # commerce|care|build|diagnose|empower|optimize|learn
+    follow: Optional[str] = None  # frase de seguimiento
     response: str
     narrative: str = ""
     session_id: str
@@ -568,6 +571,85 @@ def generar_narrative_tts(response_full: str, productos: list) -> str:
     return primera[:197] + "..."
 
 # --- V13.1 TTS Endpoint ---
+
+# ═══════════════════════════════════════════
+# V25: Funciones para interfaz
+# ═══════════════════════════════════════════
+
+def detect_mode_v25(message: str, industry: str, productos: list) -> str:
+    """Detecta el modo de ODI segun contexto. Alimenta la interfaz."""
+    msg_lower = message.lower()
+    
+    # Crisis / cuidado (Guardian P0)
+    crisis_keywords = ["solo", "mal", "triste", "no puedo", "angustia", "ayuda", "morir"]
+    if any(k in msg_lower for k in crisis_keywords):
+        return "care"
+    
+    # Saludo/Cuidado
+    care_keywords = ["hola", "buenos dias", "buenas tardes", "como estas", "gracias"]
+    if any(k in msg_lower for k in care_keywords):
+        return "care"
+    
+    # Comercio (tiene productos O keywords de compra)
+    commerce_keywords = ["comprar", "precio", "cotizar", "cuanto cuesta", "disponible", "pedido", "vender"]
+    if productos and len(productos) > 0:
+        return "commerce"
+    if any(k in msg_lower for k in commerce_keywords):
+        return "commerce"
+    
+    # Diagnostico (incluye mecanico)
+    diagnose_keywords = ["no prende", "no funciona", "falla", "problema", "revisar", "diagnostico", "no arranca", "se apaga", "ruido"]
+    if any(k in msg_lower for k in diagnose_keywords):
+        return "diagnose"
+    
+    # Aprender
+    learn_keywords = ["como se", "como instalar", "estudiar", "aprender", "curso", "programar", "tutorial", "explicame"]
+    if any(k in msg_lower for k in learn_keywords):
+        return "learn"
+    
+    # Salud
+    if industry and industry.startswith("salud"):
+        return "care"
+    
+    # Empoderar
+    empower_keywords = ["trabajo", "empleo", "experiencia", "echaron", "retirar"]
+    if any(k in msg_lower for k in empower_keywords):
+        return "empower"
+    
+    # Construir
+    build_keywords = ["montar", "negocio", "tienda", "landing", "armar", "crear"]
+    if any(k in msg_lower for k in build_keywords):
+        return "build"
+    
+    # Optimizar
+    optimize_keywords = ["excel", "facturas", "reportes", "automatizar"]
+    if any(k in msg_lower for k in optimize_keywords):
+        return "optimize"
+    
+    return "commerce"  # default para industria moto
+
+
+def split_follow_v25(response_text: str) -> tuple:
+    """Separa respuesta principal de frase de seguimiento."""
+    if not response_text:
+        return response_text, None
+    
+    sentences = response_text.split(". ")
+    if len(sentences) >= 2:
+        last = sentences[-1].strip()
+        if last.endswith("?") or any(w in last.lower() for w in ["enviame", "pasame", "dime", "cuentame"]):
+            main = ". ".join(sentences[:-1]) + "."
+            return main, last
+    return response_text, None
+
+
+def add_from_to_productos(productos: list) -> list:
+    """Agrega campo from (empresa proveedora) a cada producto."""
+    for p in productos:
+        if "from" not in p or not p["from"]:
+            p["from"] = p.get("vendor", p.get("empresa", p.get("store", "")))
+    return productos
+
 @app.post("/odi/chat/speak")
 async def speak(request: Request):
     """
@@ -701,6 +783,8 @@ async def chat(msg: ChatMessage):
     narrative = generar_narrative_tts(respuesta, productos_formateados)
 
     # V23.4: Build filter log
+    # V25: agregar from a productos
+    productos_formateados = add_from_to_productos(productos_formateados)
     filter_log = {
         "chroma_total": len(productos) if productos else 0,
         "enriched": len(productos_estructurados) if productos_estructurados else 0
@@ -719,6 +803,9 @@ async def chat(msg: ChatMessage):
         audio_enabled=True,
         industry=industry,
         company_identity=company_id,
+        # V25: mode, voice, follow
+        mode=detect_mode_v25(msg.message, industry, productos_formateados),
+        follow=split_follow_v25(respuesta)[1],
     )
 
 @app.get("/odi/chat/health")
@@ -745,3 +832,8 @@ if __name__ == "__main__":
     port = int(os.getenv("ODI_CHAT_PORT", "8813"))
     log.info("Starting ODI Chat API on port %d", port)
     uvicorn.run(app, host="0.0.0.0", port=port)
+
+# ═══════════════════════════════════════════
+# V25: Funciones para interfaz
+# ═══════════════════════════════════════════
+

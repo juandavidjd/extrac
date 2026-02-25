@@ -66,7 +66,7 @@ curl http://localhost:8804/stores
 
 # Kaiqi (Piloto)
 KAIQI_SHOP=tu-tienda-kaiqi.myshopify.com
-KAIQI_TOKEN=***REMOVED***xxxxxxxxxxxxx
+KAIQI_TOKEN=shpat_xxxxxxxxxxxxx
 
 # Resto de tiendas cuando estén listas...
 ```
