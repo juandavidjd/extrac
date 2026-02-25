@@ -36,6 +36,7 @@ BENEFICIOS_POR_TIPO = {
     "Arbol de Levas": ["Sincronizacion precisa de valvulas", "Acero de alta resistencia", "Perfil optimizado", "Mayor durabilidad"],
     "Biela": ["Conexion piston-ciguenal optima", "Aleacion de alta resistencia", "Balance perfecto", "Reduce vibraciones"],
     "Piston": ["Compresion eficiente", "Aleacion ligera", "Ranuras precisas", "Excelente disipacion de calor"],
+    "Anillos": ["Sellado preciso piston-cilindro", "Compresion optima", "Control de aceite", "Resistencia al calor"],
     "Bomba de Aceite": ["Lubricacion constante", "Presion optima", "Engranajes precisos", "Protege el motor"],
     "Cilindro": ["Paredes pulidas", "Enfriamiento eficiente", "Aleacion de alta calidad", "Larga vida util"],
     "Clutch/Embrague": ["Acople suave", "Transmision progresiva", "Materiales premium", "Respuesta inmediata"],

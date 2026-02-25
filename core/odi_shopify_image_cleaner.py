@@ -83,7 +83,7 @@ def clean_all_images(empresa: str, domain: str = None, token: str = None, dry_ru
                 time.sleep(0.3)
             except:
                 pass
-        print(f"  [{p[id]}] {len(p[images])} imagenes eliminadas")
+        print(f"  [{p['id']}] {len(p['images'])} imagenes eliminadas")
 
     print(f"\n[COMPLETE] Deleted: {deleted} imagenes")
     return {"products": len(products), "images": total_images, "deleted": deleted}
