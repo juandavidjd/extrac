@@ -38,15 +38,15 @@ FITMENT_URL = "http://172.18.0.5:8802"  # Docker network, no port-published
 # ============================================================
 # GOVERNANCE — V21.2 Enforcement Classification
 # ============================================================
-GOVERNED_STORES = {"DFG", "ARMOTOS", "VITTON", "IMBRA", "BARA", "KAIQI", "MCLMOTOS"}
-LEGACY_STORES = {"YOKOMAR", "JAPAN", "CBI", "LEO", "STORE", "VAISAND"}
+GOVERNED_STORES = {"DFG", "ARMOTOS", "VITTON", "IMBRA", "BARA", "KAIQI", "MCLMOTOS", "YOKOMAR"}
+LEGACY_STORES = {"JAPAN", "CBI", "LEO", "STORE", "VAISAND"}
 ECOSYSTEM_CACHE_TTL_SECONDS = 300
 
 # Extractors por tienda
 STORE_EXTRACTORS = {
     "DFG": "CSV", "ARMOTOS": "PDF_Tabular", "VITTON": "Excel",
     "IMBRA": "CSV", "BARA": "CSV", "KAIQI": "CSV", "MCLMOTOS": "PDF_Grid",
-    "YOKOMAR": "Legacy", "JAPAN": "Legacy", "CBI": "Legacy",
+    "YOKOMAR": "PDF_Grid+HD", "JAPAN": "Legacy", "CBI": "Legacy",
     "LEO": "Legacy", "STORE": "Legacy", "VAISAND": "Legacy",
     "DUNA": "CSV", "OH_IMPORTACIONES": "CSV"
 }
@@ -70,12 +70,12 @@ def _get_shopify_counts(shop, token):
     headers = {"X-Shopify-Access-Token": token}
     active, draft = 0, 0
     try:
-        url = f"https://{shop}/admin/api/2024-10/products/count.json?published_status=published"
+        url = f"https://{shop}/admin/api/2024-10/products/count.json?status=active"
         r = requests.get(url, headers=headers, timeout=10)
         if r.status_code == 200:
             active = r.json().get("count", 0)
         
-        url = f"https://{shop}/admin/api/2024-10/products/count.json?published_status=unpublished"
+        url = f"https://{shop}/admin/api/2024-10/products/count.json?status=draft"
         r = requests.get(url, headers=headers, timeout=10)
         if r.status_code == 200:
             draft = r.json().get("count", 0)
