@@ -49,6 +49,28 @@ Cada ventana tiene un scope definido. Respétalo.
 Si encuentras un problema que no está en la orden, REPÓRTALO.
 No lo corrijas por tu cuenta. Juan David decide si se corrige y cuándo.
 
+### Regla 7: Verificar cada escritura (Protocolo Anti-Alucinación)
+Después de CUALQUIER edición de archivo, Claude Code DEBE:
+1. **Leer el archivo modificado** con Read/cat para confirmar que el cambio existe en disco.
+2. **Incluir números de línea** en el reporte de lo que cambió.
+3. **Si un comando falla**, declararlo explícitamente como FALLIDO. Nunca decir "debería funcionar".
+4. **No reportar éxito sin evidencia.** Si no puedes verificar, di "NO VERIFICADO".
+
+```
+INCORRECTO: "Actualicé el endpoint en main.py"
+CORRECTO:   "Actualicé main.py:45-52 — nuevo endpoint /health. Verificado con Read:"
+```
+
+**Contexto:** Claude Code tiende a confundir intención con ejecución. Esta regla obliga a mostrar evidencia.
+
+### Regla 8: Gatekeeper — No tocar archivos fuente directamente en tareas complejas
+Para tareas de integración que vienen del debate Claude.ai/ChatGPT/Gemini:
+1. **Escribir propuesta** en `PROPOSED_CHANGES.md` con bloques de código completos y rutas exactas.
+2. **Esperar aprobación** de Juan David o del pipeline Gatekeeper antes de tocar archivos `.py`, `.js`, `.jsx`, `.ts`.
+3. **Si no encuentras un archivo**, reportar `FILE_NOT_FOUND`. No inventar rutas.
+
+**Excepción:** Tareas simples y directas (corregir un typo, agregar una línea) pueden ejecutarse directo con verificación de Regla 7.
+
 ---
 
 ## Proyecto
@@ -315,4 +337,81 @@ sudo certbot certificates
 
 # Espacio disco
 df -h && docker system df
+
+# Gatekeeper — ejecutar tarea blindada
+./gatekeeper.sh "descripción de la tarea"
+
+# Lint Python (ruff)
+ruff check .
+
+# Lint JS/React (eslint)
+npm run lint
+
+# Verificar integridad Django
+python manage.py check && ruff check .
+```
+
+## Sistema Gatekeeper (Pipeline de Integración Blindada)
+
+### Problema que resuelve
+Claude Code a veces reporta cambios como "hechos" cuando la realidad en disco es diferente.
+El Gatekeeper obliga a que todo cambio pase por verificación automatizada.
+
+### Cadena de mando
+
+```
+Claude.ai (Contexto) + ChatGPT (Lógica) + Gemini (Proyección)
+                         |
+                         v
+              DIRECTIVA_MAESTRA_TEMPLATE.md
+                         |
+                         v
+              gatekeeper.sh (Orquestador)
+                         |
+              +----------+----------+
+              |                     |
+              v                     v
+     Claude Code               Aider (--architect)
+     (Propuesta en             (Integración
+     PROPOSED_CHANGES.md)       quirúrgica)
+              |                     |
+              +----------+----------+
+                         |
+                         v
+              Linters (ruff / eslint)
+                         |
+                         v
+                  Servidor limpio
+```
+
+### Flujo de uso
+
+1. **Debate**: Claude.ai + ChatGPT + Gemini maduran la orden.
+2. **Directiva**: Llenar `DIRECTIVA_MAESTRA_TEMPLATE.md` con el resultado del debate.
+3. **Ejecución**: `./gatekeeper.sh "tarea"` orquesta el pipeline.
+4. **Verificación**: Linters validan automáticamente. Si fallan, la tarea se marca como FALLIDA.
+
+### Archivos del sistema
+
+| Archivo | Función |
+|---------|---------|
+| `gatekeeper.sh` | Orquestador principal del pipeline |
+| `DIRECTIVA_MAESTRA_TEMPLATE.md` | Plantilla para órdenes maduradas del debate IA |
+| `PROPOSED_CHANGES.md` | Archivo temporal donde Claude Code escribe propuestas |
+| `pyproject.toml` | Configuración de ruff para Python |
+
+### Comandos de instalación (servidor)
+
+```bash
+# Python linting
+pip install ruff
+
+# JS/React linting
+npm install eslint eslint-plugin-react eslint-plugin-security --save-dev
+
+# Aider (integrador)
+pip install -U aider-chat
+
+# Permisos del gatekeeper
+chmod +x gatekeeper.sh
 ```
