@@ -35,4 +35,4 @@ Pendientes:
 - Source report to dispatch.
 - StorefrontAuditor timer.
 - KAIQI verificación final antes de apply.
-- Watermark detector con firma.
+- Verificación de marca visual con firma.
