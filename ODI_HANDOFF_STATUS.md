@@ -23,6 +23,11 @@ Estado:
 - YOKOMAR protegido.
 - DARROW pospuesto.
 - Dispatch limpio.
+- PC III V1 conectado.
+
+Documentos nuevos:
+- PC_III_V1_HANDOFF_P10_T10_2026_06_28.md
+- PC_III_V1_CIRCUIT_POINTER_2026_06_28.md
 
 Pendientes:
 - Issue 47 orden quirúrgica SRM.
