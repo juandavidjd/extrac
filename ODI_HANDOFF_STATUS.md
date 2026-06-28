@@ -28,6 +28,7 @@ Estado:
 - Taxonomía ADSI Systeme.io aprobada: [PROYECTO]_[CATEGORIA]_[VALOR].
 - P10 Professional Signup v1 registrado como primera ejecución CaptationPipeline.
 - P10 Professional Signup v1 tiene especificación ejecutiva lista para configuración en Systeme.io.
+- Orden inmediata Systeme.io P10 Professional Signup v1 lista para ejecución operativa.
 - T10 continúa bloqueado a diseño hasta Auditoría de Realidad.
 - Patrón ODI de integración y potenciación registrado: lo externo entra al ecosistema como capacidad, se conecta, se mide, aprende y retorna al ciclo.
 
@@ -38,6 +39,7 @@ Documentos nuevos:
 - PC_III_V1_ADSI_TAGS_P10_CAPTATION_T10_AUDIT_2026_06_28.md
 - PC_III_V1_P10_PROFESSIONAL_SIGNUP_V1_EXECUTION_2026_06_28.md
 - PC_III_V1_ODI_INTEGRATION_PATTERN_2026_06_28.md
+- PC_III_V1_SYSTEME_IO_P10_CONFIGURATION_ORDER_2026_06_28.md
 
 Pendientes:
 - Issue 47 orden quirúrgica SRM.
@@ -52,4 +54,5 @@ Pendientes:
 - Systeme.io: cargar copy ES/EN.
 - Systeme.io: activar secuencia bienvenida P10 ES/EN.
 - Systeme.io: probar P10 Professional Signup v1 con contacto test.
+- Systeme.io: entregar evidencia browser de funnel, tags, landing, formulario, secuencia, workflow y contacto test.
 - T10: recibir evidencia forense antes de diseño.
