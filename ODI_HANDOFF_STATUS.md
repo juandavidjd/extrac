@@ -29,6 +29,7 @@ Estado:
 - P10 Professional Signup v1 registrado como primera ejecución CaptationPipeline.
 - P10 Professional Signup v1 tiene especificación ejecutiva lista para configuración en Systeme.io.
 - T10 continúa bloqueado a diseño hasta Auditoría de Realidad.
+- Patrón ODI de integración y potenciación registrado: lo externo entra al ecosistema como capacidad, se conecta, se mide, aprende y retorna al ciclo.
 
 Documentos nuevos:
 - PC_III_V1_HANDOFF_P10_T10_2026_06_28.md
@@ -36,6 +37,7 @@ Documentos nuevos:
 - PC_III_V1_SYSTEME_IO_CAPTATION_HANDOFF_2026_06_28.md
 - PC_III_V1_ADSI_TAGS_P10_CAPTATION_T10_AUDIT_2026_06_28.md
 - PC_III_V1_P10_PROFESSIONAL_SIGNUP_V1_EXECUTION_2026_06_28.md
+- PC_III_V1_ODI_INTEGRATION_PATTERN_2026_06_28.md
 
 Pendientes:
 - Issue 47 orden quirúrgica SRM.
