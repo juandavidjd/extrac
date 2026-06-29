@@ -33,6 +33,7 @@ Estado:
 - P10 Visual Master Fusion aprobado: une P10 Base + P10 v3 sin reemplazar la marca oficial; corrección obligatoria de geolocalización a Miami-Dade/Broward antes de mostrar a Martha.
 - P10/T10 12 entregables prometidos registrados: la certificación se hace contra propuesta, con backend, frontend, tests y evidencia visible para Martha.
 - P10/T10 Dual Surface + Habitat Widgets aprobado: una sola capacidad se renderiza como feature pública para Martha y como widget contextual para el habitante.
+- Criterio de certificación Dual Surface impuesto: cada entregable debe demostrar Public Projection y Habitat Projection; si falta una, máximo PARTIAL.
 - Nervio primero; luego dispatcher despacha los 12 entregables como tasks reales del organismo.
 - T10 continúa bloqueado a diseño hasta Auditoría de Realidad; solo se ejecutan entregables previamente propuestos/certificables.
 - Patrón ODI de integración y potenciación registrado: lo externo entra al ecosistema como capacidad, se conecta, se mide, aprende y retorna al ciclo.
@@ -53,6 +54,7 @@ Documentos nuevos:
 - P10_T10_12_ENTREGABLES_PROMETIDOS_2026_06_29.md
 - P10_VISUAL_MASTER_FUSION_APPROVED_2026_06_29.md
 - P10_T10_DUAL_SURFACE_HABITAT_WIDGETS_2026_06_29.md
+- P10_T10_DUAL_SURFACE_CERTIFICATION_CRITERIA_2026_06_29.md
 
 Pendientes:
 - Issue 47 orden quirúrgica SRM.
@@ -65,6 +67,7 @@ Pendientes:
 - P10 Visual Master Fusion: preparar preview controlado en Vercel con ubicaciones Miami, Doral, Hialeah, Kendall, Kissimmee, Fort Lauderdale, Hollywood, Pembroke Pines, Miramar y Weston; no reemplazar producción raíz sin QA.
 - P10/T10: después de NERVE_ALIVE despachar 12 entregables prometidos como tasks reales y certificables.
 - P10/T10: reescribir los 12 entregables como capacidades duales Capability → Widget → Public Projection / Habitat Projection.
+- P10/T10: cada entregable debe certificar backend, widget core, public projection, habitat projection, tests y evidencia browser.
 - Systeme.io: crear cuenta maestra ADSI Free.
 - Systeme.io: crear tags base ADSI/P10.
 - Systeme.io: montar landing coming soon P10.
