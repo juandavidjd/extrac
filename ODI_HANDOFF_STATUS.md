@@ -31,6 +31,8 @@ Estado:
 - Orden inmediata Systeme.io P10 Professional Signup v1 lista para ejecución operativa.
 - T10 continúa bloqueado a diseño hasta Auditoría de Realidad.
 - Patrón ODI de integración y potenciación registrado: lo externo entra al ecosistema como capacidad, se conecta, se mide, aprende y retorna al ciclo.
+- Guardian Legado constitucional aprobado / runtime en diseño.
+- Guardian Layer completo 4/4: Emocional, Ético, Profesional, Legado.
 
 Documentos nuevos:
 - PC_III_V1_HANDOFF_P10_T10_2026_06_28.md
@@ -40,6 +42,8 @@ Documentos nuevos:
 - PC_III_V1_P10_PROFESSIONAL_SIGNUP_V1_EXECUTION_2026_06_28.md
 - PC_III_V1_ODI_INTEGRATION_PATTERN_2026_06_28.md
 - PC_III_V1_SYSTEME_IO_P10_CONFIGURATION_ORDER_2026_06_28.md
+- ODI_GUARDIAN_LEGADO_CONSTITUCION_2026_06_28.md
+- GUARDIAN_LEGADO_DOCUMENTO_CONSTITUCIONAL.docx
 
 Pendientes:
 - Issue 47 orden quirúrgica SRM.
