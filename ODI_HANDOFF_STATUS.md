@@ -30,7 +30,9 @@ Estado:
 - P10 Professional Signup v1 tiene especificación ejecutiva lista para configuración en Systeme.io.
 - Orden inmediata Systeme.io P10 Professional Signup v1 lista para ejecución operativa.
 - P10 histórico pre-v3 registrado: origen, diagnóstico, propuesta, contrato, entregables, backend, dominios, leads y acompañamiento inteligente ODI.
-- T10 continúa bloqueado a diseño hasta Auditoría de Realidad.
+- P10/T10 12 entregables prometidos registrados: la certificación se hace contra propuesta, con backend, frontend, tests y evidencia visible para Martha.
+- Nervio primero; luego dispatcher despacha los 12 entregables como tasks reales del organismo.
+- T10 continúa bloqueado a diseño hasta Auditoría de Realidad; solo se ejecutan entregables previamente propuestos/certificables.
 - Patrón ODI de integración y potenciación registrado: lo externo entra al ecosistema como capacidad, se conecta, se mide, aprende y retorna al ciclo.
 - Guardian Legado constitucional aprobado / runtime en diseño.
 - Guardian Layer completo 4/4: Emocional, Ético, Profesional, Legado.
@@ -46,6 +48,7 @@ Documentos nuevos:
 - ODI_GUARDIAN_LEGADO_CONSTITUCION_2026_06_28.md
 - GUARDIAN_LEGADO_DOCUMENTO_CONSTITUCIONAL.docx
 - P10_LEVANTAMIENTO_PROFUNDO_SIN_V3_2026_06_29.md
+- P10_T10_12_ENTREGABLES_PROMETIDOS_2026_06_29.md
 
 Pendientes:
 - Issue 47 orden quirúrgica SRM.
@@ -54,6 +57,8 @@ Pendientes:
 - StorefrontAuditor timer.
 - KAIQI verificación final antes de apply.
 - Verificación de marca visual con firma.
+- Sistema nervioso ODI: completar RUNTIME_BRIDGE + re-H2 + first task hasta NERVE_ALIVE.
+- P10/T10: después de NERVE_ALIVE despachar 12 entregables prometidos como tasks reales y certificables.
 - Systeme.io: crear cuenta maestra ADSI Free.
 - Systeme.io: crear tags base ADSI/P10.
 - Systeme.io: montar landing coming soon P10.
@@ -61,4 +66,4 @@ Pendientes:
 - Systeme.io: activar secuencia bienvenida P10 ES/EN.
 - Systeme.io: probar P10 Professional Signup v1 con contacto test.
 - Systeme.io: entregar evidencia browser de funnel, tags, landing, formulario, secuencia, workflow y contacto test.
-- T10: recibir evidencia forense antes de diseño.
+- T10: recibir evidencia forense antes de diseño nuevo; ejecutar solo compromisos propuestos si son parte de los 12 entregables.
